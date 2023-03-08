@@ -103,7 +103,7 @@ def main():
     global original_folder
     original_folder= os.getcwd()
 
-    subjects = [f'subject_{i:02d}' for i in range(0, 24)]
+    subjects = [f'subject_{i:02d}' for i in range(20, 24)]
     captured_data = 'captured_data'
     sets = [f'set{i:03d}' for i in range(0, 4)]
     files = ['timestamp_speech.csv', 'processed_data.h5']
@@ -123,12 +123,11 @@ def main():
             for file in files:
                 print(f"Downloading file: {file}")
                 download_file(f'https://cloud.ilabt.imec.be/index.php/s/eRkdk6NnJZNL5XG/download?path=%2F{subject}%2F{captured_data}%2F{set}&files={file}', file)
-                if '.h5' in file:
-                    preprocess_file(file)
-                    try:
-                        os.remove(file)
-                    except OSError:
-                        pass
+                try:
+                    if '.h5' in file:
+                        preprocess_file(file)
+                except FileNotFoundError:
+                    print(f"File {file} not found")
             # change the current working directory to the parent directory
             os.chdir('..')
 
