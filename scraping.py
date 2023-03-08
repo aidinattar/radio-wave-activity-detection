@@ -11,7 +11,7 @@ def download_file(url, filename):
     '''
     # get the response object using the requests library
     r = requests.get(url, stream=True)
-
+    download = False
     try:
         r.raise_for_status()
         total_size = int(r.headers.get('content-length', 0))
@@ -28,12 +28,17 @@ def download_file(url, filename):
                 if chunk:
                     f.write(chunk)
                     progress_bar.update(len(chunk))
+        
+        download = True
+        
 
     except requests.exceptions.RequestException as e:
         print('Download failed: ', e)
         with open(os.path.join(original_folder, 'failed_downloads.txt'), 'a') as f:
             f.write('Download failed: ' + str(e) + '\n')
 
+            return download
+        
 def create_directory(directory):
     '''
     Function to create a directory if it does not exist
@@ -103,7 +108,7 @@ def main():
     global original_folder
     original_folder= os.getcwd()
 
-    subjects = [f'subject_{i:02d}' for i in range(20, 24)]
+    subjects = [f'subject_{i:02d}' for i in range(0, 24)]
     captured_data = 'captured_data'
     sets = [f'set{i:03d}' for i in range(0, 4)]
     files = ['timestamp_speech.csv', 'processed_data.h5']
@@ -122,12 +127,14 @@ def main():
 
             for file in files:
                 print(f"Downloading file: {file}")
-                download_file(f'https://cloud.ilabt.imec.be/index.php/s/eRkdk6NnJZNL5XG/download?path=%2F{subject}%2F{captured_data}%2F{set}&files={file}', file)
-                try:
+                d = download_file(f'https://cloud.ilabt.imec.be/index.php/s/eRkdk6NnJZNL5XG/download?path=%2F{subject}%2F{captured_data}%2F{set}&files={file}', file)
+                if d:
                     if '.h5' in file:
                         preprocess_file(file)
-                except FileNotFoundError:
-                    print(f"File {file} not found")
+                    #try:
+                    #    os.remove(file)
+                    #except OSError:
+                    #    pass
             # change the current working directory to the parent directory
             os.chdir('..')
 
