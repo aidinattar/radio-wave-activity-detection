@@ -37,7 +37,7 @@ def download_file(url, filename):
         with open(os.path.join(original_folder, 'failed_downloads.txt'), 'a') as f:
             f.write('Download failed: ' + str(e) + '\n')
 
-            return download
+    return download
         
 def create_directory(directory):
     '''
