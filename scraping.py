@@ -103,7 +103,7 @@ def main():
     global original_folder
     original_folder= os.getcwd()
 
-    subjects = [f'subject_{i:02d}' for i in range(0, 24)]
+    subjects = [f'subject_{i:02d}' for i in range(10, 20)]
     captured_data = 'captured_data'
     sets = [f'set{i:03d}' for i in range(0, 4)]
     files = ['timestamp_speech.csv', 'processed_data.h5']
