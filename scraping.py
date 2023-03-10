@@ -1,9 +1,24 @@
+'''Scrape the cloud folder at https://cloud.ilabt.imec.be/index.php/s/eRkdk6NnJZNL5XG/
+
+Usage:
+    scraping.py [--first_subjects=<first_subject>] [--last_subjects=<last_subject>] [--first_sets=<first_set>] [--last_sets=<last_set>]
+
+Options:
+    -h --help                   Show this screen.
+    --first_subjects=FIRST      First subject to download [default: 0].
+    --last_subjects=LAST        Last subject to download [default: 24].
+    --first_sets=FIRST          First set to download [default: 0].
+    --last_sets=LAST            Last set to download [default: 4].
+'''
+
+
 import os
 import requests
 import h5py
 import subprocess
 
-from tqdm import tqdm
+from tqdm   import tqdm
+from docopt import docopt
 
 def download_file(url, filename):
     '''
@@ -28,9 +43,9 @@ def download_file(url, filename):
                 if chunk:
                     f.write(chunk)
                     progress_bar.update(len(chunk))
-        
+
         download = True
-        
+
 
     except requests.exceptions.RequestException as e:
         print('Download failed: ', e)
@@ -38,7 +53,7 @@ def download_file(url, filename):
             f.write('Download failed: ' + str(e) + '\n')
 
     return download
-        
+
 def create_directory(directory):
     '''
     Function to create a directory if it does not exist
@@ -99,7 +114,7 @@ def preprocess_file(filename):
 
         repack_hdf5(filename)
 
-def main():
+def main(subjects, sets):
     '''
     Main function
     '''
@@ -108,9 +123,7 @@ def main():
     global original_folder
     original_folder= os.getcwd()
 
-    subjects = [f'subject_{i:02d}' for i in range(10, 20)]
     captured_data = 'captured_data'
-    sets = [f'set{i:03d}' for i in range(0, 4)]
     files = ['timestamp_speech.csv', 'processed_data.h5']
 
     # loop over each subject
@@ -146,4 +159,13 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    args = docopt(__doc__)
+
+    first_subject = int(args['--first_subjects'])
+    last_subject  = int(args['--last_subjects' ])
+    first_set     = int(args['--first_sets'    ])
+    last_set      = int(args['--last_sets'     ])
+
+    subjects = [f'subject_{i:02d}' for i in range(first_subject, last_subject)]
+    sets     = [f'set{i:03d}'      for i in range(first_set,     last_set    )]
+    main(subjects=subjects, sets=sets)
