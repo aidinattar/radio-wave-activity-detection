@@ -316,7 +316,7 @@ class preprocess(object):
 
                 # Add x and y labels
                 ax[i].set_xlabel("time [s]")
-                ax[i].set_ylabel("range [m]")
+                ax[i].set_ylabel("velocity [m/s]")
 
             fig.suptitle("Frame {}".format(j))
             fig.tight_layout()
@@ -364,7 +364,7 @@ class preprocess(object):
 
             # Add x and y labels
             ax[i].set_xlabel("time [au]")
-            ax[i].set_ylabel("velocy [m/s]")
+            ax[i].set_ylabel("velocity [m/s]")
 
         fig.tight_layout()
         # Show the plot
@@ -409,7 +409,7 @@ class preprocess(object):
 
             # Add x and y labels
             ax[i].set_xlabel("time [au]")
-            ax[i].set_ylabel("velocy [m/s]")
+            ax[i].set_ylabel("velocity [m/s]")
 
         fig.tight_layout()
         # Show the plot
