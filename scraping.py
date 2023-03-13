@@ -1,14 +1,14 @@
 '''Scrape the cloud folder at https://cloud.ilabt.imec.be/index.php/s/eRkdk6NnJZNL5XG/
 
 Usage:
-    scraping.py [--first_subjects=<first_subject>] [--last_subjects=<last_subject>] [--first_sets=<first_set>] [--last_sets=<last_set>]
+    scraping.py [--first_subject=<first_subject>] [--last_subject=<last_subject>] [--first_set=<first_set>] [--last_set=<last_set>]
 
 Options:
     -h --help                   Show this screen.
-    --first_subjects=FIRST      First subject to download [default: 0].
-    --last_subjects=LAST        Last subject to download [default: 24].
-    --first_sets=FIRST          First set to download [default: 0].
-    --last_sets=LAST            Last set to download [default: 4].
+    --first_subject=FIRST       First subject to download [default: 0].
+    --last_subject=LAST         Last subject to download [default: 24].
+    --first_set=FIRST           First set to download [default: 0].
+    --last_set=LAST             Last set to download [default: 4].
 '''
 
 
@@ -24,9 +24,12 @@ def download_file(url, filename):
     '''
     Function to download a file from a URL with a progress bar
     '''
+    # set the download flag to False
+    download = False
+
     # get the response object using the requests library
     r = requests.get(url, stream=True)
-    download = False
+
     try:
         r.raise_for_status()
         total_size = int(r.headers.get('content-length', 0))
@@ -44,8 +47,8 @@ def download_file(url, filename):
                     f.write(chunk)
                     progress_bar.update(len(chunk))
 
+        # set the download flag to True
         download = True
-
 
     except requests.exceptions.RequestException as e:
         print('Download failed: ', e)
@@ -161,10 +164,10 @@ def main(subjects, sets):
 if __name__ == '__main__':
     args = docopt(__doc__)
 
-    first_subject = int(args['--first_subjects'])
-    last_subject  = int(args['--last_subjects' ])
-    first_set     = int(args['--first_sets'    ])
-    last_set      = int(args['--last_sets'     ])
+    first_subject = int(args['--first_subject'])
+    last_subject  = int(args['--last_subject' ])
+    first_set     = int(args['--first_set'    ])
+    last_set      = int(args['--last_set'     ])
 
     subjects = [f'subject_{i:02d}' for i in range(first_subject, last_subject)]
     sets     = [f'set{i:03d}'      for i in range(first_set,     last_set    )]
