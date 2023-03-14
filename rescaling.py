@@ -37,6 +37,32 @@ def standardize(data, **kwargs):
     '''
     return (data - data.mean()) / data.std()
 
+def min_max(data, **kwargs):
+    '''
+    Function to apply min-max scaling to the data
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Data to scale
+
+    Returns
+    -------
+    numpy.ndarray
+        Scaled data
+    '''
+    # Find the minimum value of the map
+    data_min = np.min(data[data != 0])
+
+    # Subtract the minimum value from the map
+    data_norm = data - data_min
+
+    # Find the maximum value of the normalized map
+    data_max = np.max(data_norm)
+
+    # Divide the normalized map by the maximum value
+    return data_norm / data_max
+
 def log_transformation(data, **kwargs):
     """
     Function to apply log transformation to the data
