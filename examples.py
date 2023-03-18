@@ -31,8 +31,11 @@ a.hierarchical_clustering()
 # %%
 a.GMM()
 # %%
-a.hdbscan(min_cluster_size=10, min_samples=10, alpha=1.0, metric='euclidean')
+a.hdbscan()
 
 # %%
 a.gridsearch()
+# %%
+a.otsu()
+
 # %%

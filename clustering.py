@@ -19,7 +19,8 @@ from sklearn.metrics      import make_scorer
 from rescaling            import normalize, standardize, \
                                  log_transformation, power_transformation, \
                                  binning, apply_pca, min_max
-from utils                import my_silhouette_score
+from utils                import my_silhouette_score, \
+                                 pipeline
 
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import silhouette_score
@@ -490,6 +491,7 @@ class preprocess(object):
         if save:
             fig.savefig(os.path.join(figures_dir, name))
 
+
     def hdbscan(self, name='hdbscan.png', save=False, **kwargs):
         '''
         Function to perform the HDBSCAN clustering algorithm
@@ -498,22 +500,24 @@ class preprocess(object):
         if not self.do_mDoppler:
             raise OptionIsFalseError("do_mDoppler")
 
-        # Get the first image
-        img = self.mDoppler[0].T
+        ## Get the first image
+        #img = self.mDoppler[0].T
 
-        # Reshape the image
-        img = img.reshape((img.shape[0] * img.shape[1], 1))
+        ## Reshape the image
+        #img = img.reshape((img.shape[0] * img.shape[1], 1))
 
-        # Perform HDBSCAN
-        clusterer = hdbscan.HDBSCAN(**kwargs)
-        clusterer.fit(img)
+        ## Perform HDBSCAN
+        #clusterer = hdbscan.HDBSCAN(**kwargs)
+        #clusterer.fit(img)
 
-        # Create an empty array
-        labels = np.zeros_like(clusterer.labels_)
-        labels[clusterer.labels_ != -1] = 1
+        ## Create an empty array
+        #labels = np.zeros_like(clusterer.labels_)
+        #labels[clusterer.labels_ != -1] = 1
 
-        # Reshape the labels
-        labels = labels.reshape((self.mDoppler[0].shape[0], self.mDoppler[0].shape[1]))
+        ## Reshape the labels
+        #labels = labels.reshape((self.mDoppler[0].shape[0], self.mDoppler[0].shape[1]))
+
+        labels = pipeline(self.mDoppler[0].T, **kwargs)
 
         # Plot the results
         fig, ax = plt.subplots(nrows=2, figsize=(9,7))
@@ -529,6 +533,7 @@ class preprocess(object):
 
         if save:
             fig.savefig(os.path.join(figures_dir, name))
+
 
     def kmeans(self, n_clusters=112, name='kmeans.png', save=False):
         '''
