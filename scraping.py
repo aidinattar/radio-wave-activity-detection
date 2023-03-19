@@ -81,10 +81,6 @@ def repack_hdf5(filename):
     os.rename(f"{filename}_repack", filename)
 
 
-####################
-# Preprocessing code
-# TO BE CHECKED
-####################
 def preprocess_file(filename):
     '''
     Function to preprocess the file

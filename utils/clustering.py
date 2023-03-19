@@ -10,8 +10,6 @@ def my_silhouette_score(model, X, y=None):
     preds = model.fit_predict(X)
     return silhouette_score(X, preds) if len(set(preds)) > 1 else float('nan')
 
-
-
 def preprocess(img, kernel_size=3):
     # Apply Gaussian smoothing to reduce noise
     img = cv2.GaussianBlur(img, (kernel_size, kernel_size), 0)
@@ -25,7 +23,7 @@ def threshold(img):
 def morphological_ops(thresholded, erosion_size=3, dilation_size=3):
     # Remove small noise pixels using erosion
     eroded = morph.erosion(thresholded, morph.square(erosion_size))
-    
+
     # Fill in gaps in signal clouds using dilation
     dilated = morph.dilation(eroded, morph.square(dilation_size))
     return dilated

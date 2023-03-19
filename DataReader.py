@@ -1,33 +1,23 @@
 '''
-Read the data from the h5 files and perform clustering on the data
+DataReader.py
+
+This file contains the DataReader class,
+which is used to read data contained in the directory DATA.
 '''
 
 import os
 import h5py
 import cv2
-import hdbscan
 import numpy             as np
 import pandas            as pd
 import matplotlib.pyplot as plt
 
 from tqdm                 import tqdm
 from matplotlib           import animation
-from sklearn.cluster      import DBSCAN, KMeans, \
-                                 AgglomerativeClustering
-from sklearn.mixture      import GaussianMixture
-from sklearn.metrics      import make_scorer
-from rescaling            import normalize, standardize, \
-                                 log_transformation, power_transformation, \
-                                 binning, apply_pca, min_max
-from utils                import my_silhouette_score, \
-                                 pipeline
-
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import silhouette_score
+from utils                import rescaling
 
 data_dir    = os.path.join(os.getcwd(),    'DATA')
 figures_dir = os.path.join(os.getcwd(), 'figures')
-
 
 class OptionIsFalseError(Exception):
     def __init__(self, option_name):
@@ -37,12 +27,12 @@ class OptionIsFalseError(Exception):
         return f"The '{self.option_name}' option is set to False. The code cannot be run."
 
 
-class preprocess(object):
+class DataReader(object):
     '''
-    Class to preprocess the data
+    Class to read the data and do some prelimary processing
     '''
 
-    def __init__(self, subjects, sets, do_rdn=False, do_mDoppler=True):
+    def __init__(self, subjects, sets, do_rdn:bool=False, do_mDoppler:bool=True):
         '''
         Initialize the class
 
@@ -139,7 +129,7 @@ class preprocess(object):
             self.rdn_1 = self.rdn[0::2]
             self.rdn_2 = self.rdn[1::2]
 
-    def rescaling(self, method='norm', **kwargs):
+    def rescaling(self, method:str='norm', **kwargs):
         '''
         Function to rescale the data
 
@@ -160,13 +150,13 @@ class preprocess(object):
         '''
 
         method_dict = {
-            'norm': normalize,
-            'std': standardize,
-            'log': log_transformation,
-            'pow': power_transformation,
-            'bin': binning,
-            'pca': apply_pca,
-            'min_max': min_max
+            'norm':    rescaling.normalize,
+            'std':     rescaling.standardize,
+            'log':     rescaling.log_transformation,
+            'pow':     rescaling.power_transformation,
+            'bin':     rescaling.binning,
+            'pca':     rescaling.apply_pca,
+            'min_max': rescaling.min_max
         }
 
         if method not in method_dict:
@@ -181,20 +171,20 @@ class preprocess(object):
                 self.rdn[i] = method_dict[method](data=self.rdn[i], **kwargs)
 
 
-    def Plot_Gif_rdn(self, frames, k=0, name='rdn.gif'):
+    def Plot_Gif_rdn(self, frames:int, k:int=0, name:str='rdn.gif'):
         '''
         Function to plot the gif of the rdn data
 
         Parameters
         ----------
-        frames : list
-            List of frames to plot
+        frames : int
+            Number of frames to plot
         k : int
             Index of the radar to plot [default: 0]
         name : str, optional
             Name of the file to save [default: 'rdn.gif']
         '''
-        def update(j):
+        def update(j:int):
             for i in range(2*k, 2*k+2):
                 data = self.rdn[i][j,:,:]
 
@@ -224,7 +214,7 @@ class preprocess(object):
         # Save the animation as a GIF file
         anim.save(os.path.join(figures_dir, name), writer="pillow")
 
-    def plot_rdn_map(self, k=0, range_length=40, name='rdn_map.png', save=False):
+    def plot_rdn_map(self, k:int=0, range_length:int=40, name:str='rdn_map.png', save:bool=False):
         '''
         Function to plot the map of the rdn data
 
@@ -452,272 +442,46 @@ class preprocess(object):
         # Filter the data
         self.mDoppler = [cv2.GaussianBlur(data, size, 1) for data in self.mDoppler]
 
-    def dbscan(self, eps=3, min_samples=10, name='dbscan.png', save=False):
+
+    def divide_actions(self, conversion_factor:float=1, k:int=0, name:str='actions.png', save:bool=False):
         '''
-        Function to perform the DBSCAN clustering algorithm
+        Function to divide the actions according to the
+        timestamps recorded in the file
+
+        Parameters
+        ----------
+        conversion_factor : float
+            Conversion factor to convert the timestamps in seconds [default: 1]
+        k : int
+            Index of the radar to plot [default: 0]
+        name : str, optional
+            Name of the file to save [default: 'actions.png']
+        save : bool, optional
+            Save the figure [default: False]
         '''
 
-        if not self.do_mDoppler:
-            raise OptionIsFalseError("do_mDoppler")
+        # Compute the time passed
+        for i in range(len(self.timestamp_speech)):
+            # Convert the timestamps in seconds
+            self.timestamp_speech[i]['timestamp']=pd.to_datetime(self.timestamp_speech[i]['timestamp'])
+            # Compute the time passed
+            self.timestamp_speech[i]['time_passed'] = (self.timestamp_speech[i]['timestamp'] - self.timestamp_speech[i]['timestamp'].iloc[0]).dt.total_seconds()
+            # compute the time passed in bins
+            self.timestamp_speech[i]['time_passed_bins'] = (self.timestamp_speech[i]['time_passed']*conversion_factor).astype(int)
+            # compute number of beans per action
+            self.timestamp_speech[i]['n_beans'] = self.timestamp_speech[i]['time_passed_bins'].diff().fillna(0).astype(int)
 
-        # Get the first image
-        img = self.mDoppler[0].T
+        # define the figure
+        fig, axes = plt.subplots(nrows=2, figsize=(9,7))
 
-        # Reshape the image
-        img = img.reshape((img.shape[0] * img.shape[1], 1))
+        # plot the data
+        for i, ax in enumerate(axes):
+            ax.contourf(self.mDoppler[k+i].T, cmap='coolwarm')
+            # draw vertical lines corresponding to the actions' limits
+            for j in range(len(self.timestamp_speech[k])):
+                ax.axvline(x=self.timestamp_speech[k]['time_passed_bins'].iloc[j], color='red', linestyle='--')
 
-        # Perform DBSCAN
-        db = DBSCAN(eps=3, min_samples=10).fit(img)
-
-        # Create an empty array
-        labels = np.zeros_like(db.labels_)
-        labels[db.labels_ != -1] = 1
-
-        # Reshape the labels
-        labels = labels.reshape((self.mDoppler[0].shape[0], self.mDoppler[0].shape[1]))
-
-        # Plot the results
-        fig, ax = plt.subplots(nrows=2, figsize=(9,7))
-
-        ax[0].imshow(self.mDoppler[0], cmap='viridis')
-        ax[0].set_title("Original")
-
-        ax[1].imshow(labels, cmap='viridis')
-        ax[1].set_title("DBSCAN")
-
-        fig.tight_layout()
         plt.show()
 
         if save:
             fig.savefig(os.path.join(figures_dir, name))
-
-
-    def hdbscan(self, name='hdbscan.png', save=False, **kwargs):
-        '''
-        Function to perform the HDBSCAN clustering algorithm
-        '''
-
-        if not self.do_mDoppler:
-            raise OptionIsFalseError("do_mDoppler")
-
-        ## Get the first image
-        #img = self.mDoppler[0].T
-
-        ## Reshape the image
-        #img = img.reshape((img.shape[0] * img.shape[1], 1))
-
-        ## Perform HDBSCAN
-        #clusterer = hdbscan.HDBSCAN(**kwargs)
-        #clusterer.fit(img)
-
-        ## Create an empty array
-        #labels = np.zeros_like(clusterer.labels_)
-        #labels[clusterer.labels_ != -1] = 1
-
-        ## Reshape the labels
-        #labels = labels.reshape((self.mDoppler[0].shape[0], self.mDoppler[0].shape[1]))
-
-        labels = pipeline(self.mDoppler[0].T, **kwargs)
-
-        # Plot the results
-        fig, ax = plt.subplots(nrows=2, figsize=(9,7))
-
-        ax[0].contourf(self.mDoppler[0].T, cmap='viridis')
-        ax[0].set_title("Original")
-
-        ax[1].contourf(labels, cmap='viridis')
-        ax[1].set_title("HDBSCAN")
-
-        fig.tight_layout()
-        plt.show()
-
-        if save:
-            fig.savefig(os.path.join(figures_dir, name))
-
-
-    def kmeans(self, n_clusters=112, name='kmeans.png', save=False):
-        '''
-        Function to perform the K-means clustering algorithm
-        '''
-
-        if not self.do_mDoppler:
-            raise OptionIsFalseError("do_mDoppler")
-
-        # Get the first image
-        img = self.mDoppler[0].T
-
-        # Perform K-means
-        kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(img.reshape(-1, 1))
-
-        # Get the labels and reshape them
-        labels = kmeans.labels_.reshape(img.shape)
-
-        # Plot the results
-        fig, ax = plt.subplots(nrows=2, figsize=(9,7))
-
-        ax[0].imshow(img, cmap='viridis', aspect=20)
-        ax[0].set_title("Original")
-
-        ax[1].imshow(labels, cmap='viridis', aspect=20)
-        ax[1].set_title("K-means")
-
-        fig.tight_layout()
-        plt.show()
-
-        if save:
-            fig.savefig(os.path.join(figures_dir, name))
-
-
-
-    def xmeans(self, name='xmeans.png', save=False):
-        '''
-        Function to perform the X-means clustering algorithm
-        '''
-
-        if not self.do_mDoppler:
-            raise OptionIsFalseError("do_mDoppler")
-
-        # Get the first image
-        img = self.mDoppler[0].T
-
-        # Reshape the image
-        img = img.reshape((img.shape[0] * img.shape[1], 1))
-
-        # Perform X-means
-        xmeans = XMeans(random_state=0).fit(img)
-
-        # Create an empty array
-        labels = np.zeros_like(xmeans.labels_)
-        labels[xmeans.labels_ != -1] = 1
-
-        # Reshape the labels
-        labels = labels.reshape((self.mDoppler[0].shape[0], self.mDoppler[0].shape[1]))
-
-        # Plot the results
-        fig, ax = plt.subplots(nrows=2, figsize=(9,7))
-
-        ax[0].imshow(self.mDoppler[0], cmap='viridis')
-        ax[0].set_title("Original")
-
-        ax[1].imshow(labels, cmap='viridis')
-        ax[1].set_title("X-means")
-
-        fig.tight_layout()
-        plt.show()
-
-        if save:
-            fig.savefig(os.path.join(figures_dir, name))
-
-
-    def hierarchical_clustering(self, name='hierarchical_clustering.png', save=False):
-        '''
-        Function to perform the hierarchical clustering algorithm
-        '''
-
-        if not self.do_mDoppler:
-            raise OptionIsFalseError("do_mDoppler")
-
-        # Get the first image
-        img = self.mDoppler[0].T
-
-        # Reshape the image
-        img = img.reshape((img.shape[0] * img.shape[1], 1))
-
-        # Perform hierarchical clustering
-        clustering = AgglomerativeClustering().fit(img)
-
-        # Create an empty array
-        labels = np.zeros_like(clustering.labels_)
-        labels[clustering.labels_ != -1] = 1
-
-        # Reshape the labels
-        labels = labels.reshape((self.mDoppler[0].shape[0], self.mDoppler[0].shape[1]))
-
-        # Plot the results
-        fig, ax = plt.subplots(nrows=2, figsize=(9,7))
-
-        ax[0].imshow(self.mDoppler[0], cmap='viridis')
-        ax[0].set_title("Original")
-
-        ax[1].imshow(labels, cmap='viridis')
-        ax[1].set_title("Hierarchical clustering")
-
-        fig.tight_layout()
-        plt.show()
-
-        if save:
-            fig.savefig(os.path.join(figures_dir, name))
-
-    def GMM(self, name='GMM.png', save=False):
-        '''
-        Function to perform the GMM clustering algorithm
-        '''
-
-        if not self.do_mDoppler:
-            raise OptionIsFalseError("do_mDoppler")
-
-        # Get the first image
-        img = self.mDoppler[0].T
-
-        # Reshape the image
-        img = img.reshape((img.shape[0] * img.shape[1], 1))
-
-        # Perform GMM
-        gmm = GaussianMixture(n_components=3, random_state=0).fit(img)
-
-        # Create an empty array
-        labels = np.zeros_like(gmm.predict(img))
-        labels[gmm.predict(img) != -1] = 1
-
-        # Reshape the labels
-        labels = labels.reshape((self.mDoppler[0].shape[0], self.mDoppler[0].shape[1]))
-
-        # Plot the results
-        fig, ax = plt.subplots(nrows=2, figsize=(9,7))
-
-        ax[0].contourf(self.mDoppler[0], cmap='viridis')
-        ax[0].set_title("Original")
-
-        ax[1].contourf(labels, cmap='viridis')
-        ax[1].set_title("GMM")
-
-        fig.tight_layout()
-        plt.show()
-
-        if save:
-            fig.savefig(os.path.join(figures_dir, name))
-
-
-    def gridsearch(self):
-        '''
-        Function to perform a grid search to find the best parameters for the
-        HDBSCAN algorithm
-        '''
-
-        if not self.do_mDoppler:
-            raise OptionIsFalseError("do_mDoppler")
-
-        # Get the first image
-        img = self.mDoppler[0].T
-
-        # Reshape the image
-        img = img.reshape((img.shape[0] * img.shape[1], 1))
-
-
-        # Define the parameters to search over
-        param_grid = {'min_cluster_size': [5, 10, 15], 
-                    'min_samples': [5, 10, 15],
-                    'alpha': [0.5, 1.0],
-                    'metric': ['euclidean', 'manhattan']}
-
-        # Perform grid search
-        clusterer = hdbscan.HDBSCAN()
-
-        # Create the grid search object
-        grid_search = GridSearchCV(clusterer, param_grid, cv=5, scoring=my_silhouette_score, verbose=3)
-
-        grid_search.fit(img)
-
-        # Print the best parameters and score
-        print("Best parameters: ", grid_search.best_params_)
-        print("Best score: ", grid_search.best_score_)
