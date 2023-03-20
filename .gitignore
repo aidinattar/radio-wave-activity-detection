@@ -208,3 +208,4 @@ pyrightconfig.json
 ### DATA ###
 /DATA
 /.vscode/
+/DATA_processed
