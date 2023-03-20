@@ -444,23 +444,15 @@ class DataReader(object):
         self.mDoppler = [cv2.GaussianBlur(data, size, 1) for data in self.mDoppler]
 
 
-    def divide_actions(self, conversion_factor:float=1, k:int=0, name:str='actions.png', save:bool=False):
+    def timestamp_to_bins(self, conversion_factor:float=1):
         '''
-        Function to divide the actions according to the
-        timestamps recorded in the file
+        Function to convert the timestamps in bins
 
         Parameters
         ----------
         conversion_factor : float
             Conversion factor to convert the timestamps in seconds [default: 1]
-        k : int
-            Index of the radar to plot [default: 0]
-        name : str, optional
-            Name of the file to save [default: 'actions.png']
-        save : bool, optional
-            Save the figure [default: False]
         '''
-
         # Compute the time passed
         for i in range(len(self.timestamp_speech)):
             # Convert the timestamps in seconds
@@ -471,6 +463,29 @@ class DataReader(object):
             self.timestamp_speech[i]['time_passed_bins'] = (self.timestamp_speech[i]['time_passed']*conversion_factor).astype(int)
             # compute number of beans per action
             self.timestamp_speech[i]['n_beans'] = self.timestamp_speech[i]['time_passed_bins'].diff().fillna(0).astype(int)
+
+        self.timestamp_to_bins_done = True
+
+
+    def plot_divided_actions(self, k:int=0, name:str='actions.png', save:bool=False):
+        '''
+        Function to divide the actions according to the
+        timestamps recorded in the file
+
+        Parameters
+        ----------
+        k : int
+            Index of the radar to plot [default: 0]
+        name : str, optional
+            Name of the file to save [default: 'actions.png']
+        save : bool, optional
+            Save the figure [default: False]
+        '''
+
+        if not self.timestamp_to_bins_done:
+            raise OptionIsFalseError("timestamp_to_bins")
+        if not self.do_mDoppler:
+            raise OptionIsFalseError("do_mDoppler")
 
         # define the figure
         fig, axes = plt.subplots(nrows=2, figsize=(9,7))
