@@ -8,6 +8,7 @@ which is used to read data contained in the directory DATA.
 import os
 import h5py
 import cv2
+import copy
 import numpy             as np
 import pandas            as pd
 import matplotlib.pyplot as plt
@@ -485,3 +486,9 @@ class DataReader(object):
 
         if save:
             fig.savefig(os.path.join(figures_dir, name))
+
+    def copy(self):
+        '''
+        Function to copy the object
+        '''
+        return copy.deepcopy(self)
