@@ -33,6 +33,10 @@ class DataReader(object):
     Class to read the data and do some prelimary processing
     '''
 
+    # Flags to indicate if the data has been processed
+    timestamp_to_bins_done = False
+    radar_division_done    = False
+
     def __init__(self, subjects, sets, do_rdn:bool=False, do_mDoppler:bool=True):
         '''
         Initialize the class
@@ -129,6 +133,9 @@ class DataReader(object):
         if self.do_rdn:
             self.rdn_1 = self.rdn[0::2]
             self.rdn_2 = self.rdn[1::2]
+
+        self.radar_division_done = True
+
 
     def rescaling(self, method:str='norm', **kwargs):
         '''
