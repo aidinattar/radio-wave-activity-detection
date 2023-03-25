@@ -7,7 +7,7 @@ This file contains the DataProcess class, which is used to process the data.
 import os
 import numpy as np
 
-from DataCutter import DataCutter
+from preprocessing.DataCutter import DataCutter
 
 class DataProcess(object):
     '''

@@ -1,7 +1,7 @@
 '''
-model.py
+classifier.py
 '''
-from DataProcess import DataProcess
+from preprocessing.DataProcess import DataProcess
 
 class model(object):
     '''

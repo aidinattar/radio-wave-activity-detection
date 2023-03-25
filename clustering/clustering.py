@@ -20,7 +20,7 @@ from sklearn.mixture      import GaussianMixture
 from sklearn.metrics      import make_scorer
 from utils                import my_silhouette_score, \
                                  pipeline
-from DataReader           import OptionIsFalseError
+from preprocessing.DataReader           import OptionIsFalseError
 
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import silhouette_score
@@ -29,7 +29,7 @@ data_dir    = os.path.join(os.getcwd(),    'DATA')
 figures_dir = os.path.join(os.getcwd(), 'figures')
 
 
-class preprocess(object):
+class clustering(object):
     '''
     Class to preprocess the data
     '''

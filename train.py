@@ -25,7 +25,7 @@ Options:
 '''
 from docopt import docopt
 import torch
-from DataProcess import DataProcess
+from preprocessing.DataProcess import DataProcess
 
 def main(data:DataProcess, output, epochs, batch_size, lr, weight_decay, momentum, nesterov, patience, min_delta, factor, verbose, device):
     pass

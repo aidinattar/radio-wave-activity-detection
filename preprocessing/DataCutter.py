@@ -8,7 +8,7 @@ according to the timestamps provided by the timestamp_speech system.
 import os
 import numpy as np
 
-from DataReader import DataReader
+from preprocessing.DataReader import DataReader
 
 class DataCutter(object):
     '''

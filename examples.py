@@ -1,6 +1,6 @@
 # %%
-from DataReader import DataReader
-from DataCutter import DataCutter
+from preprocessing.DataReader import DataReader
+from preprocessing.DataCutter import DataCutter
 
 subjects = [f'subject_{i:02d}' for i in range(5, 6)]
 sets     = [f'set{i:03d}'      for i in range(1, 2)]
