@@ -47,15 +47,65 @@ class DataProcess(object):
 
         for i, (rdn_1, rdn_2) in enumerate(zip(self.data.signal_rdn_1, self.data.signal_rdn_2)):
             self.rdn_1 = self.rdn[i].max(axis=0)
+            self.rdn_2 = self.rdn[i].max(axis=0)
 
-    def crop_rdn(self, start: int, stop: int):
+    def padding_rdn(self, padding: int):
         '''
-        Crop the rdn data
+        Pad the rdn data.
+        Check if the action is at least 40 bins long.
         '''
         pass
 
-    def crop_mDoppler(self, start: int, stop: int):
+    def padding_mDoppler(self, padding: int):
         '''
-        Crop the mDoppler data
+        Pad the mDoppler data
         '''
+        pass
+
+
+    def cut_time(self, loc='random'):
+        '''
+        Cut the data in time
+
+        Parameters
+        ----------
+        loc : str, optional
+            Location of the cut. Possible values are:
+            'center', 'start', 'end', 'random'.
+            The default is 'random'.
+        '''
+        pass
+
+
+    def augmentation(self):
+        '''
+        Augment the data
+        '''
+        pass
+
+
+    def save(self, path:str='DATA_preprocessed', filename:str='data_processed.npz'):
+        '''
+        Save the data.
+        '''
+
+        # Create the path
+        path = os.path.join(path, filename)
+
+        # Save the data
+        np.savez(path, ###### Arrays here)
+
+
+    def load(self, path:str='DATA_preprocessed', filename:str='data_processed.npz'):
+        '''
+        Load the data.
+        '''
+
+        # Create the path
+        path = os.path.join(path, filename)
+
+        # Load the data
+        data = np.load(path)
+
+        ###### Load the arrays here
         pass
