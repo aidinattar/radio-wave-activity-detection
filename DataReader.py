@@ -122,18 +122,41 @@ class DataReader(object):
             self.mDoppler[i] = np.delete(self.mDoppler[i], (63,64,65), axis=1)
 
 
-    def crop_rdn(self, start: int, stop: int):
+    def crop_rdn(self,
+                 start_vel:int=13, stop_vel:int=111,
+                 start_range:int=0, stop_range:int=63):
         '''
         Crop the rdn data
+
+        Parameters
+        ----------
+        start_vel : int, optional
+            Start velocity bin [default: 13]
+        stop_vel : int, optional
+            Stop velocity bin [default: 111]
+        start_range : int, optional
+            Start range bin [default: 0]
+        stop_range : int, optional
+            Stop range bin [default: 63]
         '''
-        pass
+        # check if the dimensions are correct
+        if not self.do_rdn:
+            raise OptionIsFalseError('do_rdn')
+
+        for i in range(len(self.rdn)):
+            self.rdn[i] = self.rdn[i][start_vel:stop_vel, start_range:stop_range, :]
 
 
     def crop_mDoppler(self, start: int, stop: int):
         '''
         Crop the mDoppler data
         '''
-        pass
+        # check if the dimensions are correct
+        if not self.do_mDoppler:
+            raise OptionIsFalseError('do_mDoppler')
+
+        for i in range(len(self.mDoppler)):
+            self.mDoppler[i] = self.mDoppler[i][start:stop, :]
 
 
     def radar_division(self):
