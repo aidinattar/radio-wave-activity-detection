@@ -1,6 +1,6 @@
 TODO:
     - complete the implementation of the function crop_mDoppler
-    and crop_rdn in DataReader.py
+    and crop_rdn in DataReader.py [DONE]
     - complete the implementation of the function padding_rdn,
     padding_mDoppler, cut_time (and augmentation) in DataProcess.py
     - check the parameters of CNN-MD in cnn_md.py
