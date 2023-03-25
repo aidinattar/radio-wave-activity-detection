@@ -89,11 +89,22 @@ class cnn_md(Module):
             Softmax(dim=1)
         )
 
-    def _init_weights(self):
+        self.apply(self._init_weights)
+
+
+    def _init_weights(self, module):
         '''
         Initialize the weights of the model
         '''
-        pass
+        if isinstance(module, torch.nn.Linear):
+            torch.nn.init.xavier_uniform_(module.weight)
+            if module.bias is not None:
+                module.bias.data.zero_()
+        if isinstance(module, torch.nn.Conv2d):
+            torch.nn.init.xavier_uniform_(module.weight)
+            if module.bias is not None:
+                module.bias.data.zero_()
+
 
     def forward(self, x):
         '''
