@@ -1,0 +1,11 @@
+TODO:
+    - complete the implementation of the function crop_mDoppler
+    and crop_rdn in DataReader.py
+    - complete the implementation of the function padding_rdn,
+    padding_mDoppler, cut_time (and augmentation) in DataProcess.py
+    - check the parameters of CNN-MD in cnn_md.py
+    - copy-paste the code of cnn_md.py in cnn_rdn.py and modify
+    the parameters
+    - complete the functions in classifier.py
+    - write the main function in train.py
+    - run the code in and check the results
