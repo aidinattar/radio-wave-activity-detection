@@ -117,7 +117,7 @@ class DataCutter(object):
 
         self.labels_to_int_done = True
 
-    def save(self, path:str='DATA_preprocessed', filename:str='data.npz'):
+    def save(self, path:str='DATA_preprocessed', filename:str='data_cutted.npz'):
         '''
         Save the data.
         '''
