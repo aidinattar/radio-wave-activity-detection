@@ -121,6 +121,21 @@ class DataReader(object):
         for i in range(len(self.rdn)):
             self.mDoppler[i] = np.delete(self.mDoppler[i], (63,64,65), axis=1)
 
+
+    def crop_rdn(self, start: int, stop: int):
+        '''
+        Crop the rdn data
+        '''
+        pass
+
+
+    def crop_mDoppler(self, start: int, stop: int):
+        '''
+        Crop the mDoppler data
+        '''
+        pass
+
+
     def radar_division(self):
         '''
         Divide the data based on the radar they come from
