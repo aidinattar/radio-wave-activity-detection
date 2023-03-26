@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from tqdm                 import tqdm
 from matplotlib           import animation
 from utils                import rescaling
-from exceptions.exceptions import OptionIsFalseError
+from exceptions           import OptionIsFalseError
 
 data_dir    = os.path.join(os.getcwd(),    'DATA')
 figures_dir = os.path.join(os.getcwd(), 'figures')

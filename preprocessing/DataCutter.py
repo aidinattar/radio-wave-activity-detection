@@ -9,7 +9,7 @@ import os
 import numpy as np
 
 from preprocessing.DataReader import DataReader
-from exceptions.exceptions import OptionIsFalseError
+from exceptions               import OptionIsFalseError
 
 
 class DataCutter(object):

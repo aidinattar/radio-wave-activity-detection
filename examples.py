@@ -7,8 +7,11 @@ sets     = [f'set{i:03d}'      for i in range(1, 2)]
 
 a = DataReader(subjects=subjects, sets=sets, do_rdn=True, do_mDoppler=True)
 a.remove_static_bins()
+a.crop_mDoppler()
+a.crop_rdn()
 a.rescaling()
 a.filter_mDoppler(size=(15, 15), sigma=10)
+
 # %%
 #a.Plot_Gif_rdn(60)
 # %%
