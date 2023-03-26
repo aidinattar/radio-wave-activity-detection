@@ -2,6 +2,8 @@
 classifier.py
 '''
 from preprocessing.DataProcess import DataProcess
+from exceptions.exceptions import OptionIsFalseError
+from sklearn.model_selection import train_test_split
 
 class model(object):
     '''
