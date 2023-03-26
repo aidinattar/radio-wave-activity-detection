@@ -9,6 +9,8 @@ import os
 import numpy as np
 
 from preprocessing.DataReader import DataReader
+from exceptions.exceptions import OptionIsFalseError
+
 
 class DataCutter(object):
     '''
@@ -18,6 +20,13 @@ class DataCutter(object):
     cut_done = False
     labels_extraction_done = False
     labels_to_int_done = False
+
+    signals_mDoppler_1 = np.array([])
+    signals_mDoppler_2 = np.array([])
+    signals_rdn_1 = np.array([])
+    signals_rdn_2 = np.array([])
+    labels = np.array([])
+    labels_dict = np.array([])
 
     def __init__(self, data: DataReader):
         '''
@@ -49,6 +58,9 @@ class DataCutter(object):
         Cut the mDoppler data into the signals according to the timestamps provided by the timestamp_speech system.
         '''
 
+        if not self.data.do_mDoppler:
+            raise OptionIsFalseError('do_mDoppler')
+
         # Create the list of signals
         self.signals_mDoppler_1, self.signals_mDoppler_2 = ([] for i in range(2))
 
@@ -70,6 +82,9 @@ class DataCutter(object):
         '''
         Cut the rdn data into the signals according to the timestamps provided by the timestamp_speech system.
         '''
+
+        if not self.data.do_rdn:
+            raise OptionIsFalseError('do_rdn')
 
         # Create the list of signals
         self.signals_rdn_1, self.signals_rdn_2 = ([] for i in range(2))
