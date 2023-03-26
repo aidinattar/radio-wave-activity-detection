@@ -8,7 +8,7 @@ import os
 import numpy as np
 
 from preprocessing.DataCutter import DataCutter
-from exceptions.exceptions import OptionIsFalseError
+from exceptions import OptionIsFalseError
 
 class DataProcess(object):
     '''
@@ -238,7 +238,8 @@ class DataProcess(object):
         path = os.path.join(path, filename)
 
         # Save the data
-        np.savez(path, ###### Arrays here)
+        np.savez(path, ###### Arrays here
+                 )
 
 
     def load(self, path:str='DATA_preprocessed', filename:str='data_processed.npz'):
