@@ -29,6 +29,8 @@ def random(array: np.ndarray, len_default: int = 40):
         random_bins.sort()
         return array[random_bins]
 
+### Doubt: can we extract indexes according to a normal
+### distribution without replacements?
 def normal(array: np.ndarray,
            len_default:int=40,
            mean:int=20,
@@ -54,4 +56,10 @@ def normal(array: np.ndarray,
         # select len_default bins according to a normal
         # distribution and take the data sorted by time
         normal_bins = np.random.normal(
-            loc=center,
+            loc=mean,
+            scale=std,
+            size=len_default
+        )
+        normal_bins = np.round(normal_bins).astype(int)
+        normal_bins.sort()
+        return array[normal_bins]
