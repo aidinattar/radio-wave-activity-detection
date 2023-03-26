@@ -8,7 +8,8 @@ import os
 import numpy as np
 
 from preprocessing.DataCutter import DataCutter
-from exceptions import OptionIsFalseError
+from exceptions               import OptionIsFalseError
+from utils                    import cutting
 
 class DataProcess(object):
     '''
@@ -22,6 +23,8 @@ class DataProcess(object):
         self.data = data
         self.do_rdn = self.data.data.do_rdn
         self.do_mDoppler = self.data.data.do_mDoppler
+        self.labels = self.data.labels
+        self.labels_dict = self.data.labels_dict
 
     def agglomerate_rdn(self, method: str='max'):
         '''
@@ -125,7 +128,7 @@ class DataProcess(object):
                 self.mDoppler_2 = mDoppler_2
 
 
-    def cut_time(self, loc:str='random', len_default:int=40):
+    def cut_time(self, loc:str='random', len_default:int=40, **kwargs):
         '''
         Cut the data in time
 
@@ -135,14 +138,18 @@ class DataProcess(object):
             Location of the cut. Possible values are:
             'center', 'start', 'end', 'random', 'normal'.
             The default is 'random'.
+        len_default : int, optional
+            Default length of the action. The default is 40.
+        **kwargs : TYPE
+            Keyword arguments to pass to the cut_time function.
         '''
         if self.do_rdn:
-            self.cut_time_rdn(loc=loc, len_default=len_default)
+            self.cut_time_rdn(loc=loc, len_default=len_default, **kwargs)
         if self.do_mDoppler:
-            self.cut_time_mDoppler(loc=loc, len_default=len_default)
+            self.cut_time_mDoppler(loc=loc, len_default=len_default, **kwargs)
 
 
-    def cut_time_rdn(self, loc:int='random', len_default:int=40):
+    def cut_time_rdn(self, loc:int='random', len_default:int=40, **kwargs):
         '''
         Cut the rdn data in time
 
@@ -154,6 +161,8 @@ class DataProcess(object):
             The default is 'random'.
         len_default : int, optional
             Default length of the action. The default is 40.
+        **kwargs : TYPE
+            Keyword arguments to pass to the cut_time function.
 
         Raises
         ------
@@ -176,13 +185,15 @@ class DataProcess(object):
                 self.rdn_1 = rdn_1[-len_default:, :]
                 self.rdn_2 = rdn_2[-len_default:, :]
             elif loc == 'random':
-                pass
+                self.rdn_1 = cutting.random(rdn_1, len_default)
+                self.rdn_2 = cutting.random(rdn_2, len_default)
             elif loc == 'normal':
-                pass
+                self.rdn_1 = cutting.normal(rdn_1, len_default, **kwargs)
+                self.rdn_2 = cutting.normal(rdn_2, len_default, **kwargs)
             else:
                 raise ValueError("Invalid location")
 
-    def cut_time_mDoppler(self, loc:int='random', len_default:int=40):
+    def cut_time_mDoppler(self, loc:int='random', len_default:int=40, **kwargs):
         '''
         Cut the mDoppler data in time
 
@@ -194,6 +205,8 @@ class DataProcess(object):
             The default is 'random'.
         len_default : int, optional
             Default length of the action. The default is 40.
+        **kwargs : TYPE
+            Keyword arguments to pass to the cut_time function.
 
         Raises
         ------
@@ -216,17 +229,51 @@ class DataProcess(object):
                 self.mDoppler_1 = mDoppler_1[-len_default:, :]
                 self.mDoppler_2 = mDoppler_2[-len_default:, :]
             elif loc == 'random':
-                pass
+                self.mDoppler_1 = cutting.random(mDoppler_1, len_default)
+                self.mDoppler_2 = cutting.random(mDoppler_2, len_default)
             elif loc == 'normal':
-                pass
+                self.mDoppler_1 = cutting.normal(mDoppler_1, len_default, **kwargs)
+                self.mDoppler_2 = cutting.normal(mDoppler_2, len_default, **kwargs)
             else:
                 raise ValueError("Invalid location")
 
-    def augmentation(self):
+
+    def augmentation(self, method=['time-mask'], **kwargs):
         '''
-        Augment the data
+        Augment the data.
+
+        Parameters
+        ----------
+        method : list, optional
+            List of methods to use.
+            Possible values are:
+                'time-mask', 'doppler-mask', 'time-doppler-mask', ...
+            The default is ['time-mask'].
+        **kwargs : TYPE
+            Keyword arguments to pass to the augmentation function.
+        '''
+        if self.do_rdn:
+            self.augmentation_rdn()
+        if self.do_mDoppler:
+            self.augmentation_mDoppler()
+
+
+    def augmentation_rdn(self):
+        '''
+        Augment the rdn data
         '''
         pass
+        #self.rdn_1 = augmentation.time_mask(self.rdn_1)
+        #self.rdn_2 = augmentation.time_mask(self.rdn_2)
+
+
+    def augmentation_mDoppler(self):
+        '''
+        Augment the mDoppler data
+        '''
+        pass
+        #self.mDoppler_1 = augmentation.time_mask(self.mDoppler_1)
+        #self.mDoppler_2 = augmentation.time_mask(self.mDoppler_2)
 
 
     def save(self, path:str='DATA_preprocessed', filename:str='data_processed.npz'):
@@ -238,8 +285,15 @@ class DataProcess(object):
         path = os.path.join(path, filename)
 
         # Save the data
-        np.savez(path, ###### Arrays here
-                 )
+        np.savez(
+            path,
+            mDoppler_1=self.mDoppler_1,
+            mDoppler_2=self.mDoppler_2,
+            rdn_1=self.rdn_1,
+            rdn_2=self.rdn_2,
+            labels=self.labels,
+            labels_dict=self.labels_dict
+        )
 
 
     def load(self, path:str='DATA_preprocessed', filename:str='data_processed.npz'):
@@ -253,5 +307,10 @@ class DataProcess(object):
         # Load the data
         data = np.load(path)
 
-        ###### Load the arrays here
-        pass
+        # Get the data
+        self.mDoppler_1  = data['mDoppler_1']
+        self.mDoppler_2  = data['mDoppler_2']
+        self.rdn_1       = data['rdn_1']
+        self.rdn_2       = data['rdn_2']
+        self.labels      = data['labels']
+        self.labels_dict = data['labels_dict'].item()
