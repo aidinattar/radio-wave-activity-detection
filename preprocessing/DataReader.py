@@ -16,17 +16,10 @@ import matplotlib.pyplot as plt
 from tqdm                 import tqdm
 from matplotlib           import animation
 from utils                import rescaling
+from exceptions.exceptions import OptionIsFalseError
 
 data_dir    = os.path.join(os.getcwd(),    'DATA')
 figures_dir = os.path.join(os.getcwd(), 'figures')
-
-class OptionIsFalseError(Exception):
-    def __init__(self, option_name):
-        self.option_name = option_name
-
-    def __str__(self):
-        return f"The '{self.option_name}' option is set to False. The code cannot be run."
-
 
 class DataReader(object):
     '''
@@ -139,24 +132,26 @@ class DataReader(object):
         stop_range : int, optional
             Stop range bin [default: 63]
         '''
-        # check if the dimensions are correct
+        # check if rdns are present
         if not self.do_rdn:
             raise OptionIsFalseError('do_rdn')
 
+        # crop the data
         for i in range(len(self.rdn)):
-            self.rdn[i] = self.rdn[i][start_vel:stop_vel, start_range:stop_range, :]
+            self.rdn[i] = self.rdn[i][:, start_range:stop_range, start_vel:stop_vel]
 
 
-    def crop_mDoppler(self, start: int, stop: int):
+    def crop_mDoppler(self, start:int=13, stop:int=111):
         '''
         Crop the mDoppler data
         '''
-        # check if the dimensions are correct
+        # check if mDopplers are present
         if not self.do_mDoppler:
             raise OptionIsFalseError('do_mDoppler')
 
+        # crop the data
         for i in range(len(self.mDoppler)):
-            self.mDoppler[i] = self.mDoppler[i][start:stop, :]
+            self.mDoppler[i] = self.mDoppler[i][:, start:stop]
 
 
     def radar_division(self):
