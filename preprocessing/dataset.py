@@ -11,11 +11,13 @@ TODO:
     - add the link to the paper
 '''
 
-from torch.utils.data import Dataset
+import os
 import numpy as np
 
+from torch.utils.data import Dataset
+
 class Dataset(Dataset):
-    def __init_(self, path:str, transform=None, type:str='mdoppler'):
+    def __init_(self, path:str, file:str, transform=None, type:str='mdoppler'):
         '''
         Constructor
 
@@ -23,6 +25,8 @@ class Dataset(Dataset):
         ----------
         path : str
             Path to the dataset
+        file : str
+            Name of the file containing the dataset
         transform : callable, optional
             Transform to apply to the data. The default is None.
         type : str, optional
@@ -32,16 +36,17 @@ class Dataset(Dataset):
                 'rdn': rdn data
         '''
         # Load the data
-        pass
+        data = np.load(os.path.join(path, file))
 
         if type == 'mdoppler':
-            self.x = None
+            self.x = np.concatenate((data['mdoppler_1'], data['mdoppler_2']), axis=0)
         elif type == 'rdn':
-            self.x = None
+            self.x = np.concatenate((data['rdn_1'], data['rdn_2']), axis=0)
         else:
             raise ValueError('Invalid type of data')
 
-        self.y = None
+        self.y = np.concatenate(data['labels'], data['labels'], axis=0)
+        self.labels_dict = data['labels_dict']
         self.transform = transform
 
     def __len__(self):
