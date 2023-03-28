@@ -162,3 +162,8 @@ class DataCutter(object):
         self.signals_rdn_2      = data['signals_rdn_2']
         self.labels             = data['labels']
         self.labels_dict        = data['labels_dict'].item()
+
+        if self.signals_mDoppler_1.size != 0:
+            self.data.do_mDoppler = True
+        if self.signals_rdn_1.size != 0:
+            self.data.do_rdn = True
