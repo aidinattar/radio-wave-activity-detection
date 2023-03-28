@@ -27,13 +27,110 @@ TODO:
 
 import torch
 from torch.nn import Module, Linear,\
-                     Conv2d, MaxPool2d,\
+                     Conv3d, MaxPool3d,\
                      Dropout,\
                      Flatten, Sequential,\
                      ELU, Softmax
 
 class cnn_rd(Module):
     '''
-    Class to create the model for the rdn data
+    Class to create the model for the mDoppler data
     '''
-    pass
+
+    def __init__(self,
+                 in_channels: int=1,
+                 filters: tuple=(8, 16, 32, 64),
+                 kernel_size: tuple=(3, 3, 3),  # change 1
+                 stride: int=1,
+                 pool_size: int=2,
+                 pool_stride: int=2,
+                 padding: tuple=(1, 1, 1),  # change 2
+                 dilation: int=1,
+                 groups: int=1,
+                 bias: bool=True,
+                 padding_mode: str='zeros'):
+        '''
+        Constructor
+        '''
+        super().__init__()
+        f1, f2, f3, f4 = filters
+
+        # Convolutional layers
+        self.cnn = Sequential(
+
+            Conv3d(in_channels=in_channels, out_channels=f1, kernel_size=kernel_size, stride=stride, padding=padding),  # change 4
+            ELU(),
+            MaxPool3d(kernel_size=pool_size, stride=pool_stride),
+
+            Conv3d(in_channels=f1, out_channels=f2, kernel_size=kernel_size, stride=stride, padding=padding),  # change 4
+            ELU(),
+            MaxPool3d(kernel_size=pool_size, stride=pool_stride),
+
+            Conv3d(in_channels=f2, out_channels=f3, kernel_size=kernel_size, stride=stride, padding=padding),  # change 4
+            ELU(),
+            MaxPool3d(kernel_size=pool_size, stride=pool_stride),
+
+            Conv3d(in_channels=f3, out_channels=f4, kernel_size=kernel_size, stride=stride, padding=padding),  # change 4
+            ELU(),
+            MaxPool3d(kernel_size=pool_size, stride=pool_stride)
+        )
+
+        # Flatten the output of the convolutional layers
+        self.flatten = Flatten(),
+
+        # Fully connected layers
+        self.fc = Sequential(
+            # num_filters * height * width * depth
+            # height = (input_height - kernel_size + 2 * padding) / stride + 1
+            # width = (input_width - kernel_size + 2 * padding) / stride + 1
+            # depth = (input_depth - kernel_size + 2 * padding) / stride + 1
+            Linear(in_features=f4*3*5*3*3, out_features=128),  # adjust the input size accordingly
+            ELU(), # not sure if this is the right activation function
+            Dropout(p=0.2),
+            Linear(in_features=128, out_features=6),
+            Softmax(dim=1)
+        )
+
+        self.apply(self._init_weights)
+
+
+    def _init_weights(self, module):
+        '''
+        Initialize the weights of the model
+        '''
+        if isinstance(module, torch.nn.Linear):
+            torch.nn.init.xavier_uniform_(module.weight)
+            if module.bias is not None:
+                module.bias.data.zero_()
+        if isinstance(module, torch.nn.Conv2d):
+            torch.nn.init.xavier_uniform_(module.weight)
+            if module.bias is not None:
+                module.bias.data.zero_()
+
+
+    def forward(self, x):
+        '''
+        Forward pass
+        '''
+        # Convolutional layers
+        x = self.cnn(x)
+        # Flatten the output of the convolutional layers
+        x = self.flatten(x)
+        # Fully connected layers
+        x = self.fc(x)
+        return x
+
+    def save(self, path: str):
+        '''
+        Save the model
+        '''
+        torch.save(self.state_dict(), path)
+
+    def load(self, path: str):
+        '''
+        Load the model
+        '''
+        self.load_state_dict(torch.load(path))
+
+    def train(self, train_loader, test_loader, epochs: int=10, lr: float=0.001):
+        pass
