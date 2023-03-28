@@ -1,6 +1,7 @@
 # %%
 from preprocessing.DataReader import DataReader
 from preprocessing.DataCutter import DataCutter
+from preprocessing.DataProcess import DataProcess
 
 subjects = [f'subject_{i:02d}' for i in range(5, 6)]
 sets     = [f'set{i:03d}'      for i in range(1, 2)]
@@ -17,7 +18,7 @@ a.filter_mDoppler(size=(15, 15), sigma=10)
 # %%
 a.plot_rdn_map()
 # %%
-#a.plot_rdn_map_3d()
+a.plot_rdn_map_3d(k=0, range_length=6000)
 # %%
 a.Plot_Gif_mDoppler(100)
 # %%
@@ -27,7 +28,7 @@ a.plot_mDoppler_map(start=161, stop=208)
 # %%
 a.timestamp_to_bins(11)
 # %%
-a.divide_actions()
+a.plot_divided_actions()
 
 # %%
 b = DataCutter(a)
@@ -39,4 +40,10 @@ b.labels_to_int()
 
 # %%
 b.save()
+# %%
+c = DataProcess(b)
+# %%
+c.cut_time()
+# %%
+c.padding(padding=40)
 # %%
