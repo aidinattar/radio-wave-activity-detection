@@ -26,6 +26,12 @@ class DataProcess(object):
         self.labels = self.data.labels
         self.labels_dict = self.data.labels_dict
 
+        self.rdn_1 = self.data.signals_rdn_1
+        self.rdn_2 = self.data.signals_rdn_2
+        self.mDoppler_1 = self.data.signals_mDoppler_1
+        self.mDoppler_2 = self.data.signals_mDoppler_2
+
+
     def agglomerate_rdn(self, method: str='max'):
         '''
         Agglomerate the rdn data on the time axis.
@@ -51,11 +57,30 @@ class DataProcess(object):
         if method not in methods:
             raise ValueError("Invalid method")
 
-        for i, (rdn_1, rdn_2) in enumerate(zip(self.data.signal_rdn_1, self.data.signal_rdn_2)):
-            self.rdn_1 = self.rdn[i].max(axis=0)
-            self.rdn_2 = self.rdn[i].max(axis=0)
+        for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.data.rdn_2)):
+            self.rdn_1[i] = self.rdn[i].max(axis=0)
+            self.rdn_2[i] = self.rdn[i].max(axis=0)
 
-    def padding_rdn(self, padding: int, mode: str='constant', **kwargs):
+    def padding(self, padding: int, mode: str='constant', **kwargs):
+        '''
+        Pad the data.
+        Check if the action is at least 40 bins long, if not, pad the data.
+
+        Parameters
+        ----------
+        padding : int
+            Number of bins to pad.
+        mode : str, optional
+            Mode to use to pad the data. The default is 'constant'.
+        **kwargs : TYPE
+            Keyword arguments to pass to the pad function.
+        '''
+        if self.do_rdn:
+            self.padding_rdn(padding=padding, mode=mode, **kwargs)
+        if self.do_mDoppler:
+            self.padding_mDoppler(padding=padding, mode=mode, **kwargs)
+
+    def padding_rdn(self, padding: int=40, mode: str='constant', **kwargs):
         '''
         Pad the rdn data.
         Check if the action is at least 40 bins long, if not, pad the data.
@@ -69,27 +94,27 @@ class DataProcess(object):
         **kwargs : TYPE
             Keyword arguments to pass to the pad function.
         '''
-        for i, (rdn_1, rdn_2) in enumerate(zip(self.data.signal_rdn_1, self.data.signal_rdn_2)):
-            if rdn_1.shape[0] < 40:
-                self.rdn_1 = np.pad(
+        for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
+            if rdn_1.shape[0] < padding:
+                self.rdn_1[i] = np.pad(
                     array=rdn_1,
-                    pad_width=((0, padding - rdn_1.shape[0]), (0, 0)),
+                    pad_width=((0, padding - rdn_1.shape[0]), (0, 0), (0, 0)),
                     mode=mode,
                     **kwargs
                 )
             else:
-                self.rdn_1 = rdn_1
-            if rdn_2.shape[0] < 40:
-                self.rdn_2 = np.pad(
+                self.rdn_1[i] = rdn_1
+            if rdn_2.shape[0] < padding:
+                self.rdn_2[i] = np.pad(
                     array=rdn_2,
-                    pad_width=((0, padding - rdn_2.shape[0]), (0, 0)),
+                    pad_width=((0, padding - rdn_2.shape[0]), (0, 0), (0, 0)),
                     mode=mode,
                     **kwargs
                 )
             else:
-                self.rdn_2 = rdn_2
+                self.rdn_2[i] = rdn_2
 
-    def padding_mDoppler(self, padding:int, mode: str='constant', len_default:int=40, **kwargs):
+    def padding_mDoppler(self, padding:int, mode: str='constant', **kwargs):
         '''
         Pad the mDoppler data.
         Check if the action is at least 40 bins long, if not, pad the data.
@@ -100,32 +125,30 @@ class DataProcess(object):
             Number of bins to pad.
         mode : str, optional
             Mode to use to pad the data. The default is 'constant'.
-        len_default : int, optional
-            Default length of the action. The default is 40.
         **kwargs : TYPE
             Keyword arguments to pass to the pad function.
         '''
 
 
-        for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.data.signal_mDoppler_1, self.data.signal_mDoppler_2)):
-            if mDoppler_1.shape[0] < len_default:
-                self.mDoppler_1 = np.pad(
+        for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
+            if mDoppler_1.shape[0] < padding:
+                self.mDoppler_1[i] = np.pad(
                     array=mDoppler_1,
                     pad_width=((0, padding - mDoppler_1.shape[0]), (0, 0)),
                     mode=mode,
                     **kwargs
                 )
             else:
-                self.mDoppler_1 = mDoppler_1
-            if mDoppler_2.shape[0] < len_default:
-                self.mDoppler_2 = np.pad(
+                self.mDoppler_1[i] = mDoppler_1
+            if mDoppler_2.shape[0] < padding:
+                self.mDoppler_2[i] = np.pad(
                     array=mDoppler_2,
                     pad_width=((0, padding - mDoppler_2.shape[0]), (0, 0)),
                     mode=mode,
                     **kwargs
                 )
             else:
-                self.mDoppler_2 = mDoppler_2
+                self.mDoppler_2[i] = mDoppler_2
 
 
     def cut_time(self, loc:str='random', len_default:int=40, **kwargs):
@@ -174,22 +197,22 @@ class DataProcess(object):
         if not self.do_rdn:
             raise OptionIsFalseError("do_rdn")
 
-        for i, (rdn_1, rdn_2) in enumerate(zip(self.data.signal_rdn_1, self.data.signal_rdn_2)):
+        for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
             if loc == 'center':
-                self.rdn_1 = rdn_1[rdn_1.shape[0]//2-len_default//2:rdn_1.shape[0]//2+len_default//2, :]
-                self.rdn_2 = rdn_2[rdn_2.shape[0]//2-len_default//2:rdn_2.shape[0]//2+len_default//2, :]
+                self.rdn_1[i] = rdn_1[rdn_1.shape[0]//2-len_default//2:rdn_1.shape[0]//2+len_default//2, :]
+                self.rdn_2[i] = rdn_2[rdn_2.shape[0]//2-len_default//2:rdn_2.shape[0]//2+len_default//2, :]
             elif loc == 'start':
-                self.rdn_1 = rdn_1[:len_default, :]
-                self.rdn_2 = rdn_2[:len_default, :]
+                self.rdn_1[i] = rdn_1[:len_default, :]
+                self.rdn_2[i] = rdn_2[:len_default, :]
             elif loc == 'end':
-                self.rdn_1 = rdn_1[-len_default:, :]
-                self.rdn_2 = rdn_2[-len_default:, :]
+                self.rdn_1[i] = rdn_1[-len_default:, :]
+                self.rdn_2[i] = rdn_2[-len_default:, :]
             elif loc == 'random':
-                self.rdn_1 = cutting.random(rdn_1, len_default)
-                self.rdn_2 = cutting.random(rdn_2, len_default)
+                self.rdn_1[i] = cutting.random(rdn_1, len_default)
+                self.rdn_2[i] = cutting.random(rdn_2, len_default)
             elif loc == 'normal':
-                self.rdn_1 = cutting.normal(rdn_1, len_default, **kwargs)
-                self.rdn_2 = cutting.normal(rdn_2, len_default, **kwargs)
+                self.rdn_1[i] = cutting.normal(rdn_1, len_default, **kwargs)
+                self.rdn_2[i] = cutting.normal(rdn_2, len_default, **kwargs)
             else:
                 raise ValueError("Invalid location")
 
@@ -218,22 +241,22 @@ class DataProcess(object):
         if not self.do_mDoppler:
             raise OptionIsFalseError("do_mDoppler")
 
-        for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.data.signal_mDoppler_1, self.data.signal_mDoppler_2)):
+        for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
             if loc == 'center':
-                self.mDoppler_1 = mDoppler_1[mDoppler_1.shape[0]//2-len_default//2:mDoppler_1.shape[0]//2+len_default//2, :]
-                self.mDoppler_2 = mDoppler_2[mDoppler_2.shape[0]//2-len_default//2:mDoppler_2.shape[0]//2+len_default//2, :]
+                self.mDoppler_1[i] = mDoppler_1[mDoppler_1.shape[0]//2-len_default//2:mDoppler_1.shape[0]//2+len_default//2, :]
+                self.mDoppler_2[i] = mDoppler_2[mDoppler_2.shape[0]//2-len_default//2:mDoppler_2.shape[0]//2+len_default//2, :]
             elif loc == 'start':
-                self.mDoppler_1 = mDoppler_1[:len_default, :]
-                self.mDoppler_2 = mDoppler_2[:len_default, :]
+                self.mDoppler_1[i] = mDoppler_1[:len_default, :]
+                self.mDoppler_2[i] = mDoppler_2[:len_default, :]
             elif loc == 'end':
-                self.mDoppler_1 = mDoppler_1[-len_default:, :]
-                self.mDoppler_2 = mDoppler_2[-len_default:, :]
+                self.mDoppler_1[i] = mDoppler_1[-len_default:, :]
+                self.mDoppler_2[i] = mDoppler_2[-len_default:, :]
             elif loc == 'random':
-                self.mDoppler_1 = cutting.random(mDoppler_1, len_default)
-                self.mDoppler_2 = cutting.random(mDoppler_2, len_default)
+                self.mDoppler_1[i] = cutting.random(mDoppler_1, len_default)
+                self.mDoppler_2[i] = cutting.random(mDoppler_2, len_default)
             elif loc == 'normal':
-                self.mDoppler_1 = cutting.normal(mDoppler_1, len_default, **kwargs)
-                self.mDoppler_2 = cutting.normal(mDoppler_2, len_default, **kwargs)
+                self.mDoppler_1[i] = cutting.normal(mDoppler_1, len_default, **kwargs)
+                self.mDoppler_2[i] = cutting.normal(mDoppler_2, len_default, **kwargs)
             else:
                 raise ValueError("Invalid location")
 
@@ -314,3 +337,8 @@ class DataProcess(object):
         self.rdn_2       = data['rdn_2']
         self.labels      = data['labels']
         self.labels_dict = data['labels_dict'].item()
+
+        if self.mDoppler_1 is None:
+            self.do_mDoppler = False
+        if self.rdn_1 is None:
+            self.do_rdn = False
