@@ -1,6 +1,7 @@
 '''
 classifier.py
 '''
+import torch
 import numpy as np
 from torch.utils.data          import DataLoader, random_split
 from torch.optim               import SGD, Adam
@@ -171,6 +172,9 @@ class model(object):
         self.loss_created = True
 
 
+    ######################################
+    ######           CHECK         #######
+    ######################################
     def train_model(self,
                     epochs: int=10,
                     device: str='cuda',
@@ -206,9 +210,61 @@ class model(object):
         # Use GPU
         self.model = self.model.to(device)
 
+        # Define first best loss
+        best_loss = np.inf
+
         # Train the model
-        for epoch in tqdm(range(epochs)):
-            pass
+        for epoch in range(epochs):
+            self.model.train()
+            print(f'Epoch {epoch+1}/{epochs}')
+            iterator = tqdm(self.train_loader)
+            for batch in iterator:
+                # Get the data
+                data = batch['data'].to(device)
+                target = batch['target'].to(device)
+
+                # Forward pass
+                output = self.model(data)
+                loss = self.loss(output, target)
+
+                # Backward pass
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+
+                # Update the progress bar
+                iterator.set_postfix(loss=loss.item())
+                #iterator.set_description(f"Train loss: {loss.detach().cpu().numpy()}")
+
+            self.model.eval()
+            with torch.no_grad():
+                preds, targets = [], []
+                for batch in self.test_loader:
+                    # Get the data
+                    data = batch['data'].to(device)
+                    target = batch['target'].to(device)
+
+                    # Forward pass
+                    output = self.model(data)
+                    loss = self.loss(output, target)
+
+                    # Get the predictions
+                    preds.append(output)
+                    targets.append(target)
+                preds = torch.cat(preds, axis=0)
+                targets = torch.cat(targets, axis=0)
+
+                # Calculate the loss and accuracy
+                test_loss = self.loss(preds, targets)
+                test_acc = None
+
+                print(f'Test loss: {test_loss.detach().cpu().numpy()}')
+                print(f'Test accuracy: {test_acc}')
+
+            if checkpoint:
+                if test_loss < best_loss:
+                    best_loss = test_loss
+                    torch.save(self.model.state_dict(), checkpoint_path)
 
         self.model_trained = True
 
