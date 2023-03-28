@@ -290,6 +290,8 @@ class DataReader(object):
         if save:
             fig.savefig(os.path.join(figures_dir, name))
 
+    # To correct: in this way the 3d plot is of the
+    # aggregated data, not as a function of time
     def plot_rdn_map_3d(self, k=0, range_length=40, name='rdn_map_3d.png', save=False):
         '''
         Function to plot the map of the rdn data
