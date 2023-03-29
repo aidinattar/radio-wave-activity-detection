@@ -1,7 +1,7 @@
 '''
 cnn_rd.py
 
-This file contains the Model class, which is used to create the model 
+This file contains the Model class, which is used to create the model
 for the rdn data.
 
 The model is based on the following paper:
@@ -131,6 +131,3 @@ class cnn_rd(Module):
         Load the model
         '''
         self.load_state_dict(torch.load(path))
-
-    def train(self, train_loader, test_loader, epochs: int=10, lr: float=0.001):
-        pass

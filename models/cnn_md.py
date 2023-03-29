@@ -129,6 +129,3 @@ class cnn_md(Module):
         Load the model
         '''
         self.load_state_dict(torch.load(path))
-
-    def train(self, train_loader, test_loader, epochs: int=10, lr: float=0.001):
-        pass
