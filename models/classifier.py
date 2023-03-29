@@ -1,17 +1,28 @@
 '''
 classifier.py
+
+This file contains the model class, which is used
+to create the model and train it.
 '''
+import os
 import torch
-import numpy as np
+import numpy             as np
+import seaborn           as sns
+import matplotlib.pyplot as plt
+
 from torch.utils.data          import DataLoader, random_split
 from torch.optim               import SGD, Adam
 from torch.nn                  import BCELoss, BCEWithLogitsLoss
 from preprocessing.dataset     import Dataset
 from exceptions                import OptionIsFalseError, WorkToDoError
-from sklearn.model_selection   import train_test_split
 from cnn_rd                    import cnn_rd
 from cnn_md                    import cnn_md
 from tqdm                      import tqdm
+from sklearn.metrics           import confusion_matrix, accuracy_score,\
+                                      precision_recall_fscore_support,\
+                                      roc_curve, roc_auc_score
+
+fig_dir = 'figures'
 
 class model(object):
     '''
@@ -269,62 +280,266 @@ class model(object):
         self.model_trained = True
 
 
+    ######################################
+    ######           CHECK         #######
+    ######################################
     def evaluate_model(self,
                        do_cm: bool=True,
                        do_acc: bool=True,
-                       do_prec: bool=True,
-                       do_rec: bool=True,
-                       do_f1: bool=True,
-                       do_roc: bool=True,
-                       do_auc: bool=True,
+                       do_prec_rec_f1: bool=True,
+                       do_roc_auc: bool=True,
+                       save: bool=True
                        ):
         '''
         Evaluate the model.
 
         Confusion matrix, accuracy, precision, recall, f1-score,
         ROC curve, AUC, etc.
+
+        Parameters
+        ----------
+        do_cm : bool, optional
+            Plot the confusion matrix. The default is True.
+        do_acc : bool, optional
+            Print the accuracy. The default is True.
+        do_prec_rec_f1 : bool, optional
+            Print the precision, recall and f1-score. The default is True.
+        do_roc_auc : bool, optional
+            Plot the ROC curve and print the AUC. The default is True.
+        save : bool, optional
+            Save the plots. The default is True.
+
+        Raises
+        ------
+        WorkToDoError
+            If the model is not trained.
         '''
         if not self.model_trained:
             raise WorkToDoError('model_trained')
 
+        # Set the model to evaluation mode
+        self.model.eval()
+        with torch.no_grad():
+            # Get the predictions
+            preds, targets = [], []
+            for batch in self.test_loader:
+                # Get the data
+                data = batch['data']
+                target = batch['target']
+
+                # Forward pass
+                output = model(data)
+                preds.append(output)
+                targets.append(target)
+            preds = torch.cat(preds, axis=0)
+            targets = torch.cat(targets, axis=0)
+            loss = self.loss(preds, targets).detach().cpu().numpy()
+            preds = torch.sigmoid(preds).detach().cpu().numpy()
+            targets = targets.detach().cpu().numpy()
+
         # Confusion matrix
         if do_cm:
-            pass
+            self.confusion_matrix(self.model, self.test_loader, save=save)
 
         # Accuracy
         if do_acc:
-            pass
+            self.accuracy(self.model, self.test_loader, save=save)
 
-        # Precision
-        if do_prec:
-            pass
-
-        # Recall
-        if do_rec:
-            pass
-
-        # F1-score
-        if do_f1:
-            pass
+        # Precision, recall, f1-score
+        if do_prec_rec_f1:
+            self.precision_recall_fscore_support(self.model, self.test_loader, save=save)
 
         # ROC curve
-        if do_roc:
-            pass
-
-        # AUC
-        if do_auc:
-            pass
+        if do_roc_auc:
+            self.roc_auc_curve(self.model, self.test_loader, save=save)
 
 
-    def save_model(self):
+    def confusion_matrix(self, targets, preds, save: bool=False):
+        '''
+        Calculate the confusion matrix
+
+        Parameters
+        ----------
+        targets : numpy.ndarray
+            The targets.
+        preds : numpy.ndarray
+            The predictions.
+        save : bool, optional
+            Save the plot. The default is False.
+        '''
+
+        # Calculate the confusion matrix
+        cm = confusion_matrix(targets, preds)
+        print(cm)
+
+        # Plot the confusion matrix
+        plt.figure(figsize=(10, 10))
+        sns.heatmap(cm, annot=True, fmt='d')
+        plt.title('Confusion matrix')
+        plt.ylabel('Actual')
+        plt.xlabel('Predicted')
+        plt.show()
+
+        # Save the confusion matrix
+        if save:
+            plt.savefig(os.path.join(fig_dir, f'{self.model_type}__confusion_matrix.png'))
+
+
+    def accuracy(self, targets, preds, save: bool=False):
+        '''
+        Calculate the accuracy
+
+        Parameters
+        ----------
+        targets : numpy.ndarray
+            The targets.
+        preds : numpy.ndarray
+            The predictions.
+        save : bool, optional
+            Save the accuracy. The default is False.
+        '''
+        preds = preds.round()
+        accuracy = accuracy_score(targets, preds)
+        print(f'Accuracy: {accuracy}')
+
+        # Save the accuracy
+        if save:
+            with open(os.path.join(fig_dir, f'{self.model_type}__accuracy.txt'), 'w') as f:
+                f.write(f'Accuracy: {accuracy}')
+
+
+    def precision_recall_fscore_support(self, targets, preds, save: bool=False):
+        '''
+        Calculate the precision, recall and f1-score
+
+        Parameters
+        ----------
+        targets : numpy.ndarray
+            The targets.
+        preds : numpy.ndarray
+            The predictions.
+        save : bool, optional
+            Save the precision, recall and f1-score. The default is False.
+        '''
+        preds = preds.round()
+        precision, recall, fscore, _= precision_recall_fscore_support(targets, preds, average='binary')
+
+        print(f'Precision: {precision}')
+        print(f'Recall: {recall}')
+        print(f'F1-score: {fscore}')
+
+        # Save the precision, recall, f1-score
+        if save:
+            with open(os.path.join(fig_dir, f'{self.model_type}__precision_recall_fscore_support.txt'), 'w') as f:
+                f.write(f'Precision: {precision}\n')
+                f.write(f'Recall: {recall}\n')
+                f.write(f'F1-score: {fscore}\n')
+
+
+    def roc_auc_curve(self, targets, preds, save: bool=False):
+        '''
+        Calculate the ROC curve and AUC
+
+        Parameters
+        ----------
+        targets : numpy.ndarray
+            The targets.
+        preds : numpy.ndarray
+            The predictions.
+        save : bool, optional
+            Save the ROC curve and AUC. The default is False.
+        '''
+        fpr, tpr, thresholds = roc_curve(targets, preds)
+        auc = roc_auc_score(targets, preds)
+        plt.figure(figsize=(10, 10))
+        plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % auc)
+        plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver operating characteristic')
+        plt.legend(loc="lower right")
+        plt.show()
+
+        # Save the ROC curve
+        if save:
+            plt.savefig(os.path.join(fig_dir, f'{self.model_type}__roc_auc_curve.png'))
+
+
+    def predict(self, data):
+        '''
+        Predict the output
+
+        Parameters
+        ----------
+        data : numpy.ndarray
+            The data to predict.
+
+        Returns
+        -------
+        numpy.ndarray
+            The predictions.
+
+        Raises
+        ------
+        WorkToDoError
+            If the model is not trained.
+        '''
+        if not self.model_trained:
+            raise WorkToDoError('model_trained')
+
+        # Convert the data to a tensor
+        data = torch.tensor(data, dtype=torch.float32)
+
+        # Predict the output
+        with torch.no_grad():
+            preds = self.model(data)
+            preds = torch.sigmoid(preds).detach().cpu().numpy()
+
+        return preds
+
+
+    def save_trained_model(self, name: str, path: str='trained_models'):
         '''
         Save the model
+
+        Parameters
+        ----------
+        name : str
+            The name of the model.
+        path : str, optional
+            The path to save the model. The default is 'trained_models'.
+
+        Raises
+        ------
+        WorkToDoError
+            If the model is not trained.
         '''
-        pass
+        if not self.model_trained:
+            raise WorkToDoError('model_trained')
+
+        # Create the path if it does not exist
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        # Save the model
+        torch.save(self.model.state_dict(), os.path.join(path, f'{name}.pt'))
 
 
-    def load_model(self):
+    def load_model(self, name: str, path: str='trained_models'):
         '''
         Load the model
+
+        Parameters
+        ----------
+        name : str
+            The name of the model.
+        path : str, optional
+            The path to load the model. The default is 'trained_models'.
         '''
-        pass
+        # Load the model
+        self.model.load_state_dict(torch.load(os.path.join(path, f'{name}.pt')))
+
+        # Set the model as trained
+        self.model_trained = True
