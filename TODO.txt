@@ -8,8 +8,8 @@ TODO:
     - check the parameters of CNN-MD in models/cnn_md.py
     - [DONE - TO BE CHECKED] copy-paste the code of models/cnn_md.py
     in models/cnn_rdn.py and modify the parameters
-    - [Part DONE, mostly to check] complete the functions
+    - [Part. DONE, mostly to check] complete the functions
     in models/classifier.py
-    - write the main function in ./train.py
+    - [Part. DONE] write the main function in ./train.py
     - run the code in and check the results
     - complete the augmentation part in preprocessing/DataProcess.py
