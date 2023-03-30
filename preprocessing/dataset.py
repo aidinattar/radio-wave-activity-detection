@@ -9,6 +9,7 @@ The dataset is composed of the following data:
 TODO:
     - add the link to the data
     - add the link to the paper
+    - others...
 '''
 
 import os
@@ -48,6 +49,7 @@ class Dataset(Dataset):
         self.y = np.concatenate(data['labels'], data['labels'], axis=0)
         self.labels_dict = data['labels_dict']
         self.transform = transform
+        self.type = type
 
     def __len__(self):
         '''
