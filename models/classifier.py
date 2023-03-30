@@ -3,10 +3,16 @@ classifier.py
 
 This file contains the model class, which is used
 to create the model and train it.
+
+TODO:
+    - Add missing parts
+    - Check if the code is correct
+    - Add possible plots and results
 '''
 import os
 import torch
 import numpy             as np
+import pandas            as pd
 import seaborn           as sns
 import matplotlib.pyplot as plt
 
@@ -21,6 +27,7 @@ from tqdm                      import tqdm
 from sklearn.metrics           import confusion_matrix, accuracy_score,\
                                       precision_recall_fscore_support,\
                                       roc_curve, roc_auc_score
+from utils                     import plotting
 
 fig_dir = 'figures'
 
@@ -119,10 +126,14 @@ class model(object):
         '''
         # call cnn_rd or cnn_md class
         if self.model_type == 'CNN-MD':
+            if self.data.type != 'mDoppler':
+                OptionIsFalseError('do_mDoppler')
             self.model = cnn_md(
                 # params here
             )
         elif self.model_type == 'CNN-RD':
+            if self.data.type != 'rdn':
+                OptionIsFalseError('do_rdn')
             self.model = cnn_rd(
                 # params here
             )
@@ -190,7 +201,7 @@ class model(object):
                     epochs: int=10,
                     device: str='cuda',
                     checkpoint: bool=False,
-                    checkpoint_path: str='checkpoint.pth',
+                    checkpoint_path: str='checkpoint.pth'
                     ):
         '''
         Train the model
@@ -208,6 +219,12 @@ class model(object):
             Save the model after every epoch. The default is False.
         checkpoint_path : str, optional
             Path to save the model. The default is 'checkpoint.pth'.
+
+        Raises
+        ------
+        WorkToDoError
+            If the train_test_split, create_model, create_optimizer,
+            create_loss methods have not been called
         '''
         if not self.train_test_split_done:
             raise WorkToDoError('train_test_split_done')
@@ -223,6 +240,12 @@ class model(object):
 
         # Define first best loss
         best_loss = np.inf
+
+        # Lists to store the losses and accuracies
+        train_losses = []
+        train_accs = []
+        test_losses = []
+        test_accs = []
 
         # Train the model
         for epoch in range(epochs):
@@ -265,17 +288,39 @@ class model(object):
                 preds = torch.cat(preds, axis=0)
                 targets = torch.cat(targets, axis=0)
 
-                # Calculate the loss and accuracy
+                #### ADD TRAIN ACCURACY ####
+
+                # Calculate the loss and accuracy for the train set
+                train_loss = None
+                train_acc = None
+
+                # Calculate the loss and accuracy for the test set
                 test_loss = self.loss(preds, targets)
-                test_acc = None
+                test_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().round())
 
                 print(f'Test loss: {test_loss.detach().cpu().numpy()}')
                 print(f'Test accuracy: {test_acc}')
 
+                # Save the loss and accuracy values for plotting later
+                train_losses.append(train_loss)
+                train_accs.append(train_acc)
+                test_losses.append(test_loss)
+                test_accs.append(test_acc)
+
+
+            # Save the model
             if checkpoint:
                 if test_loss < best_loss:
                     best_loss = test_loss
                     torch.save(self.model.state_dict(), checkpoint_path)
+
+        # Create dataframe with the losses and accuracies history
+        self.history = pd.DataFrame({
+            'train_loss': train_losses,
+            'train_acc': train_accs,
+            'test_loss': test_losses,
+            'test_acc': test_accs
+        })
 
         self.model_trained = True
 
@@ -499,6 +544,47 @@ class model(object):
 
         return preds
 
+
+    def plot_history(self,
+                     save: bool=False,
+                     path: str='figures',
+                     name: str='history.png',
+                     show: bool=True,
+                     save_csv: bool=False,
+                     path_csv: str='results',
+                     name_csv: str='history.csv'
+                     ):
+        '''
+        Plot the history of the training
+
+        Parameters
+        ----------
+        save : bool, optional
+            Save the plot. The default is False.
+        path : str, optional
+            The path to save the plot. The default is 'figures'.
+        name : str, optional
+            The name of the plot. The default is 'history.png'.
+        show : bool, optional
+            Show the plot. The default is True.
+        save_csv : bool, optional
+            Save the history as a csv file. The default is False.
+        path_csv : str, optional
+            The path to save the csv file. The default is 'results'.
+        name_csv : str, optional
+            The name of the csv file. The default is 'history.csv'.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The history of the training.
+        '''
+        plotting.PlotHistory(self.history).plot(save=save, path=path, name=name, show=show)
+
+        if save_csv:
+            self.history.to_csv(os.path.join(path_csv, name_csv), index=False)
+
+        return self.history
 
     def save_trained_model(self, name: str, path: str='trained_models'):
         '''
