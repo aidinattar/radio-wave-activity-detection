@@ -64,7 +64,7 @@ class DataProcess(object):
     def padding(self, padding: int, mode: str='constant', **kwargs):
         '''
         Pad the data.
-        Check if the action is at least 40 bins long, if not, pad the data.
+        Check if the action is at least [padding] bins long, if not, pad the data.
 
         Parameters
         ----------
