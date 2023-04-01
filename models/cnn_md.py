@@ -39,7 +39,7 @@ class cnn_md(Module):
     def __init__(self,
                  in_channels: int=1,
                  filters: tuple=(8, 16, 32, 64),
-                 kernel_size: int=3,
+                 kernel_size: tuple=(3, 3),
                  stride: int=1,
                  pool_size: int=2,
                  pool_stride: int=2,
