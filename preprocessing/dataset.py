@@ -18,7 +18,7 @@ import numpy as np
 from torch.utils.data import Dataset
 
 class Dataset(Dataset):
-    def __init_(self, path:str, file:str, transform=None, type:str='mdoppler'):
+    def __init__(self, path:str, file:str, transform=None, type:str='mdoppler'):
         '''
         Constructor
 
@@ -37,16 +37,16 @@ class Dataset(Dataset):
                 'rdn': rdn data
         '''
         # Load the data
-        data = np.load(os.path.join(path, file))
+        data = np.load(os.path.join(path, file), allow_pickle=True)
 
-        if type == 'mdoppler':
-            self.x = np.concatenate((data['mdoppler_1'], data['mdoppler_2']), axis=0)
+        if type == 'mDoppler':
+            self.x = np.concatenate((data['mDoppler_1'], data['mDoppler_2']), axis=0)
         elif type == 'rdn':
             self.x = np.concatenate((data['rdn_1'], data['rdn_2']), axis=0)
         else:
             raise ValueError('Invalid type of data')
 
-        self.y = np.concatenate(data['labels'], data['labels'], axis=0)
+        self.y = np.concatenate((data['labels'], data['labels']), axis=0)
         self.labels_dict = data['labels_dict']
         self.transform = transform
         self.type = type
