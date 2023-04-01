@@ -2,6 +2,7 @@
 from preprocessing.DataReader import DataReader
 from preprocessing.DataCutter import DataCutter
 from preprocessing.DataProcess import DataProcess
+from preprocessing.dataset     import Dataset
 
 subjects = [f'subject_{i:02d}' for i in range(5, 6)]
 sets     = [f'set{i:03d}'      for i in range(1, 2)]
@@ -46,4 +47,8 @@ c = DataProcess(b)
 c.cut_time()
 # %%
 c.padding(padding=40)
+# %%
+c.save()
+# %%
+d = Dataset(path='DATA_preprocessed', file='data_processed.npz')
 # %%
