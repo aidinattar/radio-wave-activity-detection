@@ -21,8 +21,8 @@ from torch.optim               import SGD, Adam
 from torch.nn                  import BCELoss, BCEWithLogitsLoss
 from preprocessing.dataset     import Dataset
 from exceptions                import OptionIsFalseError, WorkToDoError
-from cnn_rd                    import cnn_rd
-from cnn_md                    import cnn_md
+from models.cnn_rd             import cnn_rd
+from models.cnn_md             import cnn_md
 from tqdm                      import tqdm
 from sklearn.metrics           import confusion_matrix, accuracy_score,\
                                       precision_recall_fscore_support,\
@@ -199,7 +199,7 @@ class model(object):
     ######################################
     def train_model(self,
                     epochs: int=10,
-                    device: str='cuda',
+                    device= torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
                     checkpoint: bool=False,
                     checkpoint_path: str='checkpoint.pth'
                     ):
@@ -254,8 +254,8 @@ class model(object):
             iterator = tqdm(self.train_loader)
             for batch in iterator:
                 # Get the data
-                data = batch['data'].to(device)
-                target = batch['target'].to(device)
+                data = batch[0].to(device) #### batch['data'].to(device)
+                target = batch[1].to(device) #### batch['target'].to(device)
 
                 # Forward pass
                 output = self.model(data)
@@ -275,8 +275,8 @@ class model(object):
                 preds, targets = [], []
                 for batch in self.test_loader:
                     # Get the data
-                    data = batch['data'].to(device)
-                    target = batch['target'].to(device)
+                    data = batch[0].to(device)
+                    target = batch[1].to(device)
 
                     # Forward pass
                     output = self.model(data)
@@ -369,8 +369,8 @@ class model(object):
             preds, targets = [], []
             for batch in self.test_loader:
                 # Get the data
-                data = batch['data']
-                target = batch['target']
+                data = batch[0]
+                target = batch[1]
 
                 # Forward pass
                 output = model(data)
