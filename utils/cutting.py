@@ -55,6 +55,9 @@ def normal(array: np.ndarray,
     else:
         # select len_default bins according to a normal
         # distribution and take the data sorted by time
+        #### NO np.random.normal
+        #### USE np.random.choice with custom probability
+        #### Assign probabilities accoreding to a normal distribution
         normal_bins = np.random.normal(
             loc=mean,
             scale=std,
