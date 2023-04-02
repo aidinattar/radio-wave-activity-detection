@@ -31,36 +31,6 @@ class DataProcess(object):
         self.mDoppler_1 = self.data.signals_mDoppler_1
         self.mDoppler_2 = self.data.signals_mDoppler_2
 
-
-    def agglomerate_rdn(self, method: str='max'):
-        '''
-        Agglomerate the rdn data on the time axis.
-
-        Parameters
-        ----------
-        method : str, optional
-            Method to use to agglomerate the data. Possible values are:
-            'max', 'min', 'mean', 'median', 'sum', 'std', 'var'. The default is 'max'.
-        '''
-
-        # create dictionary of methods
-        methods = {
-            'max': np.max,
-            'min': np.min,
-            'mean': np.mean,
-            'median': np.median,
-            'sum': np.sum,
-            'std': np.std,
-            'var': np.var
-        }
-
-        if method not in methods:
-            raise ValueError("Invalid method")
-
-        for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.data.rdn_2)):
-            self.rdn_1[i] = self.rdn[i].max(axis=0)
-            self.rdn_2[i] = self.rdn[i].max(axis=0)
-
     def padding(self, padding: int, mode: str='constant', **kwargs):
         '''
         Pad the data.

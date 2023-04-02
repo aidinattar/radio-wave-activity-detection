@@ -111,7 +111,7 @@ class DataReader(object):
         for i in range(len(self.rdn)):
             self.rdn[i] = np.delete(self.rdn[i], (63,64,65), axis=2)
 
-        for i in range(len(self.rdn)):
+        for i in range(len(self.mDoppler)):
             self.mDoppler[i] = np.delete(self.mDoppler[i], (63,64,65), axis=1)
 
 
