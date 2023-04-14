@@ -94,15 +94,15 @@ class model(object):
         '''
         # Split the data
         if self.case == 0:
-            train_size = int((1-test_size) * len(self.data))
-            test_size = len(self.data) - train_size
-            self.train_data, self.test_data = random_split(self.data, [train_size, test_size])
+            # TODO: split the data into training and testing data
+            pass            
         elif self.case == 1:
             # TODO: split the data into training and testing data
             pass
         elif self.case == 2:
-            # TODO: split the data into training and testing data
-            pass
+            train_size = int((1-test_size) * len(self.data))
+            test_size = len(self.data) - train_size
+            self.train_data, self.test_data = random_split(self.data, [train_size, test_size])
         else:
             raise ValueError('Invalid case')
 

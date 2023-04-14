@@ -75,14 +75,14 @@ class cnn_md(Module):
         )
 
         # Flatten the output of the convolutional layers
-        self.flatten = Flatten(),
+        self.flatten = Flatten()
 
         # Fully connected layers
         self.fc = Sequential(
             # num_filters * height * width
             # height = (input_height - kernel_size + 2 * padding) / stride + 1
             # width = (input_width - kernel_size + 2 * padding) / stride + 1
-            Linear(in_features=f4*8*8, out_features=128),
+            Linear(in_features=self.flatten.size(), out_features=128),
             ELU(), # not sure if this is the right activation function
             Dropout(p=0.2),
             Linear(in_features=128, out_features=6),
