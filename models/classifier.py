@@ -94,11 +94,23 @@ class model(object):
         '''
         # Split the data
         if self.case == 0:
-            # TODO: split the data into training and testing data
-            pass            
+            if self.model_type == 'CNN-MD':
+                train_size = int((1-test_size) * len(self.data['mDoppler_1']))
+                test_size = len(self.data['mDoppler_1']) - train_size
+                self.train_data = self.data['mDoppler_1'][0:train_size]
+                self.test_data = self.data['mDoppler_1'][train_size:]
+            else:
+                train_size = int((1-test_size) * len(self.data['rdn_2']))
+                test_size = len(self.data['rdn_2']) - train_size
+                self.train_data = self.data['rdn_2'][0:train_size]
+                self.test_data = self.data['rdn_2'][train_size:]
         elif self.case == 1:
-            # TODO: split the data into training and testing data
-            pass
+            if self.model_type == 'CNN-MD':
+                self.train_data = self.data['mDoppler_1']
+                self.test_data = self.data['mDoppler_2']
+            else:
+                self.train_data = self.data['rdn_1']
+                self.test_data = self.data['rdn_2']
         elif self.case == 2:
             train_size = int((1-test_size) * len(self.data))
             test_size = len(self.data) - train_size
@@ -252,6 +264,7 @@ class model(object):
             self.model.train()
             print(f'Epoch {epoch+1}/{epochs}')
             iterator = tqdm(self.train_loader)
+            preds, targets = [], []
             for batch in iterator:
                 # Get the data
                 data = batch[0].to(device) #### batch['data'].to(device)
@@ -269,6 +282,17 @@ class model(object):
                 # Update the progress bar
                 iterator.set_postfix(loss=loss.item())
                 #iterator.set_description(f"Train loss: {loss.detach().cpu().numpy()}")
+                
+                # Get the predictions
+                preds.append(output)
+                targets.append(target)
+            
+            preds = torch.cat(preds, axis=0)
+            targets = torch.cat(targets, axis=0)
+
+            # Calculate the loss and accuracy for the training set
+            train_loss = self.loss(preds, targets)
+            train_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().round())
 
             self.model.eval()
             with torch.no_grad():
@@ -287,12 +311,6 @@ class model(object):
                     targets.append(target)
                 preds = torch.cat(preds, axis=0)
                 targets = torch.cat(targets, axis=0)
-
-                #### ADD TRAIN ACCURACY ####
-
-                # Calculate the loss and accuracy for the train set
-                train_loss = None
-                train_acc = None
 
                 # Calculate the loss and accuracy for the test set
                 test_loss = self.loss(preds, targets)
