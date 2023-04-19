@@ -41,9 +41,9 @@ class cnn_md(Module):
                  filters: tuple=(8, 16, 32, 64),
                  kernel_size: tuple=(3, 3),
                  stride: int=1,
-                 pool_size: int=2,
+                 pool_size: tuple=(2, 2),
                  pool_stride: int=2,
-                 padding: int=0,
+                 padding= 'same',
                  dilation: int=1,
                  groups: int=1,
                  bias: bool=True,
@@ -57,19 +57,19 @@ class cnn_md(Module):
         # Convolutional layers
         self.cnn = Sequential(
 
-            Conv2d(in_channels=in_channels, out_channels=f1, kernel_size=kernel_size, stride=stride),
+            Conv2d(in_channels=in_channels, out_channels=f1, kernel_size=kernel_size, stride=stride, padding=padding),
             ELU(),
             MaxPool2d(kernel_size=pool_size, stride=pool_stride),
 
-            Conv2d(in_channels=f1, out_channels=f2, kernel_size=kernel_size, stride=stride),
+            Conv2d(in_channels=f1, out_channels=f2, kernel_size=kernel_size, stride=stride, padding=padding),
             ELU(),
             MaxPool2d(kernel_size=pool_size, stride=pool_stride),
 
-            Conv2d(in_channels=f2, out_channels=f3, kernel_size=kernel_size, stride=stride),
+            Conv2d(in_channels=f2, out_channels=f3, kernel_size=kernel_size, stride=stride, padding=padding),
             ELU(),
             MaxPool2d(kernel_size=pool_size, stride=pool_stride),
 
-            Conv2d(in_channels=f3, out_channels=f4, kernel_size=kernel_size, stride=stride),
+            Conv2d(in_channels=f3, out_channels=f4, kernel_size=kernel_size, stride=stride, padding=padding),
             ELU(),
             MaxPool2d(kernel_size=pool_size, stride=pool_stride)
         )
@@ -82,7 +82,7 @@ class cnn_md(Module):
             # num_filters * height * width
             # height = (input_height - kernel_size + 2 * padding) / stride + 1
             # width = (input_width - kernel_size + 2 * padding) / stride + 1
-            Linear(in_features=self.flatten.size(), out_features=128),
+            Linear(in_features=f4*6*2, out_features=128), ### 6 and 2 are the height and width of the input
             ELU(), # not sure if this is the right activation function
             Dropout(p=0.2),
             Linear(in_features=128, out_features=6),
@@ -113,7 +113,7 @@ class cnn_md(Module):
         # Convolutional layers
         x = self.cnn(x)
         # Flatten the output of the convolutional layers
-        x = self.flatten(x)
+        x = self.flatten(x)        
         # Fully connected layers
         x = self.fc(x)
         return x

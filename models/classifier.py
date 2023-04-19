@@ -28,6 +28,7 @@ from sklearn.metrics           import confusion_matrix, accuracy_score,\
                                       precision_recall_fscore_support,\
                                       roc_curve, roc_auc_score
 from utils                     import plotting
+from torchsummary              import summary
 
 fig_dir = 'figures'
 
@@ -267,11 +268,13 @@ class model(object):
             preds, targets = [], []
             for batch in iterator:
                 # Get the data
-                data = batch[0].to(device) #### batch['data'].to(device)
+                data = batch[0].unsqueeze(1).to(device) #### batch['data'].to(device)
                 target = batch[1].to(device) #### batch['target'].to(device)
 
                 # Forward pass
                 output = self.model(data)
+                #### HERE
+                ### take max of output row-wise
                 loss = self.loss(output, target)
 
                 # Backward pass
@@ -299,7 +302,7 @@ class model(object):
                 preds, targets = [], []
                 for batch in self.test_loader:
                     # Get the data
-                    data = batch[0].to(device)
+                    data = batch[0].unsqueeze(1).to(device)
                     target = batch[1].to(device)
 
                     # Forward pass
