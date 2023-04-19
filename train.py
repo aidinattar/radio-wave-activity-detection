@@ -37,7 +37,9 @@ import torch
 from docopt                    import docopt
 from models.classifier         import model
 from preprocessing.dataset     import Dataset
+from datetime import datetime
 
+now = datetime.now().strftime("%Y%m%d")
 
 def main(model_name:str, data:Dataset, case, epochs, batch_size, lr, weight_decay, momentum, nesterov, patience, min_delta, factor, verbose, device):
     '''
@@ -95,7 +97,7 @@ def main(model_name:str, data:Dataset, case, epochs, batch_size, lr, weight_deca
     classifier.evaluate_model()
 
     # Save the model trained
-    classifier.save_trained_model()
+    classifier.save_trained_model(name=f'{model_name}_{now}_case{case}')
 
 
 if __name__ == '__main__':
