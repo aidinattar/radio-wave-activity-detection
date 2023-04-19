@@ -129,6 +129,8 @@ class model(object):
                                         shuffle=shuffle,
                                         num_workers=num_workers)
 
+        self.input_size = self.train_data[0][0].shape
+
         # Set the flag
         self.train_test_split_done = True
 
@@ -272,10 +274,11 @@ class model(object):
                 target = batch[1].to(device) #### batch['target'].to(device)
 
                 # Forward pass
-                output = self.model(data)
+                output_probs = self.model(data)
                 #### HERE
                 ### take max of output row-wise
-                loss = self.loss(output, target)
+                output_preds = output_probs.max(dim=1)
+                loss = self.loss(output_preds, target)
 
                 # Backward pass
                 self.optimizer.zero_grad()
@@ -606,6 +609,19 @@ class model(object):
             self.history.to_csv(os.path.join(path_csv, name_csv), index=False)
 
         return self.history
+
+
+    def summary(self):
+        '''
+        Print the summary of the model
+        '''
+        if not self.train_test_split_done:
+            raise WorkToDoError('train_test_split_done')
+        if not self.model_created:
+            raise WorkToDoError('model_created')
+        print(summary(self.model, (self.input_size,)))
+        return summary(self.model, (self.input_size,))
+
 
     def save_trained_model(self, name: str, path: str='trained_models'):
         '''
