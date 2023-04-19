@@ -48,7 +48,9 @@ c.cut_time()
 # %%
 c.padding(padding=40)
 # %%
+c.rotate()
+# %%
 c.save()
 # %%
-d = Dataset(path='DATA_preprocessed', file='data_processed.npz')
+d = Dataset(path='DATA_preprocessed', file='data_processed.npz', type='mDoppler')
 # %%
