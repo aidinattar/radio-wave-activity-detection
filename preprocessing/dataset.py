@@ -18,7 +18,7 @@ import numpy as np
 from torch.utils.data import Dataset
 
 class Dataset(Dataset):
-    def __init__(self, path:str, file:str, transform=None, type:str='mdoppler'):
+    def __init__(self, path:str, file:str, transform=None, type:str='mDoppler'):
         '''
         Constructor
 

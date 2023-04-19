@@ -230,6 +230,42 @@ class DataProcess(object):
             else:
                 raise ValueError("Invalid location")
 
+    def rotate(self):
+        '''
+        Rotate the data.
+
+        '''
+        if self.do_rdn:
+            self.rotate_rdn()
+        if self.do_mDoppler:
+            self.rotate_mDoppler()
+            
+    
+    def rotate_rdn(self):
+        '''
+        Rotate the rdn data
+        '''
+        
+        if not self.do_rdn:
+            raise OptionIsFalseError("do_rdn")
+        
+        for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
+            self.rdn_1[i] = np.transpose(rdn_1)
+            self.rdn_2[i] = np.transpose(rdn_2)
+
+
+    def rotate_mDoppler(self):
+        '''
+        Rotate the mDoppler data
+        '''
+        
+        if not self.do_mDoppler:
+            raise OptionIsFalseError("do_mDoppler")
+        
+        for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
+            self.mDoppler_1[i] = np.transpose(mDoppler_1)
+            self.mDoppler_2[i] = np.transpose(mDoppler_2)
+        
 
     def augmentation(self, method=['time-mask'], **kwargs):
         '''
