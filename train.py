@@ -82,6 +82,9 @@ def main(model_name:str, data:Dataset, case, epochs, batch_size, lr, weight_deca
 
     # Split the data into training and validation sets
     classifier.train_test_split()
+    
+    # Print the model summary
+    classifier.summary(save=True)
 
     # Create the optimizer, loss function
     classifier.create_optimizer()

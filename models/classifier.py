@@ -9,7 +9,7 @@ TODO:
     - Check if the code is correct
     - Add possible plots and results
 '''
-import os
+import os, sys
 import torch
 import numpy             as np
 import pandas            as pd
@@ -634,7 +634,7 @@ class model(object):
         return self.history
 
 
-    def summary(self):
+    def summary(self, save: bool=False, path: str='log', name: str='summary.txt'):
         '''
         Print the summary of the model
         '''
@@ -642,8 +642,17 @@ class model(object):
             raise WorkToDoError('train_test_split_done')
         if not self.model_created:
             raise WorkToDoError('model_created')
-        print(summary(self.model, (self.input_size,)))
-        return summary(self.model, (self.input_size,))
+        print(summary(self.model, (1,)+self.input_size))
+        
+        if save:
+            # Redirect stdout to a file
+            sys.stdout = open(os.path.join(path, name), 'w')
+
+            # Generate summary
+            summary(self.model, (1,)+self.input_size)
+
+            # Reset stdout
+            sys.stdout = sys.__stdout__
 
 
     def save_trained_model(self, name: str, path: str='trained_models'):
