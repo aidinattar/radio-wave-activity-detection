@@ -86,6 +86,7 @@ class cnn_md(Module):
             ELU(), # not sure if this is the right activation function
             #Dropout(p=0.2),
             Linear(in_features=128, out_features=6),
+            Linear(in_features=6, out_features=14),
             Softmax(dim=1)
         )
 

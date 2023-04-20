@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 from torch.utils.data          import DataLoader, random_split
 from torch.optim               import SGD, Adam
-from torch.nn                  import BCELoss, BCEWithLogitsLoss
+from torch.nn                  import CrossEntropyLoss
 from preprocessing.dataset     import Dataset
 from exceptions                import OptionIsFalseError, WorkToDoError
 from models.cnn_rd             import cnn_rd
@@ -42,7 +42,12 @@ class model(object):
     loss_created = False
     model_trained = False
 
-    def __init__(self, data: Dataset, case: int=0, model_type: str='CNN-MD'):
+    def __init__(self, 
+                 data: Dataset,
+                 case: int=0,
+                 model_type: str='CNN-MD',
+                 device= torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+                ):
         '''
         Constructor
 
@@ -59,6 +64,11 @@ class model(object):
         model_type : str, optional
             Type of model to create. Possible values are:
             'CNN-MD', 'CNN-RD'. The default is 'CNN-MD'.
+        device : str, optional
+            Device to use. The default is 'cuda'.
+            Possible values are:
+                'cpu': CPU
+                'cuda': GPU
         '''
         # Get the data
         self.data = data
@@ -68,6 +78,9 @@ class model(object):
 
         # Get the model type
         self.model_type = model_type
+        
+        # Get the device
+        self.device = device
 
 
     # TODO: add also the option to use the validation set
@@ -186,22 +199,26 @@ class model(object):
         self.optimizer_created = True
 
 
-    def create_loss(self, loss: str='BCELoss'):
+    def create_loss(self, loss: str='CrossEntropyLoss'):
         '''
         Create the loss function
 
         Parameters
         ----------
         loss : str, optional
-            Loss function to use. The default is 'BCELoss'.
+            Loss function to use. The default is 'CrossEntropyLoss'.
             Possible values are:
-                'BCELoss': Binary Cross Entropy Loss
-                'BCEWithLogitsLoss': Binary Cross Entropy with Logits Loss
+                'CrossEntropyLoss': Cross Entropy Loss
+                
+        Raises
+        ------
+        ValueError
+            Invalid loss function.
         '''
-        if loss == 'BCELoss':
-            self.loss = BCELoss()
-        elif loss == 'BCEWithLogitsLoss':
-            self.loss = BCEWithLogitsLoss()
+        if loss == 'CrossEntropyLoss':
+            self.loss = CrossEntropyLoss()
+        #elif loss == :
+            #self.loss = BCEWithLogitsLoss()
         else:
             raise ValueError('Invalid loss function')
 
@@ -214,7 +231,6 @@ class model(object):
     ######################################
     def train_model(self,
                     epochs: int=10,
-                    device= torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
                     checkpoint: bool=False,
                     checkpoint_path: str='checkpoint.pth'
                     ):
@@ -225,11 +241,6 @@ class model(object):
         ----------
         epochs : int, optional
             Number of epochs. The default is 10.
-        device : str, optional
-            Device to use. The default is 'cuda'.
-            Possible values are:
-                'cpu': CPU
-                'cuda': GPU
         checkpoint : bool, optional
             Save the model after every epoch. The default is False.
         checkpoint_path : str, optional
@@ -251,7 +262,7 @@ class model(object):
             raise WorkToDoError('loss_created')
 
         # Use GPU
-        self.model = self.model.to(device)
+        self.model = self.model.to(self.device)
 
         # Define first best loss
         best_loss = np.inf
@@ -270,15 +281,14 @@ class model(object):
             preds, targets = [], []
             for batch in iterator:
                 # Get the data
-                data = batch[0].unsqueeze(1).to(device) #### batch['data'].to(device)
-                target = batch[1].to(device) #### batch['target'].to(device)
+                data = batch[0].unsqueeze(1).to(self.device) #### batch['data'].to(device)
+                target = batch[1].to(self.device) #### batch['target'].to(device)
 
                 # Forward pass
-                output_probs = self.model(data)
+                output = self.model(data)
                 #### HERE
                 ### take max of output row-wise
-                output_preds = output_probs.max(dim=1)
-                loss = self.loss(output_preds, target)
+                loss = self.loss(output, target)
 
                 # Backward pass
                 self.optimizer.zero_grad()
@@ -298,15 +308,15 @@ class model(object):
 
             # Calculate the loss and accuracy for the training set
             train_loss = self.loss(preds, targets)
-            train_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().round())
+            train_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().argmax(axis=1))
 
             self.model.eval()
             with torch.no_grad():
                 preds, targets = [], []
                 for batch in self.test_loader:
                     # Get the data
-                    data = batch[0].unsqueeze(1).to(device)
-                    target = batch[1].to(device)
+                    data = batch[0].unsqueeze(1).to(self.device)
+                    target = batch[1].to(self.device)
 
                     # Forward pass
                     output = self.model(data)
@@ -320,7 +330,8 @@ class model(object):
 
                 # Calculate the loss and accuracy for the test set
                 test_loss = self.loss(preds, targets)
-                test_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().round())
+                test_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().argmax(axis=1))
+
 
                 print(f'Test loss: {test_loss.detach().cpu().numpy()}')
                 print(f'Test accuracy: {test_acc}')
@@ -337,6 +348,9 @@ class model(object):
                 if test_loss < best_loss:
                     best_loss = test_loss
                     torch.save(self.model.state_dict(), checkpoint_path)
+
+        # don't like this, to be changed
+        train_losses = [x.detach().cpu().numpy() for x in train_losses]
 
         # Create dataframe with the losses and accuracies history
         self.history = pd.DataFrame({
@@ -357,7 +371,7 @@ class model(object):
                        do_acc: bool=True,
                        do_prec_rec_f1: bool=True,
                        do_roc_auc: bool=True,
-                       save: bool=True
+                       save: bool=True,
                        ):
         '''
         Evaluate the model.
@@ -377,6 +391,7 @@ class model(object):
             Plot the ROC curve and print the AUC. The default is True.
         save : bool, optional
             Save the plots. The default is True.
+            
 
         Raises
         ------
@@ -393,34 +408,34 @@ class model(object):
             preds, targets = [], []
             for batch in self.test_loader:
                 # Get the data
-                data = batch[0]
+                data = batch[0].unsqueeze(1).to(self.device)
                 target = batch[1]
 
                 # Forward pass
-                output = model(data)
+                output = self.model(data)
                 preds.append(output)
                 targets.append(target)
             preds = torch.cat(preds, axis=0)
             targets = torch.cat(targets, axis=0)
             loss = self.loss(preds, targets).detach().cpu().numpy()
-            preds = torch.sigmoid(preds).detach().cpu().numpy()
+            preds = preds.detach().cpu().numpy().argmax(axis=1)
             targets = targets.detach().cpu().numpy()
 
         # Confusion matrix
         if do_cm:
-            self.confusion_matrix(self.model, self.test_loader, save=save)
+            self.confusion_matrix(targets=targets, preds=preds, save=save)
 
         # Accuracy
         if do_acc:
-            self.accuracy(self.model, self.test_loader, save=save)
+            self.accuracy(targets=targets, preds=preds, save=save)
 
         # Precision, recall, f1-score
         if do_prec_rec_f1:
-            self.precision_recall_fscore_support(self.model, self.test_loader, save=save)
+            self.precision_recall_fscore_support(targets=targets, preds=preds, save=save)
 
         # ROC curve
         if do_roc_auc:
-            self.roc_auc_curve(self.model, self.test_loader, save=save)
+            self.roc_auc_curve(targets=targets, preds=preds, save=save)
 
 
     def confusion_matrix(self, targets, preds, save: bool=False):
@@ -477,7 +492,11 @@ class model(object):
                 f.write(f'Accuracy: {accuracy}')
 
 
-    def precision_recall_fscore_support(self, targets, preds, save: bool=False):
+    def precision_recall_fscore_support(self,
+                                        targets,
+                                        preds,
+                                        average: str=None,
+                                        save: bool=False):
         '''
         Calculate the precision, recall and f1-score
 
@@ -487,11 +506,14 @@ class model(object):
             The targets.
         preds : numpy.ndarray
             The predictions.
+        average : str, optional
+            The averaging strategy. The default is None.
+            Possible values are: None, 'micro', 'macro', 'weighted'.
         save : bool, optional
             Save the precision, recall and f1-score. The default is False.
         '''
         preds = preds.round()
-        precision, recall, fscore, _= precision_recall_fscore_support(targets, preds, average='binary')
+        precision, recall, fscore, _= precision_recall_fscore_support(targets, preds, average=None)
 
         print(f'Precision: {precision}')
         print(f'Recall: {recall}')
@@ -504,7 +526,8 @@ class model(object):
                 f.write(f'Recall: {recall}\n')
                 f.write(f'F1-score: {fscore}\n')
 
-
+    ### TODO: Add support for multiclass
+    ### NOW it does not work for multiclass
     def roc_auc_curve(self, targets, preds, save: bool=False):
         '''
         Calculate the ROC curve and AUC
