@@ -10,21 +10,21 @@ Usage:
     train.py -h | --help
 
 Options:
-    -h --help                   Show this screen.
-    --epochs=<epochs>           Number of epochs [default: 100].
-    --batch_size=<batch_size>   Batch size [default: 32].
-    --lr=<lr>                   Learning rate [default: 0.001].
+    -h --help                       Show this screen.
+    --epochs=<epochs>               Number of epochs [default: 100].
+    --batch_size=<batch_size>       Batch size [default: 32].
+    --lr=<lr>                       Learning rate [default: 0.001].
     --weight_decay=<weight_decay>   Weight decay [default: 0.0001].
-    --momentum=<momentum>       Momentum [default: 0.9].
-    --nesterov=<nesterov>       Nesterov [default: True].
-    --patience=<patience>       Patience [default: 10].
-    --min_delta=<min_delta>     Minimum delta [default: 0.0001].
-    --factor=<factor>           Factor [default: 0.1].
-    --verbose=<verbose>         Verbose [default: 1].
-    --seed=<seed>               Seed [default: 42].
+    --momentum=<momentum>           Momentum [default: 0.9].
+    --nesterov=<nesterov>           Nesterov [default: True].
+    --patience=<patience>           Patience [default: 10].
+    --min_delta=<min_delta>         Minimum delta [default: 0.0001].
+    --factor=<factor>               Factor [default: 0.1].
+    --verbose=<verbose>             Verbose [default: 1].
+    --seed=<seed>                   Seed [default: 42].
 
 Example:
-    python train.py CNN-MD data/processed/data.npz mDoppler 0 --epochs=100 --batch_size=32 --lr=0.001 --weight_decay=0.0001 --momentum=0.9 --nesterov=True --patience=10 --min_delta=0.0001 --factor=0.1 --verbose=1 --seed=42
+    python train.py CNN-MD data_processed.npz mDoppler 2 --epochs=1500 --batch_size=32 --lr=0.001 --weight_decay=0.0001 --momentum=0.9 --nesterov=True --patience=10 --min_delta=0.0001 --factor=0.1 --verbose=1 --seed=42
 '''
 
 # TODO:
@@ -91,10 +91,10 @@ def main(model_name:str, data:Dataset, case, epochs, batch_size, lr, weight_deca
     classifier.train_model(epochs=epochs)
 
     # Plot the training history
-    classifier.plot_history()
+    classifier.plot_history(save=True)
 
     # Evaluate the model
-    classifier.evaluate_model()
+    classifier.evaluate_model(do_roc_auc=False)
 
     # Save the model trained
     classifier.save_trained_model(name=f'{model_name}_{now}_case{case}')
