@@ -69,8 +69,8 @@ class PlotHistory:
         ax[1].grid(True)
 
         # Adjust margins
-        plt.subplots_adjust(wspace=0.3)
-        #fig.tight_layout()
+        #plt.subplots_adjust(wspace=0.3)
+        fig.tight_layout()
 
         # Show the plot
         if show:
@@ -80,4 +80,4 @@ class PlotHistory:
         if save:
             if not os.path.exists(path):
                 os.makedirs(path)
-            plt.savefig(os.path.join(path, name))
+            fig.savefig(os.path.join(path, name))

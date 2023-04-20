@@ -15,6 +15,7 @@ import numpy             as np
 import pandas            as pd
 import seaborn           as sns
 import matplotlib.pyplot as plt
+#import torchvision.utils as vutils
 
 from torch.utils.data          import DataLoader, random_split
 from torch.optim               import SGD, Adam
@@ -29,6 +30,10 @@ from sklearn.metrics           import confusion_matrix, accuracy_score,\
                                       roc_curve, roc_auc_score
 from utils                     import plotting
 from torchsummary              import summary
+
+#from torch.utils.tensorboard import SummaryWriter
+
+
 
 fig_dir = 'figures'
 
@@ -81,6 +86,9 @@ class model(object):
         
         # Get the device
         self.device = device
+        
+        # Add tensorboard writer
+        #self.writer = SummaryWriter()
 
 
     # TODO: add also the option to use the validation set
@@ -143,6 +151,17 @@ class model(object):
                                         num_workers=num_workers)
 
         self.input_size = self.train_data[0][0].shape
+        
+        
+        #for i, data in enumerate(self.train_loader):
+        #    # Assuming your data contains images in 'img' variable
+        #    img = data['img']
+        #    
+        #    # Create a grid of images
+        #    img_grid = vutils.make_grid(img, normalize=True, scale_each=True)
+        #    
+        #    # Add the image grid to Tensorboard
+        #    self.writer.add_image('Image', img_grid, i)
 
         # Set the flag
         self.train_test_split_done = True
@@ -341,6 +360,9 @@ class model(object):
                 train_accs.append(train_acc)
                 test_losses.append(test_loss)
                 test_accs.append(test_acc)
+                
+            # Add the loss to Tensorboard
+            #self.writer.add_scalar('Loss/train', loss, epoch)
 
 
             # Save the model
@@ -457,16 +479,16 @@ class model(object):
         print(cm)
 
         # Plot the confusion matrix
-        plt.figure(figsize=(10, 10))
-        sns.heatmap(cm, annot=True, fmt='d')
-        plt.title('Confusion matrix')
-        plt.ylabel('Actual')
-        plt.xlabel('Predicted')
+        fig, ax = plt.subplots(figsize=(10, 10))
+        sns.heatmap(cm, annot=True, fmt='d', ax=ax)
+        ax.set_title('Confusion matrix')
+        ax.set_ylabel('Actual')
+        ax.set_xlabel('Predicted')
         plt.show()
 
         # Save the confusion matrix
         if save:
-            plt.savefig(os.path.join(fig_dir, f'{self.model_type}__confusion_matrix.png'))
+            fig.savefig(os.path.join(fig_dir, f'{self.model_type}__confusion_matrix.png'))
 
 
     def accuracy(self, targets, preds, save: bool=False):
