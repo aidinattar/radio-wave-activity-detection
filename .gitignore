@@ -211,3 +211,7 @@ pyrightconfig.json
 /.vscode/
 /DATA_preprocessed
 /DATA_preprocessed/*
+/figures
+/figures/*
+/trained_models
+/trained_models/*
