@@ -56,12 +56,12 @@ class PlotHistory:
         ax[1].set_ylabel('Accuracy', fontsize=14)
 
         # Plot the history
-        ax[0].plot(self.history['loss'], label='Training loss', color='#ff00ff')
-        ax[0].plot(self.history['val_loss'], label='Validation loss', color='#00ffff')
+        ax[0].plot(self.history['train_loss'], label='Training loss', color='#ff00ff')
+        ax[0].plot(self.history['test_loss'], label='Validation loss', color='#00ffff')
         ax[0].legend()
 
-        ax[1].plot(self.history['accuracy'], label='Training accuracy', color='#ff00ff')
-        ax[1].plot(self.history['val_accuracy'], label='Validation accuracy', color='#00ffff')
+        ax[1].plot(self.history['train_acc'], label='Training accuracy', color='#ff00ff')
+        ax[1].plot(self.history['test_acc'], label='Validation accuracy', color='#00ffff')
         ax[1].legend()
 
         # Add grid
