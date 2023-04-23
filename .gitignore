@@ -217,3 +217,5 @@ pyrightconfig.json
 /trained_models/*
 /checkpoints
 /checkpoints/*
+/log
+/log/*
