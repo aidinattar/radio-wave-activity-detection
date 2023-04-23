@@ -57,6 +57,19 @@ class DataReader(object):
         self.rdn, self.mDoppler, self.timestamp_speech = self.ReadData()
 
 
+    @classmethod
+    def empty(cls):
+        '''
+        Create an empty instance of the class
+        
+        Parameters
+        ----------
+        cls : class
+            Class to create an empty instance of
+        '''
+        return cls([], [])
+
+
     def ReadData(self):
         '''
         Function to read the data from the h5 files

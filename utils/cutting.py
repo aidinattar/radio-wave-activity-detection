@@ -45,7 +45,7 @@ def gaussian(array: np.ndarray,
     scale : float, optional
         Standard deviation of the gaussian distribution. The default is 5.
     '''
-    return np.exp(-np.power(array - loc, 2.) / (2 * np.power(scale, 2.)))
+    return np.exp(-np.power(array - loc, 2.) / (2 * np.power(scale, 2.))) / (scale * np.sqrt(2 * np.pi))
 
 
 def normal(array: np.ndarray,
@@ -73,8 +73,8 @@ def normal(array: np.ndarray,
         # select len_default bins according to a normal
         # distribution and take the data sorted by time
         normal_distrib = gaussian(
-            array=array,
-            loc=mean,
+            array=np.arange(len(array)),
+            loc=len(array)//2,
             scale=std,
         )
 
@@ -82,7 +82,7 @@ def normal(array: np.ndarray,
             a=array.shape[0],
             size=len_default,
             replace=False,
-            p=normal_distrib
+            p=(normal_distrib / normal_distrib.sum())
         )
 
         normal_bins.sort()

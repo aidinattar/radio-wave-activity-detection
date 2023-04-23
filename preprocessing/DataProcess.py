@@ -121,7 +121,7 @@ class DataProcess(object):
                 self.mDoppler_2[i] = mDoppler_2
 
 
-    def cut_time(self, loc:str='random', len_default:int=40, **kwargs):
+    def cut_time(self, loc:str='random', len_default:int=40, n_samples:int=1, **kwargs):
         '''
         Cut the data in time
 
@@ -133,16 +133,19 @@ class DataProcess(object):
             The default is 'random'.
         len_default : int, optional
             Default length of the action. The default is 40.
+        n_samples : int, optional
+            Number of samples to generate for each action. 
+            Implemented only for random method. The default is 1.
         **kwargs : TYPE
             Keyword arguments to pass to the cut_time function.
         '''
         if self.do_rdn:
-            self.cut_time_rdn(loc=loc, len_default=len_default, **kwargs)
+            self.cut_time_rdn(loc=loc, len_default=len_default, n_samples=n_samples, **kwargs)
         if self.do_mDoppler:
-            self.cut_time_mDoppler(loc=loc, len_default=len_default, **kwargs)
+            self.cut_time_mDoppler(loc=loc, len_default=len_default, n_samples=n_samples, **kwargs)
 
 
-    def cut_time_rdn(self, loc:int='random', len_default:int=40, **kwargs):
+    def cut_time_rdn(self, loc:int='random', len_default:int=40, n_samples:int=1, **kwargs):
         '''
         Cut the rdn data in time
 
@@ -154,6 +157,9 @@ class DataProcess(object):
             The default is 'random'.
         len_default : int, optional
             Default length of the action. The default is 40.
+        n_samples : int, optional
+            Number of samples to generate for each action.
+            Implemented only for random method. The default is 1.
         **kwargs : TYPE
             Keyword arguments to pass to the cut_time function.
 
@@ -178,15 +184,20 @@ class DataProcess(object):
                 self.rdn_1[i] = rdn_1[-len_default:, :]
                 self.rdn_2[i] = rdn_2[-len_default:, :]
             elif loc == 'random':
-                self.rdn_1[i] = cutting.random(rdn_1, len_default)
-                self.rdn_2[i] = cutting.random(rdn_2, len_default)
+                for j in range(n_samples):
+                    if j == 0:                
+                        self.rdn_1[i] = cutting.random(rdn_1, len_default)
+                        self.rdn_2[i] = cutting.random(rdn_2, len_default)
+                    else:
+                        self.rdn_1.append(cutting.random(rdn_1, len_default))
+                        self.rdn_2.append(cutting.random(rdn_2, len_default))
             elif loc == 'normal':
                 self.rdn_1[i] = cutting.normal(rdn_1, len_default, **kwargs)
                 self.rdn_2[i] = cutting.normal(rdn_2, len_default, **kwargs)
             else:
                 raise ValueError("Invalid location")
 
-    def cut_time_mDoppler(self, loc:int='random', len_default:int=40, **kwargs):
+    def cut_time_mDoppler(self, loc:int='random', len_default:int=40, n_samples:int=1, **kwargs):
         '''
         Cut the mDoppler data in time
 
@@ -198,6 +209,9 @@ class DataProcess(object):
             The default is 'random'.
         len_default : int, optional
             Default length of the action. The default is 40.
+        n_samples : int, optional
+            Number of samples to generate for each action. 
+            Implemented only for random method. The default is 1.
         **kwargs : TYPE
             Keyword arguments to pass to the cut_time function.
 
@@ -222,8 +236,13 @@ class DataProcess(object):
                 self.mDoppler_1[i] = mDoppler_1[-len_default:, :]
                 self.mDoppler_2[i] = mDoppler_2[-len_default:, :]
             elif loc == 'random':
-                self.mDoppler_1[i] = cutting.random(mDoppler_1, len_default)
-                self.mDoppler_2[i] = cutting.random(mDoppler_2, len_default)
+                for j in range(n_samples):
+                    if j == 0:
+                        self.mDoppler_1[i] = cutting.random(mDoppler_1, len_default)
+                        self.mDoppler_2[i] = cutting.random(mDoppler_2, len_default)
+                    else:
+                        self.mDoppler_1.append(cutting.random(mDoppler_1, len_default))
+                        self.mDoppler_2.append(cutting.random(mDoppler_2, len_default))
             elif loc == 'normal':
                 self.mDoppler_1[i] = cutting.normal(mDoppler_1, len_default, **kwargs)
                 self.mDoppler_2[i] = cutting.normal(mDoppler_2, len_default, **kwargs)

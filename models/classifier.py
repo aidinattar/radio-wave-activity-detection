@@ -28,12 +28,9 @@ from tqdm                      import tqdm
 from sklearn.metrics           import confusion_matrix, accuracy_score,\
                                       precision_recall_fscore_support,\
                                       roc_curve, roc_auc_score
-from utils                     import plotting
+from utils                     import plotting, augmentation
 from torchsummary              import summary
-
 #from torch.utils.tensorboard import SummaryWriter
-
-
 
 fig_dir = 'figures'
 
@@ -107,12 +104,6 @@ class model(object):
             Size of the test data. The default is 0.2.
         random_state : int, optional
             Random state. The default is 42.
-        batch_size : int, optional
-            Batch size. The default is 32.
-        shuffle : bool, optional
-            Shuffle the data. The default is True.
-        num_workers : int, optional
-            Number of workers. The default is 0.
         '''
         # define the random generator
         generator = torch.Generator().manual_seed(random_state)
@@ -143,19 +134,9 @@ class model(object):
         else:
             raise ValueError('Invalid case')
 
-        # Create the data loaders
-        self.train_loader = DataLoader(self.train_data,
-                                        batch_size=batch_size,
-                                        shuffle=shuffle,
-                                        num_workers=num_workers)
-        self.test_loader = DataLoader(self.test_data,
-                                        batch_size=batch_size,
-                                        shuffle=shuffle,
-                                        num_workers=num_workers)
-
         self.input_size = self.train_data[0][0].shape
-        
-        
+
+
         #for i, data in enumerate(self.train_loader):
         #    # Assuming your data contains images in 'img' variable
         #    img = data['img']
@@ -169,6 +150,85 @@ class model(object):
         # Set the flag
         self.train_test_split_done = True
 
+
+    def create_DataLoader(self, batch_size: int=32, shuffle: bool=True, num_workers: int=0):
+        '''
+        Create the data loaders
+        
+        Parameters
+        ----------
+        batch_size : int, optional
+            Batch size. The default is 32.
+        shuffle : bool, optional
+            Shuffle the data. The default is True.
+        num_workers : int, optional
+            Number of workers. The default is 0.
+        '''
+                  
+        # Create the data loaders
+        self.train_loader = DataLoader(self.train_data,
+                                        batch_size=batch_size,
+                                        shuffle=shuffle,
+                                        num_workers=num_workers)
+        self.test_loader = DataLoader(self.test_data,
+                                        batch_size=batch_size,
+                                        shuffle=shuffle,
+                                        num_workers=num_workers)
+
+
+    def augmentation(self, method=['time-mask'], **kwargs):
+        '''
+        Augment the data.
+
+        Parameters
+        ----------
+        method : list, optional
+            List of methods to use.
+            Possible values are:
+                'resample', 'time-mask', 'doppler-mask', 'time-doppler-mask'
+            The default is ['time-mask'].
+        **kwargs : TYPE
+            Keyword arguments to pass to the augmentation function.
+        '''
+        if self.data.type=='rdn':
+            self.augmentation_rdn(method=method, **kwargs)
+        elif self.data.type=='mDoppler':
+            self.augmentation_mDoppler(method=method, **kwargs)
+
+
+    def augmentation_rdn(self, method=['time-mask'], **kwargs):
+        '''
+        Augment the rdn data
+
+        Parameters
+        ----------
+        method : list, optional
+            List of methods to use.
+        **kwargs : TYPE
+            Keyword arguments to pass to the augmentation function.
+        '''
+
+        if 'resample' in method:
+            self.train_data = augmentation.resample(self.train_data, **kwargs)
+            
+        if 'time-mask' in method:
+            self.train_data = augmentation.time_mask(self.train_data)
+
+        if 'doppler-mask' in method:
+            self.train_data = augmentation.doppler_mask(self.train_data)
+        
+        if 'time-doppler-mask' in method:
+            self.train_data = augmentation.time_doppler_mask(self.train_data)
+
+
+    def augmentation_mDoppler(self, method=['time-mask'], **kwargs):
+        '''
+        Augment the mDoppler data
+        '''
+        pass
+        #self.mDoppler_1 = augmentation.time_mask(self.mDoppler_1)
+        #self.mDoppler_2 = augmentation.time_mask(self.mDoppler_2)
+        
 
     def create_model(self):
         '''

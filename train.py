@@ -33,7 +33,6 @@ Example:
 # Add parameters to the docstring
 # Add the parameters not used to the class
 # Check the correctness of the code
-#
 
 import torch
 from docopt                    import docopt
@@ -95,14 +94,14 @@ def main(model_name:str, data:Dataset, case, load, epochs, batch_size, optimizer
     classifier.train_test_split(test_size=.2, batch_size=batch_size)
     
     # Print the model summary
-    classifier.summary(save=True, name=f'{model_name}_case{case}.txt')
+    classifier.summary(save=True, name=f'{model_name}_case{case}_summary.txt')
 
     # Create the optimizer, loss function
     classifier.create_optimizer(optimizer=optimizer, lr=lr, weight_decay=weight_decay, momentum=momentum, nesterov=nesterov)
     classifier.create_loss(loss=loss)
 
     # Train the model
-    classifier.train_model(epochs=epochs, checkpoint=True)
+    classifier.train_model(epochs=epochs, checkpoint=True, checkpoint_path=f'{model_name}__case_{case}_checkpoint.pt')
 
     # Plot the training history
     classifier.plot_history(save=True)
