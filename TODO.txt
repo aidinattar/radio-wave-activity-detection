@@ -12,11 +12,9 @@ TODO:
     in models/classifier.py
     - [DONE] write the main function in ./train.py
     - [DONE] run the code in and check the results
-    - move the splitting of the dataset in train/test from 
-    models/classifier to preprocessing/DataProcess.py to avoid
-    augmentation on the test set
-    - complete the augmentation part in preprocessing/DataProcess.py
-    - add check after augmentation to avoid repetition of the same
+    - [DONE] complete the augmentation by resampling
+    - implementation of the functions to augment the dataset
+    - [DONE] add check after augmentation to avoid repetition of the same
     sample in the training set
     - correct the model in models/cnn_rdn.py to have the same
     architecture as the one in models/cnn_md.py
