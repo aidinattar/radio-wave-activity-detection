@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 #import torchvision.utils as vutils
 
 from torch.utils.data          import DataLoader, random_split
-from torch.optim               import SGD, Adam
+from torch.optim               import SGD, Adam, NAdam
 from torch.nn                  import CrossEntropyLoss
 from preprocessing.dataset     import Dataset
 from exceptions                import OptionIsFalseError, WorkToDoError
@@ -114,6 +114,9 @@ class model(object):
         num_workers : int, optional
             Number of workers. The default is 0.
         '''
+        # define the random generator
+        generator = torch.Generator().manual_seed(random_state)
+        
         # Split the data
         if self.case == 0:
             if self.model_type == 'CNN-MD':
@@ -136,7 +139,7 @@ class model(object):
         elif self.case == 2:
             train_size = int((1-test_size) * len(self.data))
             test_size = len(self.data) - train_size
-            self.train_data, self.test_data = random_split(self.data, [train_size, test_size])
+            self.train_data, self.test_data = random_split(self.data, [train_size, test_size], generator=generator)
         else:
             raise ValueError('Invalid case')
 
@@ -191,7 +194,12 @@ class model(object):
         self.model_created = True
 
 
-    def create_optimizer(self, optimizer: str='SGD', lr: float=0.01, momentum: float=0.9):
+    def create_optimizer(self,
+                         optimizer: str='SGD',
+                         lr: float=0.01,
+                         momentum: float=0.9,
+                         weight_decay: float=0.0005,
+                         nesterov: bool=True):
         '''
         Create the optimizer
 
@@ -206,11 +214,18 @@ class model(object):
             Learning rate. The default is 0.01.
         momentum : float, optional
             Momentum. The default is 0.9.
+        weight_decay : float, optional
+            Weight decay. The default is 0.0005.
+        nesterov : bool, optional
+            Nesterov. The default is True.
         '''
         if optimizer == 'SGD':
             self.optimizer = SGD(self.model.parameters(), lr=lr, momentum=momentum)
         elif optimizer == 'Adam':
-            self.optimizer = Adam(self.model.parameters(), lr=lr)
+            if not nesterov:
+                self.optimizer = Adam(self.model.parameters(), lr=lr, weight_decay=weight_decay)
+            else:
+                self.optimizer = NAdam(self.model.parameters(), lr=lr, weight_decay=weight_decay)
         else:
             raise ValueError('Invalid optimizer')
 
@@ -251,7 +266,8 @@ class model(object):
     def train_model(self,
                     epochs: int=10,
                     checkpoint: bool=False,
-                    checkpoint_path: str='checkpoint.pth'
+                    checkpoint_path: str='checkpoint.pt',
+                    checkpoint_dir: str='checkpoints'
                     ):
         '''
         Train the model
@@ -263,7 +279,7 @@ class model(object):
         checkpoint : bool, optional
             Save the model after every epoch. The default is False.
         checkpoint_path : str, optional
-            Path to save the model. The default is 'checkpoint.pth'.
+            Path to save the model. The default is 'checkpoint.pt'.
 
         Raises
         ------
@@ -352,8 +368,8 @@ class model(object):
                 test_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().argmax(axis=1))
 
 
-                print(f'Test loss: {test_loss.detach().cpu().numpy()}')
-                print(f'Test accuracy: {test_acc}')
+                print(f'Test loss: {test_loss.detach().cpu().numpy():.2f}')
+                print(f'Test accuracy: {test_acc:.2f}')
 
                 # Save the loss and accuracy values for plotting later
                 train_losses.append(train_loss)
@@ -369,7 +385,7 @@ class model(object):
             if checkpoint:
                 if test_loss < best_loss:
                     best_loss = test_loss
-                    torch.save(self.model.state_dict(), checkpoint_path)
+                    torch.save(self.model.state_dict(), os.path.join(checkpoint_dir, checkpoint_path))
 
         # don't like this, to be changed
         train_losses = [x.detach().cpu().numpy() for x in train_losses]
