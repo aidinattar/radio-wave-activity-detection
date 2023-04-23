@@ -61,11 +61,6 @@ class DataReader(object):
     def empty(cls):
         '''
         Create an empty instance of the class
-        
-        Parameters
-        ----------
-        cls : class
-            Class to create an empty instance of
         '''
         return cls([], [])
 

@@ -6,11 +6,12 @@ This file contains the train function, which is used to train the model.
 The model is trained using the Adam optimizer and the Cross Entropy loss.
 
 Usage:
-    train.py <model> <data> <input> <case> (--load|--no-load) [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov=<nesterov>] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
+    train.py <model> <data> <input> <case> (--load|--no-load) [--augment|--no-augment] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov=<nesterov>] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
     train.py -h | --help
 
 Options:
     -h --help                       Show this screen.
+    --augment                       Augment the data [default: False].
     --epochs=<epochs>               Number of epochs [default: 100].
     --batch_size=<batch_size>       Batch size [default: 32].
     --optimizer=<optimizer>         Optimizer [default: Adam].
@@ -26,7 +27,7 @@ Options:
     --seed=<seed>                   Seed [default: 42].
 
 Example:
-    python train.py CNN-MD data_processed.npz mDoppler 2 --load --epochs=1500 --batch_size=32 --optimizer=Adam --lr=0.001 --weight_decay=0.0001 --momentum=0.9 --nesterov=True --loss=Adam --patience=10 --min_delta=0.0001 --factor=0.1 --verbose=1 --seed=42
+    python train.py CNN-MD data_processed.npz mDoppler 2 --load --augment --epochs=1500 --batch_size=32 --optimizer=Adam --lr=0.001 --weight_decay=0.0001 --momentum=0.9 --nesterov=True --loss=Adam --patience=10 --min_delta=0.0001 --factor=0.1 --verbose=1 --seed=42
 '''
 
 # TODO:
@@ -42,7 +43,7 @@ from datetime import datetime
 
 now = datetime.now().strftime("%Y%m%d")
 
-def main(model_name:str, data:Dataset, case, load, epochs, batch_size, optimizer, lr, weight_decay, momentum, nesterov, loss, patience, min_delta, factor, verbose, device):
+def main(model_name:str, data:Dataset, case, load, augment, epochs, batch_size, optimizer, lr, weight_decay, momentum, nesterov, loss, patience, min_delta, factor, verbose, device):
     '''
     Train the model, save the best model and save the training history
 
@@ -56,6 +57,8 @@ def main(model_name:str, data:Dataset, case, load, epochs, batch_size, optimizer
         Case to use
     load : bool
         Load the model
+    augment : bool
+        Augment the data
     epochs : int
         Number of epochs
     batch_size : int
@@ -87,11 +90,19 @@ def main(model_name:str, data:Dataset, case, load, epochs, batch_size, optimizer
     classifier = model(data=data, case=case, model_type=model_name)
     classifier.create_model()
 
+    # Load the pre-trained model
     if load:
         classifier.load_model(name='checkpoint', path='checkpoints')
 
     # Split the data into training and validation sets
-    classifier.train_test_split(test_size=.2, batch_size=batch_size)
+    classifier.train_test_split(test_size=.2)
+    
+    # Augment the data
+    if augment:
+        classifier.augmentation(method=['resample'])
+        
+    # Create the DataLoaders
+    classifier.create_DataLoaders(batch_size=batch_size)
     
     # Print the model summary
     classifier.summary(save=True, name=f'{model_name}_case{case}_summary.txt')
@@ -124,6 +135,7 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     load = bool(args['--load'])
+    augment = bool(args['--augment'])
 
     # set hyperparameters
     case = int(args['<case>'])
@@ -155,6 +167,7 @@ if __name__ == '__main__':
          data=data,
          case=case,
          load=load,
+         augment=augment,
          epochs=epochs,
          batch_size=batch_size,
          optimizer=optimizer,

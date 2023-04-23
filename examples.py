@@ -27,13 +27,13 @@ dr.plot_mDoppler_map(start=161, stop=208)
 # %%
 #dr.plot_mDoppler_map_3d()
 # %%
-dr.timestamp_to_bins(10.8)
+dr.timestamp_to_bins(11)
 # %%
 dr.plot_divided_actions()
 
 # %%
 dc = DataCutter(dr)
-dc.cut(10.81)
+dc.cut(11)
 # %%
 dc.create_labels_list()
 # %%
@@ -48,7 +48,7 @@ dp.cut_time(loc='normal')
 # %%
 dp.padding(padding=40)
 # %%
-dp.rotate()
+#dp.rotate()
 # %%
 dp.save()
 # %%

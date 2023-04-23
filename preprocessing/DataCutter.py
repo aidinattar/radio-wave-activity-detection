@@ -28,12 +28,32 @@ class DataCutter(object):
     labels = np.array([])
     labels_dict = np.array([])
 
+
     def __init__(self, data: DataReader):
         '''
         Constructor
         '''
         self.data = data
         self.timestamps = self.data.timestamp_speech
+
+        
+    @classmethod
+    def empty(cls):
+        '''
+        Empty constructor
+        '''
+        return cls(DataReader.empty())
+
+    
+    @classmethod
+    def from_file(cls, path:str, file:str):
+        '''
+        Constructor from file
+        '''
+        cutter = cls(DataReader.empty())
+        cutter.load(path, file)
+        return cutter
+
 
     def cut(self, conversion_factor:float=1):
         '''
@@ -52,6 +72,7 @@ class DataCutter(object):
             self.cut_rdn()
 
         self.cut_done = True
+
 
     def cut_mDoppler(self):
         '''
@@ -77,6 +98,7 @@ class DataCutter(object):
                 # Cut the data
                 self.signals_mDoppler_1.append(mDoppler_1[time_bins[j]:time_bins[j+1] if j+1<len(time_bins) else None])
                 self.signals_mDoppler_2.append(mDoppler_2[time_bins[j]:time_bins[j+1] if j+1<len(time_bins) else None])
+
 
     def cut_rdn(self):
         '''
@@ -141,7 +163,15 @@ class DataCutter(object):
         path = os.path.join(path, filename)
 
         # Save the data
-        np.savez(path, signals_mDoppler_1=self.signals_mDoppler_1, signals_mDoppler_2=self.signals_mDoppler_2, signals_rdn_1=self.signals_rdn_1, signals_rdn_2=self.signals_rdn_2, labels=self.labels, labels_dict=self.labels_dict)
+        np.savez(
+            path,
+            signals_mDoppler_1=self.signals_mDoppler_1,
+            signals_mDoppler_2=self.signals_mDoppler_2,
+            signals_rdn_1=self.signals_rdn_1,
+            signals_rdn_2=self.signals_rdn_2,
+            labels=self.labels,
+            labels_dict=self.labels_dict
+        )
 
 
     def load(self, path:str='DATA_preprocessed', filename:str='data.npz'):
@@ -153,7 +183,7 @@ class DataCutter(object):
         path = os.path.join(path, filename)
 
         # Load the data
-        data = np.load(path)
+        data = np.load(path, allow_pickle=True)
 
         # Get the data
         self.signals_mDoppler_1 = data['signals_mDoppler_1']

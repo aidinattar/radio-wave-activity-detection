@@ -30,6 +30,7 @@ from sklearn.metrics           import confusion_matrix, accuracy_score,\
                                       roc_curve, roc_auc_score
 from utils                     import plotting, augmentation
 from torchsummary              import summary
+from torch.utils.data          import Subset
 #from torch.utils.tensorboard import SummaryWriter
 
 fig_dir = 'figures'
@@ -91,10 +92,7 @@ class model(object):
     # TODO: add also the option to use the validation set
     def train_test_split(self,
                          test_size: float=0.2,
-                         random_state: int=42,
-                         batch_size: int=32,
-                         shuffle: bool=True,
-                         num_workers: int=0):
+                         random_state: int=42):
         '''
         Split the data into training and testing data
 
@@ -110,23 +108,25 @@ class model(object):
         
         # Split the data
         if self.case == 0:
-            if self.model_type == 'CNN-MD':
-                train_size = int((1-test_size) * len(self.data['mDoppler_1']))
-                test_size = len(self.data['mDoppler_1']) - train_size
-                self.train_data = self.data['mDoppler_1'][0:train_size]
-                self.test_data = self.data['mDoppler_1'][train_size:]
-            else:
-                train_size = int((1-test_size) * len(self.data['rdn_2']))
-                test_size = len(self.data['rdn_2']) - train_size
-                self.train_data = self.data['rdn_2'][0:train_size]
-                self.test_data = self.data['rdn_2'][train_size:]
+            raise WorkToDoError('Case 0 not implemented yet')
+            #if self.model_type == 'CNN-MD':
+            #    train_size = int((1-test_size) * len(self.data['mDoppler_1']))
+            #    test_size = len(self.data['mDoppler_1']) - train_size
+            #    self.train_data = self.data['mDoppler_1'][0:train_size]
+            #    self.test_data = self.data['mDoppler_1'][train_size:]
+            #else:
+            #    train_size = int((1-test_size) * len(self.data['rdn_2']))
+            #    test_size = len(self.data['rdn_2']) - train_size
+            #    self.train_data = self.data['rdn_2'][0:train_size]
+            #    self.test_data = self.data['rdn_2'][train_size:]
         elif self.case == 1:
-            if self.model_type == 'CNN-MD':
-                self.train_data = self.data['mDoppler_1']
-                self.test_data = self.data['mDoppler_2']
-            else:
-                self.train_data = self.data['rdn_1']
-                self.test_data = self.data['rdn_2']
+            raise WorkToDoError('Case 1 not implemented yet')
+            #if self.model_type == 'CNN-MD':
+            #    self.train_data = self.data['mDoppler_1']
+            #    self.test_data = self.data['mDoppler_2']
+            #else:
+            #    self.train_data = self.data['rdn_1']
+            #    self.test_data = self.data['rdn_2']
         elif self.case == 2:
             train_size = int((1-test_size) * len(self.data))
             test_size = len(self.data) - train_size
@@ -151,7 +151,7 @@ class model(object):
         self.train_test_split_done = True
 
 
-    def create_DataLoader(self, batch_size: int=32, shuffle: bool=True, num_workers: int=0):
+    def create_DataLoaders(self, batch_size: int=32, shuffle: bool=True, num_workers: int=0):
         '''
         Create the data loaders
         
@@ -189,11 +189,22 @@ class model(object):
             The default is ['time-mask'].
         **kwargs : TYPE
             Keyword arguments to pass to the augmentation function.
+            
+        Raises
+        ------
+        ValueError
+            Invalid data type.
         '''
         if self.data.type=='rdn':
             self.augmentation_rdn(method=method, **kwargs)
         elif self.data.type=='mDoppler':
             self.augmentation_mDoppler(method=method, **kwargs)
+        else:
+            raise ValueError('Invalid data type')
+        
+        # Remove duplicates
+        self.train_data.dataset.drop_duplicates()
+        self.train_data.indices = np.arange(len(self.train_data.dataset))
 
 
     def augmentation_rdn(self, method=['time-mask'], **kwargs):
@@ -209,7 +220,11 @@ class model(object):
         '''
 
         if 'resample' in method:
-            self.train_data = augmentation.resample(self.train_data, **kwargs)
+            self.train_data = augmentation.resample(self.train_data,
+                                                    data_dir='DATA_preprocessed',
+                                                    data_file='data_cutted.npz',
+                                                    data_type='rdn',
+                                                    len_default=40)
             
         if 'time-mask' in method:
             self.train_data = augmentation.time_mask(self.train_data)
@@ -224,10 +239,32 @@ class model(object):
     def augmentation_mDoppler(self, method=['time-mask'], **kwargs):
         '''
         Augment the mDoppler data
+        
+        Parameters
+        ----------
+        method : list, optional
+            List of methods to use.
+        **kwargs : TYPE
+            Keyword arguments to pass to the augmentation function.
         '''
-        pass
-        #self.mDoppler_1 = augmentation.time_mask(self.mDoppler_1)
-        #self.mDoppler_2 = augmentation.time_mask(self.mDoppler_2)
+        if 'resample' in method:
+            self.train_data = augmentation.resample(self.train_data,
+                                                    data_dir='DATA_preprocessed',
+                                                    data_file='data_cutted.npz',
+                                                    data_type='mDoppler',
+                                                    len_default=40)
+            
+        if 'time-mask' in method:
+            self.train_data = augmentation.time_mask(self.train_data)
+            
+        if 'doppler-mask' in method:
+            self.train_data = augmentation.doppler_mask(self.train_data)
+            
+        if 'time-doppler-mask' in method:
+            self.train_data = augmentation.time_doppler_mask(self.train_data)
+            
+        if 'time-doppler-mask' in method:
+            self.train_data = augmentation.time_doppler_mask(self.train_data)
         
 
     def create_model(self):

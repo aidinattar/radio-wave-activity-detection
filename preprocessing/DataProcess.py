@@ -31,6 +31,25 @@ class DataProcess(object):
         self.mDoppler_1 = self.data.signals_mDoppler_1
         self.mDoppler_2 = self.data.signals_mDoppler_2
 
+
+    @classmethod
+    def empty(cls):
+        '''
+        Empty constructor
+        '''
+        return cls(DataCutter.empty())
+    
+    
+    @classmethod
+    def from_file(cls, path:str, file:str):
+        '''
+        Constructor from file
+        '''
+        processer = cls(DataCutter.empty())
+        processer.load(path, file)
+        return processer
+
+
     def padding(self, padding: int, mode: str='constant', **kwargs):
         '''
         Pad the data.
@@ -49,6 +68,7 @@ class DataProcess(object):
             self.padding_rdn(padding=padding, mode=mode, **kwargs)
         if self.do_mDoppler:
             self.padding_mDoppler(padding=padding, mode=mode, **kwargs)
+
 
     def padding_rdn(self, padding: int=40, mode: str='constant', **kwargs):
         '''
@@ -84,6 +104,7 @@ class DataProcess(object):
             else:
                 self.rdn_2[i] = rdn_2
 
+
     def padding_mDoppler(self, padding:int, mode: str='constant', **kwargs):
         '''
         Pad the mDoppler data.
@@ -98,8 +119,6 @@ class DataProcess(object):
         **kwargs : TYPE
             Keyword arguments to pass to the pad function.
         '''
-
-
         for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
             if mDoppler_1.shape[0] < padding:
                 self.mDoppler_1[i] = np.pad(
@@ -184,18 +203,14 @@ class DataProcess(object):
                 self.rdn_1[i] = rdn_1[-len_default:, :]
                 self.rdn_2[i] = rdn_2[-len_default:, :]
             elif loc == 'random':
-                for j in range(n_samples):
-                    if j == 0:                
-                        self.rdn_1[i] = cutting.random(rdn_1, len_default)
-                        self.rdn_2[i] = cutting.random(rdn_2, len_default)
-                    else:
-                        self.rdn_1.append(cutting.random(rdn_1, len_default))
-                        self.rdn_2.append(cutting.random(rdn_2, len_default))
+                self.rdn_1[i] = cutting.random(rdn_1, len_default)
+                self.rdn_2[i] = cutting.random(rdn_2, len_default)
             elif loc == 'normal':
                 self.rdn_1[i] = cutting.normal(rdn_1, len_default, **kwargs)
                 self.rdn_2[i] = cutting.normal(rdn_2, len_default, **kwargs)
             else:
                 raise ValueError("Invalid location")
+
 
     def cut_time_mDoppler(self, loc:int='random', len_default:int=40, n_samples:int=1, **kwargs):
         '''
@@ -236,18 +251,14 @@ class DataProcess(object):
                 self.mDoppler_1[i] = mDoppler_1[-len_default:, :]
                 self.mDoppler_2[i] = mDoppler_2[-len_default:, :]
             elif loc == 'random':
-                for j in range(n_samples):
-                    if j == 0:
-                        self.mDoppler_1[i] = cutting.random(mDoppler_1, len_default)
-                        self.mDoppler_2[i] = cutting.random(mDoppler_2, len_default)
-                    else:
-                        self.mDoppler_1.append(cutting.random(mDoppler_1, len_default))
-                        self.mDoppler_2.append(cutting.random(mDoppler_2, len_default))
+                self.mDoppler_1[i] = cutting.random(mDoppler_1, len_default)
+                self.mDoppler_2[i] = cutting.random(mDoppler_2, len_default)
             elif loc == 'normal':
                 self.mDoppler_1[i] = cutting.normal(mDoppler_1, len_default, **kwargs)
                 self.mDoppler_2[i] = cutting.normal(mDoppler_2, len_default, **kwargs)
             else:
                 raise ValueError("Invalid location")
+
 
     def rotate(self):
         '''
@@ -284,44 +295,6 @@ class DataProcess(object):
         for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
             self.mDoppler_1[i] = np.transpose(mDoppler_1)
             self.mDoppler_2[i] = np.transpose(mDoppler_2)
-        
-
-    def augmentation(self, method=['time-mask'], **kwargs):
-        '''
-        Augment the data.
-
-        Parameters
-        ----------
-        method : list, optional
-            List of methods to use.
-            Possible values are:
-                'time-mask', 'doppler-mask', 'time-doppler-mask', ...
-            The default is ['time-mask'].
-        **kwargs : TYPE
-            Keyword arguments to pass to the augmentation function.
-        '''
-        if self.do_rdn:
-            self.augmentation_rdn()
-        if self.do_mDoppler:
-            self.augmentation_mDoppler()
-
-
-    def augmentation_rdn(self):
-        '''
-        Augment the rdn data
-        '''
-        pass
-        #self.rdn_1 = augmentation.time_mask(self.rdn_1)
-        #self.rdn_2 = augmentation.time_mask(self.rdn_2)
-
-
-    def augmentation_mDoppler(self):
-        '''
-        Augment the mDoppler data
-        '''
-        pass
-        #self.mDoppler_1 = augmentation.time_mask(self.mDoppler_1)
-        #self.mDoppler_2 = augmentation.time_mask(self.mDoppler_2)
 
 
     def save(self, path:str='DATA_preprocessed', filename:str='data_processed.npz'):
@@ -353,7 +326,7 @@ class DataProcess(object):
         path = os.path.join(path, filename)
 
         # Load the data
-        data = np.load(path)
+        data = np.load(path, allow_pickle=True)
 
         # Get the data
         self.mDoppler_1  = data['mDoppler_1']
