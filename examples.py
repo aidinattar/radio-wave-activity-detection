@@ -12,7 +12,7 @@ a.remove_static_bins()
 a.crop_mDoppler()
 a.crop_rdn()
 a.rescaling()
-a.filter_mDoppler(size=(15, 15), sigma=10)
+a.filter_mDoppler(size=(21, 11), sigma=15)
 
 # %%
 #a.Plot_Gif_rdn(60)
@@ -27,7 +27,7 @@ a.plot_mDoppler_map(start=161, stop=208)
 # %%
 #a.plot_mDoppler_map_3d()
 # %%
-a.timestamp_to_bins(11)
+a.timestamp_to_bins(10.8)
 # %%
 a.plot_divided_actions()
 
