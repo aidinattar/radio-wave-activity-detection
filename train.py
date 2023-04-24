@@ -28,6 +28,19 @@ Options:
 
 Example:
     python train.py CNN-MD data_processed.npz mDoppler 2 --load --augment --epochs=1500 --batch_size=32 --optimizer=Adam --lr=0.001 --weight_decay=0.0001 --momentum=0.9 --nesterov=True --loss=Adam --patience=10 --min_delta=0.0001 --factor=0.1 --verbose=1 --seed=42
+
+Current configuration:
+    model: CNN-MD
+    data: data_processed.npz
+    input: mDoppler
+    case: 2
+    load: False
+    augment: True
+    epochs: 100
+    batch_size: 256
+    weight_decay: 0.0    
+    
+    python train.py CNN-MD data_processed.npz mDoppler 2  --no-load  - --epochs=-epochs=100 --batch_size=256 --weight_dCcay=0.
 '''
 
 # TODO:
@@ -92,7 +105,7 @@ def main(model_name:str, data:Dataset, case, load, augment, epochs, batch_size, 
 
     # Load the pre-trained model
     if load:
-        classifier.load_model(name='checkpoint', path='checkpoints')
+        classifier.load_model(name=f'{model_name}__case_{case}_checkpoint', path='checkpoints')
 
     # Split the data into training and validation sets
     classifier.train_test_split(test_size=.2)
