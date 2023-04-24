@@ -1,6 +1,5 @@
 docopt==0.6.2
 h5py==3.8.0
-hdbscan==0.8.29
 matplotlib==3.7.0
 numpy==1.23.5
 opencv_python==4.7.0.72

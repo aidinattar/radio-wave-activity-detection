@@ -1,3 +1,9 @@
+'''
+cutting.py
+
+Classes and functions for cutting the data.
+'''
+
 import numpy as np
 
 def random(array: np.ndarray, len_default: int = 40):

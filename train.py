@@ -6,7 +6,7 @@ This file contains the train function, which is used to train the model.
 The model is trained using the Adam optimizer and the Cross Entropy loss.
 
 Usage:
-    train.py <model> <data> <input> <case> (--load|--no-load) [--augment|--no-augment] [--n_samples=<n_samples>] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov=<nesterov>] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
+    train.py <model> <data> <input> <case> (--load|--no-load) [--augment|--no-augment] [--n_samples=<n_samples>] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov|--no-nesterov] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
     train.py -h | --help
 
 Options:
@@ -24,7 +24,7 @@ Options:
     --lr=<lr>                       Learning rate [default: 0.001].
     --weight_decay=<weight_decay>   Weight decay [default: 0.0001].
     --momentum=<momentum>           Momentum [default: 0.9].
-    --nesterov=<nesterov>           Nesterov [default: False].
+    --nesterov                      Nesterov [default: False].
     --loss=<loss>                   Loss [default: CrossEntropyLoss].
     --patience=<patience>           Patience [default: 10].
     --min_delta=<min_delta>         Minimum delta [default: 0.0001].
@@ -42,11 +42,13 @@ Current configuration:
     case: 2
     load: False
     augment: True
+    n_samples: 15
     epochs: 100
     batch_size: 256
     weight_decay: 0.0    
+    nesterov: False
     
-    python train.py CNN-MD data_processed.npz mDoppler 2  --no-load  - --epochs=-epochs=100 --batch_size=256 --weight_dCcay=0.
+    python train.py CNN-MD data_processed.npz mDoppler 2  --no-load --augment --n_sample=15 --epochs=100 --batch_size=256 --weight_decay=0. --no-nesterov
 '''
 
 # TODO:
@@ -113,13 +115,16 @@ def main(model_name:str, data:Dataset, case, load, augment, n_samples, epochs, b
 
     # Load the pre-trained model
     if load:
+        print(f'Loading model {model_name}__case_{case}_checkpoint.pt')
         classifier.load_model(name=f'{model_name}__case_{case}_checkpoint', path='checkpoints')
 
     # Split the data into training and validation sets
+    print('Splitting the data into training and validation sets')
     classifier.train_test_split(test_size=.2)
     
     # Augment the data
     if augment:
+        print('Augmenting the data')
         classifier.augmentation(method=['resample'], n_samples=n_samples)
         
     # Create the DataLoaders
@@ -133,15 +138,18 @@ def main(model_name:str, data:Dataset, case, load, augment, n_samples, epochs, b
     classifier.create_loss(loss=loss)
 
     # Train the model
+    print('Training the model')
     classifier.train_model(epochs=epochs, checkpoint=True, checkpoint_path=f'{model_name}__case_{case}_checkpoint.pt')
 
     # Plot the training history
-    classifier.plot_history(save=True)
+    classifier.plot_history(save=True, show=False, save_csv=True)
 
     # Evaluate the model
+    print('Evaluating the model')
     classifier.evaluate_model(do_roc_auc=False)
 
     # Save the model trained
+    print('Saving the model')
     classifier.save_trained_model(name=f'{model_name}_{now}_case{case}')
 
 

@@ -583,7 +583,7 @@ class model(object):
             self.roc_auc_curve(targets=targets, preds=preds, save=save)
 
 
-    def confusion_matrix(self, targets, preds, save: bool=False):
+    def confusion_matrix(self, targets, preds, save: bool=True, show: bool=False):
         '''
         Calculate the confusion matrix
 
@@ -607,7 +607,9 @@ class model(object):
         ax.set_title('Confusion matrix')
         ax.set_ylabel('Actual')
         ax.set_xlabel('Predicted')
-        plt.show()
+
+        if show:
+            plt.show()
 
         # Save the confusion matrix
         if save:
@@ -673,7 +675,7 @@ class model(object):
 
     ### TODO: Add support for multiclass
     ### NOW it does not work for multiclass
-    def roc_auc_curve(self, targets, preds, save: bool=False):
+    def roc_auc_curve(self, targets, preds, save: bool=True, show: bool=False):
         '''
         Calculate the ROC curve and AUC
 
@@ -697,7 +699,9 @@ class model(object):
         plt.ylabel('True Positive Rate')
         plt.title('Receiver operating characteristic')
         plt.legend(loc="lower right")
-        plt.show()
+        
+        if show:
+            plt.show()
 
         # Save the ROC curve
         if save:

@@ -1,3 +1,9 @@
+'''
+clustering.py
+
+Classes and functions for clustering the data.
+'''
+
 import cv2
 import numpy as np
 import scipy.ndimage as ndi

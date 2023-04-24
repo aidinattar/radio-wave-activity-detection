@@ -18,6 +18,9 @@ from matplotlib           import animation
 from utils                import rescaling
 from exceptions           import OptionIsFalseError
 
+# Set the number of threads to 0 to avoid problems with OpenCV
+cv2.setNumThreads(0)
+
 data_dir    = os.path.join(os.getcwd(),    'DATA')
 figures_dir = os.path.join(os.getcwd(), 'figures')
 
