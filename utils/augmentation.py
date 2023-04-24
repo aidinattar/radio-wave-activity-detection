@@ -190,7 +190,8 @@ def resample(train_data: torch.utils.data.dataset.Subset,
              data_dir:str='DATA_preprocessed',
              data_file:str='data_cutted.npz',
              data_type:str='mDoppler',
-             len_default: int = 40):
+             len_default: int = 40,
+             n_samples: int = 5):
     '''
     Resample the array to the default length
 
@@ -214,8 +215,8 @@ def resample(train_data: torch.utils.data.dataset.Subset,
     '''
     data = DataCutter.from_file(data_dir, data_file)
     dp = DataProcess(data=data)
-    dp = cut_time(dp, train_data.indices, loc='random', len_default=len_default, n_samples=5, type=data_type)
-    dp.padding(padding=40)
+    dp = cut_time(dp, train_data.indices, loc='random', len_default=len_default, n_samples=n_samples, type=data_type)
+    dp.padding(padding=len_default)
     dp.save(filename='data_resampled.npz')
 
     # Create a new dataset with additional data    

@@ -220,11 +220,16 @@ class model(object):
         '''
 
         if 'resample' in method:
+            try:
+                n_samples = kwargs['n_samples']
+            except KeyError:
+                n_samples = 5
             self.train_data = augmentation.resample(self.train_data,
                                                     data_dir='DATA_preprocessed',
                                                     data_file='data_cutted.npz',
                                                     data_type='rdn',
-                                                    len_default=40)
+                                                    len_default=40,
+                                                    n_samples=n_samples)
             
         if 'time-mask' in method:
             self.train_data = augmentation.time_mask(self.train_data)
@@ -248,11 +253,16 @@ class model(object):
             Keyword arguments to pass to the augmentation function.
         '''
         if 'resample' in method:
+            try:
+                n_samples = kwargs['n_samples']
+            except KeyError:
+                n_samples = 5
             self.train_data = augmentation.resample(self.train_data,
                                                     data_dir='DATA_preprocessed',
                                                     data_file='data_cutted.npz',
                                                     data_type='mDoppler',
-                                                    len_default=40)
+                                                    len_default=40,
+                                                    n_samples=n_samples)
             
         if 'time-mask' in method:
             self.train_data = augmentation.time_mask(self.train_data)
