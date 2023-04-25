@@ -277,22 +277,27 @@ class model(object):
             self.train_data = augmentation.time_doppler_mask(self.train_data)
         
 
-    def create_model(self):
+    def create_model(self, **kwargs):
         '''
         Create the model
+        
+        Parameters
+        ----------
+        **kwargs : TYPE
+            Keyword arguments to pass to the model class.
         '''
         # call cnn_rd or cnn_md class
         if self.model_type == 'CNN-MD':
             if self.data.type != 'mDoppler':
                 OptionIsFalseError('do_mDoppler')
             self.model = cnn_md(
-                # params here
+                **kwargs
             )
         elif self.model_type == 'CNN-RD':
             if self.data.type != 'rdn':
                 OptionIsFalseError('do_rdn')
             self.model = cnn_rd(
-                # params here
+                **kwargs
             )
         else:
             raise ValueError('Invalid model type')

@@ -6,7 +6,7 @@ This file contains the train function, which is used to train the model.
 The model is trained using the Adam optimizer and the Cross Entropy loss.
 
 Usage:
-    train.py <model> <data> <input> <case> (--load|--no-load) [--augment|--no-augment] [--n_samples=<n_samples>] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov|--no-nesterov] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
+    train.py <model> <data> <input> <case> (--load|--no-load) [--augment|--no-augment] [--n_samples=<n_samples>] [--dropout=<dropout>] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov|--no-nesterov] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
     train.py -h | --help
 
 Options:
@@ -18,6 +18,7 @@ Options:
     --augment                       Augment the data [default: False].
     --load                          Load the model [default: False].
     --n_samples=<n_samples>         Number of samples to take [default: 5].
+    --dropout=<dropout>             Dropout [default: 0.5].
     --epochs=<epochs>               Number of epochs [default: 100].
     --batch_size=<batch_size>       Batch size [default: 32].
     --optimizer=<optimizer>         Optimizer [default: Adam].
@@ -33,7 +34,7 @@ Options:
     --seed=<seed>                   Seed [default: 42].
 
 Example:
-    python train.py CNN-MD data_processed.npz mDoppler 2 --load --augment --epochs=1500 --batch_size=32 --optimizer=Adam --lr=0.001 --weight_decay=0.0001 --momentum=0.9 --nesterov=True --loss=Adam --patience=10 --min_delta=0.0001 --factor=0.1 --verbose=1 --seed=42
+    python train.py CNN-MD data_processed.npz mDoppler 2 --load --augment --n_samples=5 --dropout=.2 --epochs=1500 --batch_size=32 --optimizer=Adam --lr=0.001 --weight_decay=0.0001 --momentum=0.9 --nesterov=True --loss=Adam --patience=10 --min_delta=0.0001 --factor=0.1 --verbose=1 --seed=42
 
 Current configuration:
     model: CNN-MD
@@ -43,12 +44,13 @@ Current configuration:
     load: False
     augment: True
     n_samples: 15
+    dropout: 0.2
     epochs: 100
     batch_size: 256
     weight_decay: 0.0    
     nesterov: False
     
-    python train.py CNN-MD data_processed.npz mDoppler 2  --no-load --augment --n_sample=15 --epochs=100 --batch_size=256 --weight_decay=0. --no-nesterov
+    python train.py CNN-MD data_processed.npz mDoppler 2  --no-load --augment --n_sample=15 --dropout=.2 --epochs=100 --batch_size=256 --weight_decay=0. --no-nesterov
 '''
 
 # TODO:
@@ -64,7 +66,27 @@ from datetime import datetime
 
 now = datetime.now().strftime("%Y%m%d")
 
-def main(model_name:str, data:Dataset, case, load, augment, n_samples, epochs, batch_size, optimizer, lr, weight_decay, momentum, nesterov, loss, patience, min_delta, factor, verbose, device):
+def main(model_name:str,
+         data:Dataset,
+         case:int,
+         load:bool,
+         augment:bool,
+         n_samples:int,
+         dropout:float,
+         epochs:int,
+         batch_size:int,
+         optimizer:str,
+         lr:float,
+         weight_decay:float,
+         momentum:float,
+         nesterov:bool,
+         loss:str,
+         patience:int,
+         min_delta:float,
+         factor:float,
+         verbose:int,
+         device:torch.device,
+         seed:int):
     '''
     Train the model, save the best model and save the training history
 
@@ -111,7 +133,7 @@ def main(model_name:str, data:Dataset, case, load, augment, n_samples, epochs, b
     '''
     # Create the model object
     classifier = model(data=data, case=case, model_type=model_name)
-    classifier.create_model()
+    classifier.create_model(dropout=dropout)
 
     # Load the pre-trained model
     if load:
@@ -169,6 +191,7 @@ if __name__ == '__main__':
 
     # set hyperparameters
     case = int(args['<case>'])
+    dropout = float(args['--dropout'])
     epochs = int(args['--epochs'])
     batch_size = int(args['--batch_size'])
     optimizer = args['--optimizer']
@@ -199,6 +222,7 @@ if __name__ == '__main__':
          load=load,
          augment=augment,
          n_samples=n_samples,
+         dropout=dropout,
          epochs=epochs,
          batch_size=batch_size,
          optimizer=optimizer,
@@ -211,4 +235,5 @@ if __name__ == '__main__':
          min_delta=min_delta,
          factor=factor,
          verbose=verbose,
-         device=device)
+         device=device,
+         seed=seed)
