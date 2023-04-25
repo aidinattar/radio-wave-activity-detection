@@ -49,7 +49,7 @@ class cnn_md(Module):
                  groups: int=1,
                  bias: bool=True,
                  padding_mode: str='zeros',
-                 dropout: float=0.2,):
+                 dropout: float=0.5,):
         '''
         Constructor
         '''
@@ -128,7 +128,6 @@ class cnn_md(Module):
 
         # Fully connected layers
         self.fc = Sequential(
-            #Dropout(p=dropout),
             # num_filters * height * width
             # height = (input_height - kernel_size + 2 * padding) / stride + 1
             # width = (input_width - kernel_size + 2 * padding) / stride + 1
@@ -137,6 +136,7 @@ class cnn_md(Module):
             Dropout(p=dropout),
             Linear(in_features=128, out_features=14),
             #Linear(in_features=6, out_features=14),
+            Dropout(p=dropout),
             Softmax(dim=1)
         )
 
