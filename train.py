@@ -66,6 +66,9 @@ from datetime import datetime
 
 now = datetime.now().strftime("%Y%m%d")
 
+import os
+os.environ['TORCH_BACKEND'] = 'CPU'
+
 def main(model_name:str,
          data:Dataset,
          case:int,
@@ -158,6 +161,8 @@ def main(model_name:str,
     # Create the optimizer, loss function
     classifier.create_optimizer(optimizer=optimizer, lr=lr, weight_decay=weight_decay, momentum=momentum, nesterov=nesterov)
     classifier.create_loss(loss=loss)
+    
+    del data, classifier.data, classifier.train_data, classifier.test_data
 
     # Train the model
     print('Training the model')

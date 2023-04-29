@@ -31,6 +31,7 @@ from sklearn.metrics           import confusion_matrix, accuracy_score,\
 from utils                     import plotting, augmentation
 from torchsummary              import summary
 from torch.utils.data          import Subset
+from memory_profiler           import profile
 #from torch.utils.tensorboard import SummaryWriter
 
 fig_dir = 'figures'
@@ -375,6 +376,7 @@ class model(object):
     ######################################
     ######           CHECK         #######
     ######################################
+    @profile
     def train_model(self,
                     epochs: int=10,
                     checkpoint: bool=False,
