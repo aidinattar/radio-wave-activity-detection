@@ -18,3 +18,17 @@ TODO:
     sample in the training set
     - correct the model in models/cnn_rdn.py to have the same
     architecture as the one in models/cnn_md.py
+    - correct cases in models/classifier.py to have the same
+    object as case 2 (torch.utils.data.Subset) (maybe add randomness)
+    - correct models/cnn_md.py and models/cnn_rdn.py to take two
+    maps together as input (in_channels = 2)
+    - correct preprocessing/* to process data batch by batch
+    - correct models/classifier.py to process data batch by batch
+    (use get_item function from pytorch)
+    - correct preprocessing/dataset.py to take two maps together
+    as input (or create a new object maybe? depending on the case you
+    choose)
+    - take 40 frames not random but based on a threshold method
+    - agglomerate labels to have 10 classes
+    - time and frequency masking in utils/augmentation.py (maybe
+    warping too)
