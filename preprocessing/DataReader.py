@@ -33,7 +33,12 @@ class DataReader(object):
     timestamp_to_bins_done = False
     radar_division_done    = False
 
-    def __init__(self, subjects, sets, do_rdn:bool=False, do_mDoppler:bool=True):
+    def __init__(self,
+                 subjects,
+                 sets,
+                 do_rdn:bool=False,
+                 do_mDoppler:bool=True,
+                 data_dir:str=data_dir):
         '''
         Initialize the class
 
@@ -48,7 +53,6 @@ class DataReader(object):
         mDoppler : bool, optional
             Flag to indicate if mDoppler data should be processed [default: True]
         '''
-        os.chdir(data_dir)
 
         self.subjects      = subjects
         self.sets          = sets
@@ -57,7 +61,7 @@ class DataReader(object):
         self.do_rdn        = do_rdn
         self.do_mDoppler   = do_mDoppler
 
-        self.rdn, self.mDoppler, self.timestamp_speech = self.ReadData()
+        self.rdn, self.mDoppler, self.timestamp_speech = self.ReadData(data_dir=data_dir)
 
 
     @classmethod
@@ -68,7 +72,7 @@ class DataReader(object):
         return cls([], [])
 
 
-    def ReadData(self):
+    def ReadData(self, data_dir:str=data_dir):
         '''
         Function to read the data from the h5 files
         '''
@@ -124,6 +128,23 @@ class DataReader(object):
 
         for i in range(len(self.mDoppler)):
             self.mDoppler[i] = np.delete(self.mDoppler[i], (63,64,65), axis=1)
+
+
+    def crop(self,
+             **kwargs):
+        '''
+        Crop the data
+        
+        Parameters
+        ----------
+        **kwargs : dict
+            Dictionary containing the parameters for the crop function
+        '''
+        if self.do_rdn:
+            self.crop_rdn(**kwargs)
+            
+        if self.do_mDoppler:
+            self.crop_mDoppler(**kwargs)
 
 
     def crop_rdn(self,
@@ -496,6 +517,24 @@ class DataReader(object):
         # Filter the data
         self.mDoppler = [cv2.GaussianBlur(data, size, 1) for data in self.mDoppler]
 
+
+    #TODO: add filtering for rdn
+    def filter_rdn(self, size=(5,5,5), sigma=1, name='rdn_filtered.png', save=False):
+        '''
+        Function to filter the rdn data
+        
+        Parameters
+        ----------
+        size : tuple
+            Size of the filter [default: (5,5,5)]
+        sigma : float
+            Sigma of the filter [default: 1]
+        name : str, optional
+            Name of the file to save [default: 'rdn_filtered.png']
+        save : bool, optional
+            Save the figure [default: False]
+        '''
+        raise NotImplementedError
 
     def timestamp_to_bins(self, conversion_factor:float=1):
         '''
