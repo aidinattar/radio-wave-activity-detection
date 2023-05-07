@@ -65,6 +65,10 @@ class DataCutter(object):
         if not self.data.timestamp_to_bins_done:
             self.data.timestamp_to_bins(conversion_factor=self.conversion_factor)
 
+        # Divide data in two radars
+        if not self.data.radar_division_done:
+            self.data.radar_division()
+
         # Cut the data
         if self.data.do_mDoppler:
             self.cut_mDoppler()
@@ -84,10 +88,6 @@ class DataCutter(object):
 
         # Create the list of signals
         self.signals_mDoppler_1, self.signals_mDoppler_2 = ([] for i in range(2))
-
-        # Divide data in two radars
-        if not self.data.radar_division_done:
-            self.data.radar_division()
 
         # Cut the data
         for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.data.mDoppler_1, self.data.mDoppler_2)):
@@ -158,17 +158,16 @@ class DataCutter(object):
         '''
         Save the data.
         '''
-
         # Create the path
         path = os.path.join(path, filename)
 
         # Save the data
         np.savez(
             path,
-            signals_mDoppler_1=self.signals_mDoppler_1,
-            signals_mDoppler_2=self.signals_mDoppler_2,
-            signals_rdn_1=self.signals_rdn_1,
-            signals_rdn_2=self.signals_rdn_2,
+            signals_mDoppler_1=np.array(self.signals_mDoppler_1, dtype=object),
+            signals_mDoppler_2=np.array(self.signals_mDoppler_2, dtype=object),
+            signals_rdn_1=np.array(self.signals_rdn_1, dtype=object),
+            signals_rdn_2=np.array(self.signals_rdn_2, dtype=object),
             labels=self.labels,
             labels_dict=self.labels_dict
         )

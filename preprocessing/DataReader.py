@@ -61,6 +61,8 @@ class DataReader(object):
         self.do_rdn        = do_rdn
         self.do_mDoppler   = do_mDoppler
 
+        os.chdir(data_dir)
+
         self.rdn, self.mDoppler, self.timestamp_speech = self.ReadData(data_dir=data_dir)
 
 
@@ -107,9 +109,9 @@ class DataReader(object):
                         else:
                             timestamp_speech.append(pd.read_csv(file))
                             pass
+                    os.chdir('..')
                 except FileNotFoundError:
                     pass
-                os.chdir('..')
             os.chdir('..')
             os.chdir('..')
 
