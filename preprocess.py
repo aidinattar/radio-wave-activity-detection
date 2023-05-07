@@ -4,12 +4,19 @@ preprocess.py
 Data preprocessing batch by batch
 
 Usage:
-    preprocess.py reading (--data_path <data_path>) (--output_path <output_path>) (--subjects <subjects>...) <sets> <do_rdn> <do_mDoppler> <verbose>
+    preprocess.py (--data_path <data_path>) (--output_path <output_path>) (--all | --selection <start-stop>...) [--do_rdn] [--do_mDoppler] (--verbose=<verbose>)
 
-WRITE DOCSTRING
-
-
+Options:
+    -h --help                       Show this screen.
+    --data_path=<data_path>         Path to the data
+    --output_path=<output_path>     Path to save the data
+    --all                           Read all the data
+    --selection <start-stop>        Read a selection of the data
+    --do_rdn                        Whether to read the rdn data
+    --do_mDoppler                   Whether to read the mDoppler data
+    --verbose=<verbose>             Verbosity level
 '''
+import os
 import numpy as np
 from docopt import docopt
 from preprocessing.DataReader import DataReader
@@ -54,7 +61,7 @@ def reading(data_path:str,
     if verbose > 1:
         print("Rescaling...")
     dr.rescaling(method='norm')
-    if do_rdn:
+    if do_mDoppler:
         if verbose > 1:
             print("Filtering...")
         dr.filter_mDoppler(size=(21, 11), sigma=15)
@@ -165,12 +172,14 @@ def preprocess(data_path:str,
         Path to the data
     output_path : str
         Path to save the data
-    batch_size : int
-        Batch size
-    n_samples : int
-        Number of samples to extract from each batch
-    case : int
-        Case to preprocess
+    subjects : list of str
+        List of subjects to read
+    sets : list of str
+        List of sets to read
+    do_rdn : bool
+        Whether to read the rdn data
+    do_mDoppler : bool
+        Whether to read the mDoppler data
     verbose : int
         Verbosity level
     '''
@@ -181,14 +190,12 @@ def preprocess(data_path:str,
                  do_mDoppler=do_mDoppler,
                  verbose=verbose)
 
-    print('Cutting data...')
     dc = cutting(data=dr,
                  output_path=output_path,
                  subjects=subjects,
                  sets=sets,
                  verbose=verbose)
 
-    print('Processing data...')
     dp = process(data=dc,
                  output_path=output_path,
                  subjects=subjects,
@@ -198,4 +205,47 @@ def preprocess(data_path:str,
 if __name__ == '__main__':
     args = docopt(__doc__)
     
-    pass
+    data_path = args['--data_path']
+    output_path = args['--output_path']
+    if args['--all']:
+        subjects = [f'subject_{i:02d}' for i in range(0, 24)]
+        sets     = [f'set{i:03d}'      for i in range(0, 4)]
+    
+    elif args['--selection'] is not None:
+        subjects = []
+
+        # Iterate over each element of the selection list
+        for sel in args['--selection']:
+            # If the element contains a single index, treat it as the start and stop indices
+            if '-' not in sel:
+                start, stop = int(sel), int(sel)
+            # If the element contains a range, split it into the start and stop indices
+            else:
+                start, stop = map(int, sel.split('-'))
+
+            # Create the subjects list for the current selection range
+            subjects_range = [f'subject_{i:02d}' for i in range(start, stop+1)]
+
+            # Add the subjects for the current selection range to the overall subjects list
+            subjects.extend(subjects_range)
+
+    else:
+        raise ValueError('No option selected')
+        
+    sets = [f'set{i:03d}' for i in range(0, 4)]
+
+    do_rdn = args['--do_rdn']
+    do_mDoppler = args['--do_mDoppler']
+    verbose = int(args['--verbose'])
+    
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    
+    for subject in subjects:
+        preprocess(data_path=data_path,
+                   output_path=output_path,
+                   subjects=[subject],
+                   sets=sets,
+                   do_mDoppler=do_mDoppler,
+                   do_rdn=do_rdn,
+                   verbose=verbose)
