@@ -4,7 +4,7 @@ from preprocessing.DataCutter import DataCutter
 from preprocessing.DataProcess import DataProcess
 from preprocessing.dataset     import Dataset
 
-subjects = [f'subject_{i:02d}' for i in range(5, 6)]
+subjects = [f'subject_{i:02d}' for i in range(21, 22)]
 sets     = [f'set{i:03d}'      for i in range(1, 2)]
 
 dr = DataReader(subjects=subjects, sets=sets, do_rdn=False, do_mDoppler=True)
