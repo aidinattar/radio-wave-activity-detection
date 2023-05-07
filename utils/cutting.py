@@ -93,3 +93,71 @@ def normal(array: np.ndarray,
 
         normal_bins.sort()
         return array[normal_bins]
+   
+    
+def threshold_method(array: np.ndarray,
+                     len_default:int=40,
+                     loc:str='start',
+                     threshold:float=.5):
+    '''
+    Cut the data according to a threshold
+    If the threshold is not reached, the threshold
+    is lowered by 10% recursively until it is reached
+    
+    Parameters
+    ----------
+    array : np.ndarray
+        Array to cut.
+    len_default : int, optional
+        Default length of the action. The default is 40.
+    loc : str, optional
+        Location of the threshold. The default is 'start'.
+        Possible values are 'start', 'end' and 'center'.
+    threshold : float, optional
+        Threshold to cut. The default is .5.
+    '''
+    
+    if array.shape[0] <= len_default:
+        return array
+    
+    else:
+        array_copy = array.copy()[:, array.shape[1]//2:array.shape[1]]
+        means = array_copy.mean(axis=1)
+        try:
+            first = np.where(means > threshold)[0][0]
+            last = np.where(means > threshold)[0][-1]
+        except IndexError:
+            return threshold_method(array=array,
+                                    len_default=len_default,
+                                    loc=loc,
+                                    threshold=threshold*.9)
+        
+        if loc == 'start':
+            try:
+                return array[first:first+len_default]
+            except IndexError:
+                return threshold_method(array=array,
+                                        len_default=len_default,
+                                        loc=loc,
+                                        threshold=threshold*.9)
+        elif loc == 'end':
+            try:
+                return array[last-len_default:last]
+            except IndexError:
+                return threshold_method(array=array,
+                                        len_default=len_default,
+                                        loc=loc,
+                                        threshold=threshold*.9)
+        elif loc == 'center':
+            if (last - first) > len_default:
+                center = (last + first) // 2
+                return array[center-len_default//2:center+len_default//2]
+            elif (last - first) == len_default:
+                return array[first:last]
+            else:
+                return threshold_method(array=array,
+                                        len_default=len_default,
+                                        loc=loc,
+                                        threshold=threshold*.9)
+        else:
+            raise ValueError('loc must be "start", "end" or "center"')

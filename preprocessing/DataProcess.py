@@ -256,6 +256,15 @@ class DataProcess(object):
             elif loc == 'normal':
                 self.mDoppler_1[i] = cutting.normal(mDoppler_1, len_default, **kwargs)
                 self.mDoppler_2[i] = cutting.normal(mDoppler_2, len_default, **kwargs)
+            elif loc == 'threshold-start':
+                self.mDoppler_1[i] = cutting.threshold_method(mDoppler_1, len_default, loc='start', **kwargs)
+                self.mDoppler_2[i] = cutting.threshold_method(mDoppler_2, len_default, loc='start', **kwargs)
+            elif loc == 'threshold-end':
+                self.mDoppler_1[i] = cutting.threshold_method(mDoppler_1, len_default, loc='end', **kwargs)
+                self.mDoppler_2[i] = cutting.threshold_method(mDoppler_2, len_default, loc='end', **kwargs)
+            elif loc == 'threshold-center':
+                self.mDoppler_1[i] = cutting.threshold_method(mDoppler_1, len_default, loc='center', **kwargs)
+                self.mDoppler_2[i] = cutting.threshold_method(mDoppler_2, len_default, loc='center', **kwargs)
             else:
                 raise ValueError("Invalid location")
 

@@ -91,12 +91,13 @@ def cutting(data:DataReader,
     verbose : int
         Verbosity level
     '''
+
     if verbose > 0:
         print('Cutting data...')
     dc = DataCutter(data=data)
     if verbose > 1:
         print("Cutting...")
-    dc.cut()
+    dc.cut(11)
     if verbose > 1:
         print("Creating labels...")
     dc.create_labels_list()
@@ -111,6 +112,7 @@ def cutting(data:DataReader,
     else:
         dc.save(path=output_path,
                 filename=f'cutted_data_{subjects[0]}_{sets[0]}_{sets[-1]}.npz')
+    
     return dc
     
 def process(data:DataCutter,
@@ -141,7 +143,7 @@ def process(data:DataCutter,
     dp = DataProcess(data=data)
     if verbose > 1:
         print("Separating actions in time...")
-    dp.cut_time(loc='random')
+    dp.cut_time(loc='threshold-start', threshold=0.2)
     if verbose > 1:
         print("Padding...")
     dp.padding(padding=40)
