@@ -29,7 +29,8 @@ TODO:
     - correct preprocessing/dataset.py to take two maps together
     as input (or create a new object maybe? depending on the case you
     choose)
-    - [DONE, to be checked] take 40 frames not random but based on a threshold method
+    - [DONE, to be checked, try to plot the signals] take 40 frames
+    not random but based on a threshold method
     - agglomerate labels to have 10 classes
     - time and frequency masking in utils/augmentation.py (maybe
     warping too)
