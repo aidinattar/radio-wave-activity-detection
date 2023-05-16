@@ -4,7 +4,7 @@ preprocess.py
 Data preprocessing batch by batch
 
 Usage:
-    preprocess.py (--data_path <data_path>) (--output_path <output_path>) (--all | --selection <start-stop>...) [--do_rdn] [--do_mDoppler] (--verbose=<verbose>)
+    preprocess.py (--data_path <data_path>) (--output_path <output_path>) (--all | --selection <start-stop>...) [--do_rdn] [--do_mDoppler] (--verbose=<verbose>) [--tqdm]
 
 Options:
     -h --help                       Show this screen.
@@ -14,11 +14,16 @@ Options:
     --selection <start-stop>        Read a selection of the data
     --do_rdn                        Whether to read the rdn data
     --do_mDoppler                   Whether to read the mDoppler data
+    --tqdm                          Whether to use tqdm
     --verbose=<verbose>             Verbosity level
+    
+We suggest to avoid using tqdm together with the verbose option,
+as it may cause some problems with the progress bar.
 '''
 import os
 import h5py
 import numpy as np
+from tqdm import tqdm
 from docopt import docopt
 from preprocessing.DataReader import DataReader
 from preprocessing.DataCutter import DataCutter
@@ -160,11 +165,12 @@ def process(data:DataCutter,
     return dp
 
 
-def saveh5(data:DataProcess,
-           output_path:str,
-           subject:str,
-           sets:list,
-           verbose:int):
+def save_h5(data:DataProcess,
+            output_path:str,
+            iteration:int,
+            do_rdn:bool,
+            do_mDoppler:bool,
+            verbose:int):
     '''
     Save the data in a .h5 file
     
@@ -174,9 +180,110 @@ def saveh5(data:DataProcess,
         Data to save
     output_path : str
         Path to save the data
-    su
+    iteration : int
+        Iteration number
+    do_rdn : bool
+        Whether to save the rdn data
+    do_mDoppler : bool
+        Whether to save the mDoppler data
+    verbose : int
+        Verbosity level
     '''
+    
+    if verbose > 0:
+        print('Saving data...')
+        
+    if iteration == 0:
+        type = 'rdn' if do_rdn else 'mDoppler' if do_mDoppler else 'rdn_mDoppler'
+        filename = f'processed_data_{type}.h5'
+        
+        # Create or overwrite the HDF5 file
+        file = h5py.File(
+            name=os.path.join(
+                output_path,
+                filename
+            ),
+            mode='w'
+        )
+        
+        if do_rdn:
+            file.create_dataset(
+                name='rdn_1',
+                data=data.rdn_1,
+                dtype='float32',
+                compression='gzip'
+            )
+            file.create_dataset(
+                name='rdn_2',
+                data=data.rdn_2,
+                dtype='float32',
+                compression='gzip'
+            )
+        
+        if do_mDoppler:
+            file.create_dataset(
+                name='mDoppler_1',
+                data=data.mDoppler_1,
+                dtype='float32',
+                compression='gzip'
+            )
+            file.create_dataset(
+                name='mDoppler_2',
+                data=data.mDoppler_2,
+                dtype='float32',
+                compression='gzip'
+            )
+        
+        file.create_dataset(
+            name='labels',
+            data=data.labels,
+            dtype='int32',
+            compression='gzip'
+        )
+        
+        group = file.create_group(
+            name='labels_dict'
+        )
+        for key, value in data.labels_dict.items():
+            group.create_dataset(
+                name=key,
+                data=value,
+                dtype='int32',
+                compression='gzip'
+            )
+    else:
+        type = 'rdn' if do_rdn else 'mDoppler' if do_mDoppler else 'rdn_mDoppler'
+        filename = f'processed_data_{type}.h5'
+        
+        # Open the HDF5 file in append mode
+        file = h5py.File(
+            name=os.path.join(
+                output_path,
+                filename
+            ),
+            mode='a'
+        )
+        
+        if do_rdn:
+            file['rdn_1'].resize((file['rdn_1'].shape[0] + data.rdn_1.shape[0]), axis=0)
+            file['rdn_1'][-data.rdn_1.shape[0]:] = data.rdn_1
+            file['rdn_2'].resize((file['rdn_2'].shape[0] + data.rdn_2.shape[0]), axis=0)
+            file['rdn_2'][-data.rdn_2.shape[0]:] = data.rdn_2
+        
+        if do_mDoppler:
+            file['mDoppler_1'].resize((file['mDoppler_1'].shape[0] + data.mDoppler_1.shape[0]), axis=0)
+            file['mDoppler_1'][-data.mDoppler_1.shape[0]:] = data.mDoppler_1
+            file['mDoppler_2'].resize((file['mDoppler_2'].shape[0] + data.mDoppler_2.shape[0]), axis=0)
+            file['mDoppler_2'][-data.mDoppler_2.shape[0]:] = data.mDoppler_2
+        
+        if data.labels_dict != file['labels_dict']:
+            mapping = {data.labels_dict[key]: file['labels_dict'][key] for key in data.labels_dict.keys()}
+            data.labels = [mapping[value] for value in data.labels]
+        
+        file['labels'].resize((file['labels'].shape[0] + data.labels.shape[0]), axis=0)
+        file['labels'][-data.labels.shape[0]:] = data.labels
 
+        return file
 
 def preprocess(data_path:str,
                output_path:str,
@@ -204,6 +311,11 @@ def preprocess(data_path:str,
         Whether to read the mDoppler data
     verbose : int
         Verbosity level
+        
+    Returns
+    -------
+    dp : DataProcess
+        Processed data
     '''
     dr = reading(data_path=data_path,
                  subjects=subjects,
@@ -224,6 +336,9 @@ def preprocess(data_path:str,
                  sets=sets,
                  verbose=verbose)
     
+    return dp
+
+
 if __name__ == '__main__':
     args = docopt(__doc__)
     
@@ -263,11 +378,28 @@ if __name__ == '__main__':
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     
-    for subject in subjects:
-        preprocess(data_path=data_path,
-                   output_path=output_path,
-                   subjects=[subject],
-                   sets=sets,
-                   do_mDoppler=do_mDoppler,
-                   do_rdn=do_rdn,
-                   verbose=verbose)
+    progress = tqdm(enumerate(subjects)) \
+                if args['--tqdm'] \
+                else enumerate(subjects)
+    
+    for i, subject in progress:
+
+        dp = preprocess(
+            data_path=data_path,
+            output_path=output_path,
+            subjects=[subject],
+            sets=sets,
+            do_mDoppler=do_mDoppler,
+            do_rdn=do_rdn,
+            verbose=verbose)
+
+        file = save_h5(
+            data=dp,
+            output_path=output_path,
+            iteration=i,
+            do_mDoppler=do_mDoppler,
+            do_rdn=do_rdn,
+            verbose=verbose
+        )
+        
+    file.close()
