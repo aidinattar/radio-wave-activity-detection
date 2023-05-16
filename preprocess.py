@@ -17,6 +17,7 @@ Options:
     --verbose=<verbose>             Verbosity level
 '''
 import os
+import h5py
 import numpy as np
 from docopt import docopt
 from preprocessing.DataReader import DataReader
@@ -157,6 +158,25 @@ def process(data:DataCutter,
                 filename=f'processed_data_{subjects[0]}_{sets[0]}_{sets[-1]}.npz')
     
     return dp
+
+
+def saveh5(data:DataProcess,
+           output_path:str,
+           subject:str,
+           sets:list,
+           verbose:int):
+    '''
+    Save the data in a .h5 file
+    
+    Parameters
+    ----------
+    data : DataProcess
+        Data to save
+    output_path : str
+        Path to save the data
+    su
+    '''
+
 
 def preprocess(data_path:str,
                output_path:str,
