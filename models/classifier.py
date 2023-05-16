@@ -11,6 +11,7 @@ TODO:
 '''
 import os, sys
 import torch
+import random
 import numpy             as np
 import pandas            as pd
 import seaborn           as sns
@@ -109,34 +110,45 @@ class model(object):
         
         # Split the data
         if self.case == 0:
-            raise WorkToDoError('Case 0 not implemented yet')
-            #if self.model_type == 'CNN-MD':
-            #    train_size = int((1-test_size) * len(self.data['mDoppler_1']))
-            #    test_size = len(self.data['mDoppler_1']) - train_size
-            #    self.train_data = self.data['mDoppler_1'][0:train_size]
-            #    self.test_data = self.data['mDoppler_1'][train_size:]
-            #else:
-            #    train_size = int((1-test_size) * len(self.data['rdn_2']))
-            #    test_size = len(self.data['rdn_2']) - train_size
-            #    self.train_data = self.data['rdn_2'][0:train_size]
-            #    self.test_data = self.data['rdn_2'][train_size:]
+            #raise WorkToDoError('Case 0 not implemented yet')
+            b = random.randint(0, 1)
+            if self.model_type == 'CNN-MD':
+                if b:
+                    train_size = int((1-test_size) * len(self.data['mDoppler_1']))
+                    test_size = len(self.data['mDoppler_1']) - train_size
+                    self.train_data, self.test_data = random_split(self.data['mDoppler_1'], [train_size, test_size], generator=generator)
+                else:
+                    train_size = int((1-test_size) * len(self.data['mDoppler_2']))
+                    test_size = len(self.data['mDoppler_2']) - train_size
+                    self.train_data, self.test_data = random_split(self.data['mDoppler_2'], [train_size, test_size], generator=generator)
+            else:
+                if b:
+                    train_size = int((1-test_size) * len(self.data['rdn_1']))
+                    test_size = len(self.data['rdn_1']) - train_size
+                    self.train_data, self.test_data = random_split(self.data['rdn_1'], [train_size, test_size], generator=generator)
+                else:
+                    train_size = int((1-test_size) * len(self.data['rdn_2']))
+                    test_size = len(self.data['rdn_2']) - train_size
+                    self.train_data, self.test_data = random_split(self.data['rdn_2'], [train_size, test_size], generator=generator)
+                self.input_size = self.train_data[0].shape
         elif self.case == 1:
-            raise WorkToDoError('Case 1 not implemented yet')
-            #if self.model_type == 'CNN-MD':
-            #    self.train_data = self.data['mDoppler_1']
-            #    self.test_data = self.data['mDoppler_2']
-            #else:
-            #    self.train_data = self.data['rdn_1']
-            #    self.test_data = self.data['rdn_2']
+            #raise WorkToDoError('Case 1 not implemented yet')
+            if self.model_type == 'CNN-MD':
+                train_data = self.data['mDoppler_1']
+                test_data = self.data['mDoppler_2']
+            else:
+                train_data = self.data['rdn_1']
+                test_data = self.data['rdn_2']
+            self.train_data=torch.utils.data.Subset(train_data, list(range(0, len(train_data))))
+            self.test_data=torch.utils.data.Subset(test_data, list(range(0, len(test_data))))
+            self.input_size = self.train_data[0].shape
         elif self.case == 2:
             train_size = int((1-test_size) * len(self.data))
             test_size = len(self.data) - train_size
             self.train_data, self.test_data = random_split(self.data, [train_size, test_size], generator=generator)
+            self.input_size = self.train_data[0][0].shape
         else:
             raise ValueError('Invalid case')
-
-        self.input_size = self.train_data[0][0].shape
-
 
         #for i, data in enumerate(self.train_loader):
         #    # Assuming your data contains images in 'img' variable
