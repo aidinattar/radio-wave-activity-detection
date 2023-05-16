@@ -130,7 +130,7 @@ class model(object):
                     train_size = int((1-test_size) * len(self.data['rdn_2']))
                     test_size = len(self.data['rdn_2']) - train_size
                     self.train_data, self.test_data = random_split(self.data['rdn_2'], [train_size, test_size], generator=generator)
-                self.input_size = self.train_data[0].shape
+            self.input_size = self.train_data[0].shape
         elif self.case == 1:
             #raise WorkToDoError('Case 1 not implemented yet')
             if self.model_type == 'CNN-MD':
