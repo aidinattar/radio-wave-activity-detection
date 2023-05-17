@@ -13,138 +13,95 @@ TODO:
 '''
 
 import os
-import numpy as np
-
+import h5py
 from torch.utils.data import Dataset
 
-class Dataset(Dataset):
-    def __init__(self, path:str, file:str, transform=None, type:str='mDoppler'):
+class rdnDataset(Dataset):
+    '''
+    Class to create the dataset with rdn data for the model
+    '''
+    
+    def __init__(self,
+                 dirname:str,
+                 filename:str,
+                 transform=None,):
         '''
-        Constructor
-
+        Initialize the dataset
+        
         Parameters
         ----------
-        path : str
-            Path to the dataset
-        file : str
-            Name of the file containing the dataset
+        dirname : str
+            Name of the directory containing the dataset in .h5 format
+        filename : str
+            Name of the file containing the dataset in .h5 format
         transform : callable, optional
             Transform to apply to the data. The default is None.
-        type : str, optional
-            Type of data to load. The default is 'mdoppler'.
-            Possible values are:
-                'mdoppler': mDoppler data
-                'rdn': rdn data
         '''
-        # Load the data
-        data = np.load(os.path.join(path, file), allow_pickle=True)
-
-        if type == 'mDoppler':
-            self.x = np.concatenate((data['mDoppler_1'], data['mDoppler_2']), axis=0)
-        elif type == 'rdn':
-            self.x = np.concatenate((data['rdn_1'], data['rdn_2']), axis=0)
-        else:
-            raise ValueError('Invalid type of data')
-
-        self.y = np.concatenate((data['labels'], data['labels']), axis=0)
-        self.labels_dict = data['labels_dict']
+        
+        self.rdn_1 = h5py.File(
+            name=os.path.join(
+                dirname,
+                filename),
+            mode='r'
+        )['rdn_1']
+        
+        self.rdn_2 = h5py.File(
+            name=os.path.join(
+                dirname,
+                filename),
+            mode='r'
+        )['rdn_2']
+        
+        self.labels = h5py.File(
+            name=os.path.join(
+                dirname,
+                filename),
+            mode='r'
+        )['labels']
+        
+        self.labels_dict = h5py.File(
+            name=os.path.join(
+                dirname,
+                filename),
+            mode='r'
+        )['labels_dict']
+        
         self.transform = transform
-        self.type = type
-
-
-    @classmethod
-    def from_data(cls, x:np.ndarray, y:np.ndarray, labels_dict:dict, transform=None, type:str='mDoppler')->Dataset:
+        
+    
+    def __len__(self) -> int:
         '''
-        Constructor from data
-
-        Parameters
-        ----------
-        x : np.ndarray
-            Data
-        y : np.ndarray
-            Labels
-        labels_dict : dict
-            Dictionary containing the labels
-        transform : callable, optional
-            Transform to apply to the data. The default is None.
-        type : str, optional
-            Type of data to load. The default is 'mdoppler'.
-            Possible values are:
-                'mdoppler': mDoppler data
-                'rdn': rdn data
-
-        Returns
-        -------
-        dataset : Dataset
-            Dataset created from the data
-        '''
-        dataset = cls.__new__(cls)
-        dataset.x = x
-        dataset.y = y
-        dataset.labels_dict = labels_dict
-        dataset.transform = transform
-        dataset.type = type
-        return dataset
-
-    def __len__(self)->int:
-        '''
-        Returns the length of the dataset
+        Get the length of the dataset
         
         Returns
         -------
-        length : int
+        int
             Length of the dataset
         '''
-        return len(self.x)
-
-    def __getitem__(self, idx)->tuple:
+        return len(self.labels)
+    
+    
+    def __getitem__(self,
+                    idx:int)->tuple:
         '''
-        Returns the data at the given index
-
+        Get the item at the given index
+        
         Parameters
         ----------
         idx : int
-            Index of the data to return
+            Index of the item to get
             
         Returns
         -------
-        x : np.ndarray
-            Data
-        y : np.ndarray
-            Label
+        tuple
+            Tuple containing the two rdn data and the label
         '''
-        x = self.x[idx]
-        y = self.y[idx]
-        if self.transform:
-            x = self.transform(x)
-        return x, y
-    
-    def concat(self, other: Dataset) -> Dataset:
-        '''
-        Concatenate the dataset with another dataset
-
-        Parameters
-        ----------
-        other : Dataset
-            Dataset to concatenate with
-
-        Returns
-        -------
-        dataset : Dataset
-            Concatenated dataset
-        '''
-        x = np.concatenate((self.x, other.x), axis=0)
-        y = np.concatenate((self.y, other.y), axis=0)
-        return Dataset.from_data(x, y, self.labels_dict, self.transform, self.type)
-    
-    
-    def drop_duplicates(self):
-        '''
-        Drop the duplicates from the dataset
-        '''
-        # Get the unique values
-        _, indices = np.unique(self.x, return_index=True, axis=0)
+        rdn_1 = self.rdn_1[idx]
+        rdn_2 = self.rdn_2[idx]
+        label = self.labels[idx]
         
-        # Drop the duplicates
-        self.x = self.x[indices]
-        self.y = self.y[indices]
+        if self.transform:
+            rdn_1 = self.transform(rdn_1)
+            rdn_2 = self.transform(rdn_2)
+            
+        return rdn_1, rdn_2, label
