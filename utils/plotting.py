@@ -1,30 +1,30 @@
-'''
+"""
 plotting.py
 
 Classes and functions for plotting the results
-'''
+"""
 
 import os
 import pandas            as pd
 import matplotlib.pyplot as plt
 
 class PlotHistory:
-    '''
+    """
     Plot the history of the training
-    '''
+    """
     def __init__(self, history: pd.DataFrame):
-        '''
+        """
         Constructor
 
         Parameters
         ----------
         history : pd.DataFrame
             History of the training
-        '''
+        """
         self.history = history
 
     def plot(self, show=True, save=False, path='./', name='plot.png'):
-        '''
+        """
         Plot the history
 
         Parameters
@@ -37,7 +37,7 @@ class PlotHistory:
             Path to the folder where to save the plot. The default is './'.
         name : str, optional
             Name of the plot. The default is 'plot.png'.
-        '''
+        """
         plt.style.use('dark_background')
 
         # Set font size

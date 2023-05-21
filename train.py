@@ -1,4 +1,4 @@
-'''
+"""
 train.py
 
 This file contains the train function, which is used to train the model.
@@ -51,7 +51,7 @@ Current configuration:
     nesterov: False
     
     python train.py CNN-MD data_processed.npz mDoppler 2  --no-load --augment --n_sample=15 --dropout=.2 --epochs=100 --batch_size=256 --weight_decay=0. --no-nesterov
-'''
+"""
 
 # TODO:
 # Add parameters to the docstring
@@ -88,7 +88,7 @@ def main(model_name:str,
          verbose:int,
          device:torch.device,
          seed:int):
-    '''
+    """
     Train the model, save the best model and save the training history
 
     Parameters
@@ -131,7 +131,7 @@ def main(model_name:str,
         Verbose
     device : torch.device
         Device to use
-    '''
+    """
     # Create the model object
     classifier = model(data=data, case=case, model_type=model_name)
     classifier.create_model(dropout=dropout)

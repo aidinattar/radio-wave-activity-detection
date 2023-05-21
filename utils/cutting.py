@@ -1,13 +1,13 @@
-'''
+"""
 cutting.py
 
 Classes and functions for cutting the data.
-'''
+"""
 
 import numpy as np
 
 def random(array: np.ndarray, len_default: int = 40):
-    '''
+    """
     Cut the array in time at a random location
 
     Parameters
@@ -21,7 +21,7 @@ def random(array: np.ndarray, len_default: int = 40):
     -------
     array : np.ndarray
         Cut array.
-    '''
+    """
     if array.shape[0] <= len_default:
         return array
     else:
@@ -39,7 +39,7 @@ def random(array: np.ndarray, len_default: int = 40):
 def gaussian(array: np.ndarray,
              loc: float=20,
              scale: float=5):
-    '''
+    """
     Get the probability of a value x according to a gaussian distribution
     
     Parameters
@@ -50,7 +50,7 @@ def gaussian(array: np.ndarray,
         Mean of the gaussian distribution. The default is 20.
     scale : float, optional
         Standard deviation of the gaussian distribution. The default is 5.
-    '''
+    """
     return np.exp(-np.power(array - loc, 2.) / (2 * np.power(scale, 2.))) / (scale * np.sqrt(2 * np.pi))
 
 
@@ -58,7 +58,7 @@ def normal(array: np.ndarray,
            len_default:int=40,
            mean:int=20,
            std:int=5):
-    '''
+    """
     Cut the array in time at a normal location
 
     Parameters
@@ -72,7 +72,7 @@ def normal(array: np.ndarray,
     -------
     array : np.ndarray
         Cut array.
-    '''
+    """
     if array.shape[0] <= len_default:
         return array
     else:
@@ -99,7 +99,7 @@ def threshold_method(array: np.ndarray,
                      len_default:int=40,
                      loc:str='start',
                      threshold:float=.5):
-    '''
+    """
     Cut the data according to a threshold
     If the threshold is not reached, the threshold
     is lowered by 10% recursively until it is reached
@@ -115,7 +115,7 @@ def threshold_method(array: np.ndarray,
         Possible values are 'start', 'end' and 'center'.
     threshold : float, optional
         Threshold to cut. The default is .5.
-    '''
+    """
     
     if array.shape[0] <= len_default:
         return array

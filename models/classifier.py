@@ -1,4 +1,4 @@
-'''
+"""
 classifier.py
 
 This file contains the model class, which is used
@@ -8,7 +8,7 @@ TODO:
     - Add missing parts
     - Check if the code is correct
     - Add possible plots and results
-'''
+"""
 import os, sys
 import torch
 import numpy             as np
@@ -37,9 +37,9 @@ from memory_profiler           import profile
 fig_dir = 'figures'
 
 class model(object):
-    '''
+    """
     Class to create the model
-    '''
+    """
     train_test_split_done = False
     model_created = False
     optimizer_created = False
@@ -52,7 +52,7 @@ class model(object):
                  model_type: str='CNN-MD',
                  device= torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
                 ):
-        '''
+        """
         Constructor
 
         Parameters
@@ -73,7 +73,7 @@ class model(object):
             Possible values are:
                 'cpu': CPU
                 'cuda': GPU
-        '''
+        """
         # Get the data
         self.data = data
 
@@ -95,7 +95,7 @@ class model(object):
                          test_size: float=0.2,
                          random_state: int=42,
                          radar: bool=0):
-        '''
+        """
         Split the data into training and testing data
 
         Parameters
@@ -104,7 +104,7 @@ class model(object):
             Size of the test data. The default is 0.2.
         random_state : int, optional
             Random state. The default is 42.
-        '''
+        """
         # define the random generator
         generator = torch.Generator().manual_seed(random_state)
         
@@ -164,7 +164,7 @@ class model(object):
 
 
     def create_DataLoaders(self, batch_size: int=32, shuffle: bool=True, num_workers: int=0):
-        '''
+        """
         Create the data loaders
         
         Parameters
@@ -175,7 +175,7 @@ class model(object):
             Shuffle the data. The default is True.
         num_workers : int, optional
             Number of workers. The default is 0.
-        '''
+        """
                   
         # Create the data loaders
         self.train_loader = DataLoader(self.train_data,
@@ -189,7 +189,7 @@ class model(object):
 
 
     def augmentation(self, method=['time-mask'], **kwargs):
-        '''
+        """
         Augment the data.
 
         Parameters
@@ -206,7 +206,7 @@ class model(object):
         ------
         ValueError
             Invalid data type.
-        '''
+        """
         if self.data.type=='rdn':
             self.augmentation_rdn(method=method, **kwargs)
         elif self.data.type=='mDoppler':
@@ -220,7 +220,7 @@ class model(object):
 
 
     def augmentation_rdn(self, method=['time-mask'], **kwargs):
-        '''
+        """
         Augment the rdn data
 
         Parameters
@@ -229,7 +229,7 @@ class model(object):
             List of methods to use.
         **kwargs : TYPE
             Keyword arguments to pass to the augmentation function.
-        '''
+        """
 
         if 'resample' in method:
             try:
@@ -254,7 +254,7 @@ class model(object):
 
 
     def augmentation_mDoppler(self, method=['time-mask'], **kwargs):
-        '''
+        """
         Augment the mDoppler data
         
         Parameters
@@ -263,7 +263,7 @@ class model(object):
             List of methods to use.
         **kwargs : TYPE
             Keyword arguments to pass to the augmentation function.
-        '''
+        """
         if 'resample' in method:
             try:
                 n_samples = kwargs['n_samples']
@@ -290,14 +290,14 @@ class model(object):
         
 
     def create_model(self, **kwargs):
-        '''
+        """
         Create the model
         
         Parameters
         ----------
         **kwargs : TYPE
             Keyword arguments to pass to the model class.
-        '''
+        """
         # call cnn_rd or cnn_md class
         if self.model_type == 'CNN-MD':
             if self.data.type != 'mDoppler':
@@ -324,7 +324,7 @@ class model(object):
                          momentum: float=0.9,
                          weight_decay: float=0.0005,
                          nesterov: bool=True):
-        '''
+        """
         Create the optimizer
 
         Parameters
@@ -342,7 +342,7 @@ class model(object):
             Weight decay. The default is 0.0005.
         nesterov : bool, optional
             Nesterov. The default is True.
-        '''
+        """
         if optimizer == 'SGD':
             self.optimizer = SGD(self.model.parameters(), lr=lr, momentum=momentum)
         elif optimizer == 'Adam':
@@ -358,7 +358,7 @@ class model(object):
 
 
     def create_loss(self, loss: str='CrossEntropyLoss'):
-        '''
+        """
         Create the loss function
 
         Parameters
@@ -372,7 +372,7 @@ class model(object):
         ------
         ValueError
             Invalid loss function.
-        '''
+        """
         if loss == 'CrossEntropyLoss':
             self.loss = CrossEntropyLoss()
         #elif loss == :
@@ -394,7 +394,7 @@ class model(object):
                     checkpoint_path: str='checkpoint.pt',
                     checkpoint_dir: str='checkpoints'
                     ):
-        '''
+        """
         Train the model
 
         Parameters
@@ -411,7 +411,7 @@ class model(object):
         WorkToDoError
             If the train_test_split, create_model, create_optimizer,
             create_loss methods have not been called
-        '''
+        """
         if not self.train_test_split_done:
             raise WorkToDoError('train_test_split_done')
         if not self.model_created:
@@ -536,7 +536,7 @@ class model(object):
                        do_roc_auc: bool=True,
                        save: bool=True,
                        ):
-        '''
+        """
         Evaluate the model.
 
         Confusion matrix, accuracy, precision, recall, f1-score,
@@ -560,7 +560,7 @@ class model(object):
         ------
         WorkToDoError
             If the model is not trained.
-        '''
+        """
         if not self.model_trained:
             raise WorkToDoError('model_trained')
 
@@ -602,7 +602,7 @@ class model(object):
 
 
     def confusion_matrix(self, targets, preds, save: bool=True, show: bool=False):
-        '''
+        """
         Calculate the confusion matrix
 
         Parameters
@@ -613,7 +613,7 @@ class model(object):
             The predictions.
         save : bool, optional
             Save the plot. The default is False.
-        '''
+        """
 
         # Calculate the confusion matrix
         cm = confusion_matrix(targets, preds)
@@ -635,7 +635,7 @@ class model(object):
 
 
     def accuracy(self, targets, preds, save: bool=False):
-        '''
+        """
         Calculate the accuracy
 
         Parameters
@@ -646,7 +646,7 @@ class model(object):
             The predictions.
         save : bool, optional
             Save the accuracy. The default is False.
-        '''
+        """
         preds = preds.round()
         accuracy = accuracy_score(targets, preds)
         print(f'Accuracy: {accuracy}')
@@ -662,7 +662,7 @@ class model(object):
                                         preds,
                                         average: str=None,
                                         save: bool=False):
-        '''
+        """
         Calculate the precision, recall and f1-score
 
         Parameters
@@ -676,7 +676,7 @@ class model(object):
             Possible values are: None, 'micro', 'macro', 'weighted'.
         save : bool, optional
             Save the precision, recall and f1-score. The default is False.
-        '''
+        """
         preds = preds.round()
         precision, recall, fscore, _= precision_recall_fscore_support(targets, preds, average=None)
 
@@ -694,7 +694,7 @@ class model(object):
     ### TODO: Add support for multiclass
     ### NOW it does not work for multiclass
     def roc_auc_curve(self, targets, preds, save: bool=True, show: bool=False):
-        '''
+        """
         Calculate the ROC curve and AUC
 
         Parameters
@@ -705,7 +705,7 @@ class model(object):
             The predictions.
         save : bool, optional
             Save the ROC curve and AUC. The default is False.
-        '''
+        """
         fpr, tpr, thresholds = roc_curve(targets, preds)
         auc = roc_auc_score(targets, preds)
         plt.figure(figsize=(10, 10))
@@ -727,7 +727,7 @@ class model(object):
 
 
     def predict(self, data):
-        '''
+        """
         Predict the output
 
         Parameters
@@ -744,7 +744,7 @@ class model(object):
         ------
         WorkToDoError
             If the model is not trained.
-        '''
+        """
         if not self.model_trained:
             raise WorkToDoError('model_trained')
 
@@ -768,7 +768,7 @@ class model(object):
                      path_csv: str='results',
                      name_csv: str='history.csv'
                      ):
-        '''
+        """
         Plot the history of the training
 
         Parameters
@@ -792,7 +792,7 @@ class model(object):
         -------
         pandas.DataFrame
             The history of the training.
-        '''
+        """
         plotting.PlotHistory(self.history).plot(save=save, path=path, name=name, show=show)
 
         if save_csv:
@@ -802,9 +802,9 @@ class model(object):
 
 
     def summary(self, save: bool=False, path: str='log', name: str='summary.txt'):
-        '''
+        """
         Print the summary of the model
-        '''
+        """
         if not self.train_test_split_done:
             raise WorkToDoError('train_test_split_done')
         if not self.model_created:
@@ -823,7 +823,7 @@ class model(object):
 
 
     def save_trained_model(self, name: str, path: str='trained_models'):
-        '''
+        """
         Save the model
 
         Parameters
@@ -837,7 +837,7 @@ class model(object):
         ------
         WorkToDoError
             If the model is not trained.
-        '''
+        """
         if not self.model_trained:
             raise WorkToDoError('model_trained')
 
@@ -850,7 +850,7 @@ class model(object):
 
 
     def load_model(self, name: str, path: str='trained_models'):
-        '''
+        """
         Load the model
 
         Parameters
@@ -859,7 +859,7 @@ class model(object):
             The name of the model.
         path : str, optional
             The path to load the model. The default is 'trained_models'.
-        '''
+        """
         # Load the model
         self.model.load_state_dict(torch.load(os.path.join(path, f'{name}.pt')))
 

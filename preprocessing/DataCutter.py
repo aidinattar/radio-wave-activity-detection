@@ -1,9 +1,9 @@
-'''
+"""
 DataCutter.py
 
 This file contains the DataCutter class, which is used to cut the data into the signals
 according to the timestamps provided by the timestamp_speech system.
-'''
+"""
 
 import os
 import numpy as np
@@ -14,9 +14,9 @@ from utils.constants          import NON_AGGREGATED_LABELS_DICT
 
 
 class DataCutter(object):
-    '''
+    """
     Class to cut the data into the signals
-    '''
+    """
 
     cut_done = False
     labels_extraction_done = False
@@ -31,35 +31,35 @@ class DataCutter(object):
 
 
     def __init__(self, data: DataReader):
-        '''
+        """
         Constructor
-        '''
+        """
         self.data = data
         self.timestamps = self.data.timestamp_speech
 
         
     @classmethod
     def empty(cls):
-        '''
+        """
         Empty constructor
-        '''
+        """
         return cls(DataReader.empty())
 
     
     @classmethod
     def from_file(cls, path:str, file:str):
-        '''
+        """
         Constructor from file
-        '''
+        """
         cutter = cls(DataReader.empty())
         cutter.load(path, file)
         return cutter
 
 
     def cut(self, conversion_factor:float=1):
-        '''
+        """
         Cut the data into the signals according to the timestamps provided by the timestamp_speech system.
-        '''
+        """
         self.conversion_factor = conversion_factor
 
         # Convert the timestamps to bins
@@ -80,9 +80,9 @@ class DataCutter(object):
 
 
     def cut_mDoppler(self):
-        '''
+        """
         Cut the mDoppler data into the signals according to the timestamps provided by the timestamp_speech system.
-        '''
+        """
 
         if not self.data.do_mDoppler:
             raise OptionIsFalseError('do_mDoppler')
@@ -102,9 +102,9 @@ class DataCutter(object):
 
 
     def cut_rdn(self):
-        '''
+        """
         Cut the rdn data into the signals according to the timestamps provided by the timestamp_speech system.
-        '''
+        """
 
         if not self.data.do_rdn:
             raise OptionIsFalseError('do_rdn')
@@ -124,9 +124,9 @@ class DataCutter(object):
 
 
     def create_labels_list(self):
-        '''
+        """
         Create a list of labels.
-        '''
+        """
         # Create the list of labels
         self.labels = []
 
@@ -136,9 +136,9 @@ class DataCutter(object):
         self.labels_extraction_done = True
 
     def labels_to_int(self):
-        '''
+        """
         Convert the labels from string to integers, associating each label to a number.
-        '''
+        """
 
         # Create the list of labels
         if not self.labels_extraction_done:
@@ -156,9 +156,9 @@ class DataCutter(object):
         self.labels_to_int_done = True
 
     def save(self, path:str='DATA_preprocessed', filename:str='data_cutted.npz'):
-        '''
+        """
         Save the data.
-        '''
+        """
         # Create the path
         path = os.path.join(path, filename)
 
@@ -175,9 +175,9 @@ class DataCutter(object):
 
 
     def load(self, path:str='DATA_preprocessed', filename:str='data.npz'):
-        '''
+        """
         Load the data.
-        '''
+        """
 
         # Create the path
         path = os.path.join(path, filename)

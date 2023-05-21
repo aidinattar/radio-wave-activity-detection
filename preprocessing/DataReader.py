@@ -1,9 +1,9 @@
-'''
+"""
 DataReader.py
 
 This file contains the DataReader class,
 which is used to read data contained in the directory DATA.
-'''
+"""
 
 import os
 import h5py
@@ -25,9 +25,9 @@ data_dir    = os.path.join(os.getcwd(),    'DATA')
 figures_dir = os.path.join(os.getcwd(), 'figures')
 
 class DataReader(object):
-    '''
+    """
     Class to read the data and do some prelimary processing
-    '''
+    """
 
     # Flags to indicate if the data has been processed
     timestamp_to_bins_done = False
@@ -39,7 +39,7 @@ class DataReader(object):
                  do_rdn:bool=False,
                  do_mDoppler:bool=True,
                  data_dir:str=data_dir):
-        '''
+        """
         Initialize the class
 
         Parameters
@@ -52,7 +52,7 @@ class DataReader(object):
             Flag to indicate if rdn data should be processed [default: False]
         mDoppler : bool, optional
             Flag to indicate if mDoppler data should be processed [default: True]
-        '''
+        """
 
         self.subjects      = subjects
         self.sets          = sets
@@ -68,16 +68,16 @@ class DataReader(object):
 
     @classmethod
     def empty(cls):
-        '''
+        """
         Create an empty instance of the class
-        '''
+        """
         return cls([], [])
 
 
     def ReadData(self, data_dir:str=data_dir):
-        '''
+        """
         Function to read the data from the h5 files
-        '''
+        """
 
         # create lists to store the data
         rdn, mDoppler, timestamp_speech = ([] for i in range(3))
@@ -121,9 +121,9 @@ class DataReader(object):
 
 
     def remove_static_bins(self):
-        '''
+        """
         Remove the static bins from the data
-        '''
+        """
 
         for i in range(len(self.rdn)):
             self.rdn[i] = np.delete(self.rdn[i], (63,64,65), axis=2)
@@ -134,14 +134,14 @@ class DataReader(object):
 
     def crop(self,
              **kwargs):
-        '''
+        """
         Crop the data
         
         Parameters
         ----------
         **kwargs : dict
             Dictionary containing the parameters for the crop function
-        '''
+        """
         if self.do_rdn:
             self.crop_rdn(**kwargs)
             
@@ -152,7 +152,7 @@ class DataReader(object):
     def crop_rdn(self,
                  start_vel:int=13, stop_vel:int=111,
                  start_range:int=0, stop_range:int=63):
-        '''
+        """
         Crop the rdn data
 
         Parameters
@@ -165,7 +165,7 @@ class DataReader(object):
             Start range bin [default: 0]
         stop_range : int, optional
             Stop range bin [default: 63]
-        '''
+        """
         # check if rdns are present
         if not self.do_rdn:
             raise OptionIsFalseError('do_rdn')
@@ -176,9 +176,9 @@ class DataReader(object):
 
 
     def crop_mDoppler(self, start:int=13, stop:int=111):
-        '''
+        """
         Crop the mDoppler data
-        '''
+        """
         # check if mDopplers are present
         if not self.do_mDoppler:
             raise OptionIsFalseError('do_mDoppler')
@@ -189,9 +189,9 @@ class DataReader(object):
 
 
     def radar_division(self):
-        '''
+        """
         Divide the data based on the radar they come from
-        '''
+        """
 
         if self.do_mDoppler:
             self.mDoppler_1 = self.mDoppler[0::2]
@@ -205,7 +205,7 @@ class DataReader(object):
 
 
     def rescaling(self, method:str='norm', **kwargs):
-        '''
+        """
         Function to rescale the data
 
         Parameters
@@ -222,7 +222,7 @@ class DataReader(object):
             [default: 'norm']
         kwargs : dict
             Dictionary of keyword arguments for the rescaling method
-        '''
+        """
 
         method_dict = {
             'norm':    rescaling.normalize,
@@ -247,7 +247,7 @@ class DataReader(object):
 
 
     def Plot_Gif_rdn(self, frames:int, k:int=0, name:str='rdn.gif'):
-        '''
+        """
         Function to plot the gif of the rdn data
 
         Parameters
@@ -258,7 +258,7 @@ class DataReader(object):
             Index of the radar to plot [default: 0]
         name : str, optional
             Name of the file to save [default: 'rdn.gif']
-        '''
+        """
         def update(j:int):
             for i in range(2*k, 2*k+2):
                 data = self.rdn[i][j,:,:]
@@ -290,7 +290,7 @@ class DataReader(object):
         anim.save(os.path.join(figures_dir, name), writer="pillow")
 
     def plot_rdn_map(self, k:int=0, range_length:int=40, name:str='rdn_map.png', save:bool=False):
-        '''
+        """
         Function to plot the map of the rdn data
 
         Parameters
@@ -301,7 +301,7 @@ class DataReader(object):
             Number of frames to consider [default: 40]
         name : str, optional
             Name of the file to save [default: 'rdn_map.png']
-        '''
+        """
         if not self.do_rdn:
             raise OptionIsFalseError("do_rdn")
 
@@ -327,7 +327,7 @@ class DataReader(object):
     # To correct: in this way the 3d plot is of the
     # aggregated data, not as a function of time
     def plot_rdn_map_3d(self, k=0, range_length=40, name='rdn_map_3d.png', save=False):
-        '''
+        """
         Function to plot the map of the rdn data
 
         Parameters
@@ -338,7 +338,7 @@ class DataReader(object):
             Number of frames to consider [default: 40]
         name : str, optional
             Name of the file to save [default: 'rdn_map_3d.png']
-        '''
+        """
         if not self.do_rdn:
             raise OptionIsFalseError("do_rdn")
 
@@ -368,7 +368,7 @@ class DataReader(object):
             fig.savefig(os.path.join(figures_dir, name))
 
     def Plot_Gif_mDoppler(self, frames, k=0, name='mDoppler.gif'):
-        '''
+        """
         Function to plot the gif of the mDoppler data
 
         Parameters
@@ -379,7 +379,7 @@ class DataReader(object):
             Index of the radar to plot [default: 0]
         name : str, optional
             Name of the file to save [default: 'mDoppler.gif']
-        '''
+        """
         length_range = len(self.mDoppler[2*k]) / frames
 
         def update(j):
@@ -413,7 +413,7 @@ class DataReader(object):
         anim.save(os.path.join(figures_dir, name), writer="pillow")
 
     def plot_mDoppler_map(self, k=0, start=10, stop=90, name='mDoppler_map.png', save=False):
-        '''
+        """
         Function to plot the map of the mDoppler data
 
         Parameters
@@ -428,7 +428,7 @@ class DataReader(object):
             Name of the file to save [default: 'mDoppler_map.png']
         save : bool, optional
             Save the figure [default: False]
-        '''
+        """
         if not self.do_mDoppler:
             raise OptionIsFalseError("do_mDoppler")
 
@@ -452,7 +452,7 @@ class DataReader(object):
             fig.savefig(os.path.join(figures_dir, name))
 
     def plot_mDoppler_map_3d(self, k=0, start=10, stop=90, name='mDoppler_map_3d.png', save=False):
-        '''
+        """
         TO CORRECT
         Function to plot the map of the mDoppler data
 
@@ -468,7 +468,7 @@ class DataReader(object):
             Name of the file to save [default: 'mDoppler_map_3d.png']
         save : bool, optional
             Save the figure [default: False]
-        '''
+        """
         if not self.do_mDoppler:
             raise OptionIsFalseError("do_mDoppler")
 
@@ -498,7 +498,7 @@ class DataReader(object):
             fig.savefig(os.path.join(figures_dir, name))
 
     def filter_mDoppler(self, size=(5,5), sigma=1, name='mDoppler_filtered.png', save=False):
-        '''
+        """
         Function to filter the mDoppler data
 
         Parameters
@@ -511,7 +511,7 @@ class DataReader(object):
             Name of the file to save [default: 'mDoppler_filtered.png']
         save : bool, optional
             Save the figure [default: False]
-        '''
+        """
 
         if not self.do_mDoppler:
             raise OptionIsFalseError("do_mDoppler")
@@ -522,7 +522,7 @@ class DataReader(object):
 
     #TODO: add filtering for rdn
     def filter_rdn(self, size=(5,5,5), sigma=1, name='rdn_filtered.png', save=False):
-        '''
+        """
         Function to filter the rdn data
         
         Parameters
@@ -535,18 +535,18 @@ class DataReader(object):
             Name of the file to save [default: 'rdn_filtered.png']
         save : bool, optional
             Save the figure [default: False]
-        '''
+        """
         raise NotImplementedError
 
     def timestamp_to_bins(self, conversion_factor:float=1):
-        '''
+        """
         Function to convert the timestamps in bins
 
         Parameters
         ----------
         conversion_factor : float
             Conversion factor to convert the timestamps in seconds [default: 1]
-        '''
+        """
         # Compute the time passed
         for i in range(len(self.timestamp_speech)):
             # Convert the timestamps in seconds
@@ -562,7 +562,7 @@ class DataReader(object):
 
 
     def plot_divided_actions(self, k:int=0, name:str='actions.png', save:bool=False):
-        '''
+        """
         Function to divide the actions according to the
         timestamps recorded in the file
 
@@ -574,7 +574,7 @@ class DataReader(object):
             Name of the file to save [default: 'actions.png']
         save : bool, optional
             Save the figure [default: False]
-        '''
+        """
 
         if not self.timestamp_to_bins_done:
             raise OptionIsFalseError("timestamp_to_bins")
@@ -597,7 +597,7 @@ class DataReader(object):
             fig.savefig(os.path.join(figures_dir, name))
 
     def copy(self):
-        '''
+        """
         Function to copy the object
-        '''
+        """
         return copy.deepcopy(self)

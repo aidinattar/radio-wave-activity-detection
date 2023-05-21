@@ -1,4 +1,4 @@
-'''
+"""
 cnn_md.py
 
 This file contains the Model class, which is used to create the model 
@@ -22,7 +22,7 @@ TODO:
     - add dropout
     - add initial weights
 
-'''
+"""
 
 import torch
 from torch.nn import Module, Linear,\
@@ -32,9 +32,9 @@ from torch.nn import Module, Linear,\
                      ELU, Softmax
 
 class cnn_md(Module):
-    '''
+    """
     Class to create the model for the mDoppler data
-    '''
+    """
 
     def __init__(self,
                  in_channels: int=1,
@@ -50,9 +50,9 @@ class cnn_md(Module):
                  bias: bool=True,
                  padding_mode: str='zeros',
                  dropout: float=0.5,):
-        '''
+        """
         Constructor
-        '''
+        """
         super().__init__()
         f1, f2, f3, f4 = filters
 
@@ -144,9 +144,9 @@ class cnn_md(Module):
 
 
     def _init_weights(self, module):
-        '''
+        """
         Initialize the weights of the model
-        '''
+        """
         if isinstance(module, torch.nn.Linear):
             torch.nn.init.xavier_uniform_(module.weight)
             if module.bias is not None:
@@ -158,9 +158,9 @@ class cnn_md(Module):
 
 
     def forward(self, x):
-        '''
+        """
         Forward pass
-        '''
+        """
         # Convolutional layers
         x = self.cnn(x)
         # Flatten the output of the convolutional layers
@@ -170,13 +170,13 @@ class cnn_md(Module):
         return x
 
     def save(self, path: str):
-        '''
+        """
         Save the model
-        '''
+        """
         torch.save(self.state_dict(), path)
 
     def load(self, path: str):
-        '''
+        """
         Load the model
-        '''
+        """
         self.load_state_dict(torch.load(path))

@@ -1,4 +1,4 @@
-'''Scrape the cloud folder at https://cloud.ilabt.imec.be/index.php/s/eRkdk6NnJZNL5XG/
+"""Scrape the cloud folder at https://cloud.ilabt.imec.be/index.php/s/eRkdk6NnJZNL5XG/
 
 Usage:
     scraping.py [--first_subject=<first_subject>] [--last_subject=<last_subject>] [--first_set=<first_set>] [--last_set=<last_set>]
@@ -9,7 +9,7 @@ Options:
     --last_subject=LAST         Last subject to download [default: 24].
     --first_set=FIRST           First set to download [default: 0].
     --last_set=LAST             Last set to download [default: 4].
-'''
+"""
 
 
 import os
@@ -21,9 +21,9 @@ from tqdm   import tqdm
 from docopt import docopt
 
 def download_file(url, filename):
-    '''
+    """
     Function to download a file from a URL with a progress bar
-    '''
+    """
     # set the download flag to False
     download = False
 
@@ -58,9 +58,9 @@ def download_file(url, filename):
     return download
 
 def create_directory(directory):
-    '''
+    """
     Function to create a directory if it does not exist
-    '''
+    """
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -68,9 +68,9 @@ def create_directory(directory):
     os.chdir(directory)
 
 def repack_hdf5(filename):
-    '''
+    """
     Function to repack an HDF5 file and overwrite the original file with the repacked version
-    '''
+    """
     # Run ptrepack command to repack the file
     subprocess.run(['ptrepack', '--chunkshape=auto', '--propindexes', '--complevel=9', '--complib=blosc', filename, f"{filename}_repack"])
 
@@ -82,9 +82,9 @@ def repack_hdf5(filename):
 
 
 def preprocess_file(filename):
-    '''
+    """
     Function to preprocess the file
-    '''
+    """
     if ".h5" not in filename:
         pass
     else:
@@ -114,9 +114,9 @@ def preprocess_file(filename):
         repack_hdf5(filename)
 
 def main(subjects, sets):
-    '''
+    """
     Main function
-    '''
+    """
     # create a directory to store the files
     create_directory('DATA')
     global original_folder

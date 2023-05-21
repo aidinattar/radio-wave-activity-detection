@@ -1,8 +1,8 @@
-'''
+"""
 DataProcess.py
 
 This file contains the DataProcess class, which is used to process the data.
-'''
+"""
 
 import os
 import numpy as np
@@ -12,14 +12,14 @@ from exceptions               import OptionIsFalseError
 from utils                    import cutting
 
 class DataProcess(object):
-    '''
+    """
     Class to process the data
-    '''
+    """
 
     def __init__(self, data: DataCutter):
-        '''
+        """
         Constructor
-        '''
+        """
         self.data = data
         self.do_rdn = self.data.data.do_rdn
         self.do_mDoppler = self.data.data.do_mDoppler
@@ -34,24 +34,24 @@ class DataProcess(object):
 
     @classmethod
     def empty(cls):
-        '''
+        """
         Empty constructor
-        '''
+        """
         return cls(DataCutter.empty())
     
     
     @classmethod
     def from_file(cls, path:str, file:str):
-        '''
+        """
         Constructor from file
-        '''
+        """
         processer = cls(DataCutter.empty())
         processer.load(path, file)
         return processer
 
 
     def padding(self, padding: int, mode: str='constant', **kwargs):
-        '''
+        """
         Pad the data.
         Check if the action is at least [padding] bins long, if not, pad the data.
 
@@ -63,7 +63,7 @@ class DataProcess(object):
             Mode to use to pad the data. The default is 'constant'.
         **kwargs : TYPE
             Keyword arguments to pass to the pad function.
-        '''
+        """
         if self.do_rdn:
             self.padding_rdn(padding=padding, mode=mode, **kwargs)
         if self.do_mDoppler:
@@ -71,7 +71,7 @@ class DataProcess(object):
 
 
     def padding_rdn(self, padding: int=40, mode: str='constant', **kwargs):
-        '''
+        """
         Pad the rdn data.
         Check if the action is at least 40 bins long, if not, pad the data.
 
@@ -83,7 +83,7 @@ class DataProcess(object):
             Mode to use to pad the data. The default is 'constant'.
         **kwargs : TYPE
             Keyword arguments to pass to the pad function.
-        '''
+        """
         for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
             if rdn_1.shape[0] < padding:
                 self.rdn_1[i] = np.pad(
@@ -106,7 +106,7 @@ class DataProcess(object):
 
 
     def padding_mDoppler(self, padding:int, mode: str='constant', **kwargs):
-        '''
+        """
         Pad the mDoppler data.
         Check if the action is at least 40 bins long, if not, pad the data.
 
@@ -118,7 +118,7 @@ class DataProcess(object):
             Mode to use to pad the data. The default is 'constant'.
         **kwargs : TYPE
             Keyword arguments to pass to the pad function.
-        '''
+        """
         for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
             if mDoppler_1.shape[0] < padding:
                 self.mDoppler_1[i] = np.pad(
@@ -141,7 +141,7 @@ class DataProcess(object):
 
 
     def cut_time(self, loc:str='random', len_default:int=40, n_samples:int=1, **kwargs):
-        '''
+        """
         Cut the data in time
 
         Parameters
@@ -157,7 +157,7 @@ class DataProcess(object):
             Implemented only for random method. The default is 1.
         **kwargs : TYPE
             Keyword arguments to pass to the cut_time function.
-        '''
+        """
         if self.do_rdn:
             self.cut_time_rdn(loc=loc, len_default=len_default, n_samples=n_samples, **kwargs)
         if self.do_mDoppler:
@@ -165,7 +165,7 @@ class DataProcess(object):
 
 
     def cut_time_rdn(self, loc:int='random', len_default:int=40, n_samples:int=1, **kwargs):
-        '''
+        """
         Cut the rdn data in time
 
         Parameters
@@ -188,7 +188,7 @@ class DataProcess(object):
             If the option do_rdn is False.
         ValueError
             If the location is not valid.
-        '''
+        """
         if not self.do_rdn:
             raise OptionIsFalseError("do_rdn")
 
@@ -213,7 +213,7 @@ class DataProcess(object):
 
 
     def cut_time_mDoppler(self, loc:int='random', len_default:int=40, n_samples:int=1, **kwargs):
-        '''
+        """
         Cut the mDoppler data in time
 
         Parameters
@@ -236,7 +236,7 @@ class DataProcess(object):
             If do_mDoppler is False.
         ValueError
             If loc is not a valid value.
-        '''
+        """
         if not self.do_mDoppler:
             raise OptionIsFalseError("do_mDoppler")
 
@@ -270,10 +270,10 @@ class DataProcess(object):
 
 
     def rotate(self):
-        '''
+        """
         Rotate the data.
 
-        '''
+        """
         if self.do_rdn:
             self.rotate_rdn()
         if self.do_mDoppler:
@@ -281,9 +281,9 @@ class DataProcess(object):
             
     
     def rotate_rdn(self):
-        '''
+        """
         Rotate the rdn data
-        '''
+        """
         
         if not self.do_rdn:
             raise OptionIsFalseError("do_rdn")
@@ -294,9 +294,9 @@ class DataProcess(object):
 
 
     def rotate_mDoppler(self):
-        '''
+        """
         Rotate the mDoppler data
-        '''
+        """
         
         if not self.do_mDoppler:
             raise OptionIsFalseError("do_mDoppler")
@@ -307,9 +307,9 @@ class DataProcess(object):
 
 
     def save(self, path:str='DATA_preprocessed', filename:str='data_processed.npz'):
-        '''
+        """
         Save the data.
-        '''
+        """
 
         # Create the path
         path = os.path.join(path, filename)
@@ -327,9 +327,9 @@ class DataProcess(object):
 
 
     def load(self, path:str='DATA_preprocessed', filename:str='data_processed.npz'):
-        '''
+        """
         Load the data.
-        '''
+        """
 
         # Create the path
         path = os.path.join(path, filename)

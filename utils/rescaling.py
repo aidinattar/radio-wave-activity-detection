@@ -1,15 +1,15 @@
-'''
+"""
 rescaling.py
 
 
 Functions for the main methods of rescaling data
-'''
+"""
 
 import numpy as np
 from sklearn.decomposition import PCA
 
 def normalize(data, **kwargs):
-    '''
+    """
     Function to normalize the data
 
     Parameters
@@ -21,11 +21,11 @@ def normalize(data, **kwargs):
     -------
     numpy.ndarray
         Normalized data
-    '''
+    """
     return (data - data.min()) / (data.max() - data.min())
 
 def standardize(data, **kwargs):
-    '''
+    """
     Function to standardize the data
 
     Parameters
@@ -37,11 +37,11 @@ def standardize(data, **kwargs):
     -------
     numpy.ndarray
         Standardized data
-    '''
+    """
     return (data - data.mean()) / data.std()
 
 def min_max(data, **kwargs):
-    '''
+    """
     Function to apply min-max scaling to the data
 
     Parameters
@@ -53,7 +53,7 @@ def min_max(data, **kwargs):
     -------
     numpy.ndarray
         Scaled data
-    '''
+    """
     # Find the minimum value of the map
     data_min = np.min(data[data != 0])
 

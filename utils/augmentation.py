@@ -1,4 +1,4 @@
-'''
+"""
 augmentation.py
 
 This file contains the functions used to augment the data.
@@ -7,7 +7,7 @@ The functions are:
     - time_mask: apply a time mask to the data
     - doppler_mask: apply a doppler mask to the data
     + others...
-'''
+"""
 import torch
 import numpy as np
 from preprocessing.DataCutter import DataCutter
@@ -25,7 +25,7 @@ def cut_time(data: DataProcess,
              n_samples: int = 5,
              type: str = 'mDoppler',
              **kwargs):
-    '''
+    """
     Augment the data by cutting the time axis at random locations
     
     Parameters
@@ -57,7 +57,7 @@ def cut_time(data: DataProcess,
     -------
     data : DataProcess
         Augmented data.
-    '''
+    """
     if type=='rdn':
         cut_time_rdn(data, indices, loc=loc, len_default=len_default, n_samples=n_samples, **kwargs)
     elif type=='mDoppler':
@@ -73,7 +73,7 @@ def cut_time_rdn(data: DataProcess,
                  len_default: int = 40,
                  n_samples: int = 5,
                  **kwargs):
-    '''
+    """
     Augment the rdn data by cutting the time axis at random locations
     
     Parameters
@@ -100,7 +100,7 @@ def cut_time_rdn(data: DataProcess,
         If the option do_rdn is False.
     ValueError
         If the location is invalid.
-    '''
+    """
     if not data.do_rdn:
         raise OptionIsFalseError('do_rdn')
     
@@ -132,7 +132,7 @@ def cut_time_mDoppler(data: DataProcess,
                       len_default: int = 40,
                       n_samples: int = 5,
                       **kwargs):
-    '''
+    """
     Augment the mDoppler data by cutting the time axis at random locations
     
     Parameters
@@ -159,7 +159,7 @@ def cut_time_mDoppler(data: DataProcess,
         If the option do_mDoppler is False.
     ValueError
         If the location is invalid.
-    '''
+    """
     if not data.do_mDoppler:
         raise OptionIsFalseError('do_mDoppler')
     
@@ -192,7 +192,7 @@ def resample(train_data: torch.utils.data.dataset.Subset,
              data_type:str='mDoppler',
              len_default: int = 40,
              n_samples: int = 5):
-    '''
+    """
     Resample the array to the default length
 
     Parameters
@@ -212,7 +212,7 @@ def resample(train_data: torch.utils.data.dataset.Subset,
     -------
     array : np.ndarray
         Resampled array.
-    '''
+    """
     data = DataCutter.from_file(data_dir, data_file)
     dp = DataProcess(data=data)
     dp = cut_time(dp, train_data.indices, loc='random', len_default=len_default, n_samples=n_samples, type=data_type)

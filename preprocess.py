@@ -1,4 +1,4 @@
-'''
+"""
 preprocess.py
 
 Data preprocessing batch by batch
@@ -19,7 +19,7 @@ Options:
     
 We suggest to avoid using tqdm together with the verbose option,
 as it may cause some problems with the progress bar.
-'''
+"""
 import os
 import h5py
 import numpy as np
@@ -35,7 +35,7 @@ def reading(data_path:str,
             do_rdn:bool,
             do_mDoppler:bool,
             verbose:int):
-    '''
+    """
     Read the data and save it in a .npz file
 
     Parameters
@@ -54,7 +54,7 @@ def reading(data_path:str,
         Whether to read the mDoppler data
     verbose : int
         Verbosity level
-    '''
+    """
     if verbose > 0:
         print('Reading data...')
     dr = DataReader(subjects=subjects, sets=sets, do_rdn=do_rdn, do_mDoppler=do_mDoppler, data_dir=data_path)
@@ -79,7 +79,7 @@ def cutting(data:DataReader,
             subjects:list,
             sets:list,
             verbose:int):
-    '''
+    """
     Cut the data and save it in a .npz file
 
     Parameters
@@ -96,7 +96,7 @@ def cutting(data:DataReader,
         Case to preprocess
     verbose : int
         Verbosity level
-    '''
+    """
 
     if verbose > 0:
         print('Cutting data...')
@@ -126,7 +126,7 @@ def process(data:DataCutter,
             subjects:list,
             sets:list,
             verbose:int):
-    '''
+    """
     Process the data and save it in a .npz file
 
     Parameters
@@ -143,7 +143,7 @@ def process(data:DataCutter,
         Case to preprocess
     verbose : int
         Verbosity level
-    '''
+    """
     if verbose > 0:
         print('Processing data...')
     dp = DataProcess(data=data)
@@ -171,7 +171,7 @@ def save_h5(data:DataProcess,
             do_rdn:bool,
             do_mDoppler:bool,
             verbose:int):
-    '''
+    """
     Save the data in a .h5 file
     
     Parameters
@@ -188,7 +188,7 @@ def save_h5(data:DataProcess,
         Whether to save the mDoppler data
     verbose : int
         Verbosity level
-    '''
+    """
     
     if verbose > 0:
         print('Saving data...')
@@ -292,7 +292,7 @@ def preprocess(data_path:str,
                do_rdn:bool,
                do_mDoppler:bool,
                verbose:int):
-    '''
+    """
     Preprocess the data and save it in a .npz file
 
     Parameters
@@ -316,7 +316,7 @@ def preprocess(data_path:str,
     -------
     dp : DataProcess
         Processed data
-    '''
+    """
     dr = reading(data_path=data_path,
                  subjects=subjects,
                  sets=sets,

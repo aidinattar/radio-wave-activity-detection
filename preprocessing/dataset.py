@@ -1,4 +1,4 @@
-'''
+"""
 dataset.py
 
 This file contains the Dataset class, which is used to create the dataset for the model.
@@ -10,17 +10,17 @@ TODO:
     - add the link to the data
     - add the link to the paper
     - others...
-'''
+"""
 
 import os
 import h5py
 from torch.utils.data import Dataset
 
 class Dataset(Dataset):
-    '''
+    """
     Class to create the dataset with rdn or
     mDoppler data for the model
-    '''
+    """
     
     def __init__(self,
                  TYPE:str,
@@ -28,7 +28,7 @@ class Dataset(Dataset):
                  filename:str,
                  features_transform=None,
                  labels_transform=None):
-        '''
+        """
         Initialize the dataset
         
         Parameters
@@ -44,7 +44,7 @@ class Dataset(Dataset):
             Name of the file containing the dataset in .h5 format
         transform : callable, optional
             Transform to apply to the data. The default is None.
-        '''
+        """
         
         self.features_1 = h5py.File(
             name=os.path.join(
@@ -72,20 +72,20 @@ class Dataset(Dataset):
         
     
     def __len__(self) -> int:
-        '''
+        """
         Get the length of the dataset
         
         Returns
         -------
         int
             Length of the dataset
-        '''
+        """
         return len(self.labels)
     
     
     def __getitem__(self,
                     idx:int)->tuple:
-        '''
+        """
         Get the item at the given index
         
         Parameters
@@ -97,7 +97,7 @@ class Dataset(Dataset):
         -------
         tuple
             Tuple containing the two rdn data and the label
-        '''
+        """
         features_1 = self.features_1[idx]
         features_2 = self.features_2[idx]
         label = self.labels[idx]
