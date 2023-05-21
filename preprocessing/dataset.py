@@ -16,20 +16,28 @@ import os
 import h5py
 from torch.utils.data import Dataset
 
-class rdnDataset(Dataset):
+class Dataset(Dataset):
     '''
-    Class to create the dataset with rdn data for the model
+    Class to create the dataset with rdn or
+    mDoppler data for the model
     '''
     
     def __init__(self,
+                 TYPE:str,
                  dirname:str,
                  filename:str,
-                 transform=None,):
+                 features_transform=None,
+                 labels_transform=None):
         '''
         Initialize the dataset
         
         Parameters
         ----------
+        TYPE : str
+            Type of data to load.
+            Possible values are:
+                'mDoppler': mDoppler data
+                'rdn': rdn data
         dirname : str
             Name of the directory containing the dataset in .h5 format
         filename : str
@@ -38,19 +46,19 @@ class rdnDataset(Dataset):
             Transform to apply to the data. The default is None.
         '''
         
-        self.rdn_1 = h5py.File(
+        self.features_1 = h5py.File(
             name=os.path.join(
                 dirname,
                 filename),
             mode='r'
-        )['rdn_1']
+        )[f'{TYPE}_1']
         
-        self.rdn_2 = h5py.File(
+        self.features_2 = h5py.File(
             name=os.path.join(
                 dirname,
                 filename),
             mode='r'
-        )['rdn_2']
+        )[f'{TYPE}_2']
         
         self.labels = h5py.File(
             name=os.path.join(
@@ -59,14 +67,8 @@ class rdnDataset(Dataset):
             mode='r'
         )['labels']
         
-        self.labels_dict = h5py.File(
-            name=os.path.join(
-                dirname,
-                filename),
-            mode='r'
-        )['labels_dict']
-        
-        self.transform = transform
+        self.features_transform = features_transform
+        self.labels_transform = labels_transform
         
     
     def __len__(self) -> int:
@@ -96,12 +98,15 @@ class rdnDataset(Dataset):
         tuple
             Tuple containing the two rdn data and the label
         '''
-        rdn_1 = self.rdn_1[idx]
-        rdn_2 = self.rdn_2[idx]
+        features_1 = self.features_1[idx]
+        features_2 = self.features_2[idx]
         label = self.labels[idx]
         
-        if self.transform:
-            rdn_1 = self.transform(rdn_1)
-            rdn_2 = self.transform(rdn_2)
+        if self.features_transform:
+            features_1 = self.features_transform(features_1)
+            features_2 = self.features_transform(features_2)
             
-        return rdn_1, rdn_2, label
+        if self.labels_transform:
+            label = self.labels_transform(label)
+            
+        return features_1, features_2, label
