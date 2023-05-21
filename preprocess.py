@@ -241,16 +241,16 @@ def save_h5(data:DataProcess,
             compression='gzip'
         )
         
-        group = file.create_group(
-            name='labels_dict'
-        )
-        for key, value in data.labels_dict.items():
-            group.create_dataset(
-                name=key,
-                data=value,
-                dtype='int32',
-                compression='gzip'
-            )
+        #group = file.create_group(
+        #    name='labels_dict'
+        #)
+        #for key, value in data.labels_dict.items():
+        #    group.create_dataset(
+        #        name=key,
+        #        data=value,
+        #        dtype='int32',
+        #        compression='gzip'
+        #    )
     else:
         type = 'rdn' if do_rdn else 'mDoppler' if do_mDoppler else 'rdn_mDoppler'
         filename = f'processed_data_{type}.h5'
@@ -276,9 +276,9 @@ def save_h5(data:DataProcess,
             file['mDoppler_2'].resize((file['mDoppler_2'].shape[0] + data.mDoppler_2.shape[0]), axis=0)
             file['mDoppler_2'][-data.mDoppler_2.shape[0]:] = data.mDoppler_2
         
-        if data.labels_dict != file['labels_dict']:
-            mapping = {data.labels_dict[key]: file['labels_dict'][key] for key in data.labels_dict.keys()}
-            data.labels = [mapping[value] for value in data.labels]
+        #if data.labels_dict != file['labels_dict']:
+        #    mapping = {data.labels_dict[key]: file['labels_dict'][key] for key in data.labels_dict.keys()}
+        #    data.labels = [mapping[value] for value in data.labels]
         
         file['labels'].resize((file['labels'].shape[0] + data.labels.shape[0]), axis=0)
         file['labels'][-data.labels.shape[0]:] = data.labels

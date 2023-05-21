@@ -24,7 +24,7 @@ class DataProcess(object):
         self.do_rdn = self.data.data.do_rdn
         self.do_mDoppler = self.data.data.do_mDoppler
         self.labels = self.data.labels
-        self.labels_dict = self.data.labels_dict
+        #self.labels_dict = self.data.labels_dict
 
         self.rdn_1 = self.data.signals_rdn_1
         self.rdn_2 = self.data.signals_rdn_2
@@ -322,7 +322,7 @@ class DataProcess(object):
             rdn_1=self.rdn_1,
             rdn_2=self.rdn_2,
             labels=self.labels,
-            labels_dict=self.labels_dict
+            #labels_dict=self.labels_dict
         )
 
 
@@ -343,7 +343,7 @@ class DataProcess(object):
         self.rdn_1       = data['rdn_1']
         self.rdn_2       = data['rdn_2']
         self.labels      = data['labels']
-        self.labels_dict = data['labels_dict'].item()
+        #self.labels_dict = data['labels_dict'].item()
 
         if self.mDoppler_1 is None:
             self.do_mDoppler = False

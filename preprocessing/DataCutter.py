@@ -10,6 +10,7 @@ import numpy as np
 
 from preprocessing.DataReader import DataReader
 from exceptions               import OptionIsFalseError
+from utils.constants          import NON_AGGREGATED_LABELS_DICT
 
 
 class DataCutter(object):
@@ -147,10 +148,10 @@ class DataCutter(object):
         unique_labels = np.unique(self.labels)
 
         # Create the dictionary
-        self.labels_dict = {label: i for i, label in enumerate(unique_labels)}
+        #self.labels_dict = {label: i for i, label in enumerate(unique_labels)}
 
         # Convert the labels to integers
-        self.labels = [self.labels_dict[label] for label in self.labels]
+        self.labels = [NON_AGGREGATED_LABELS_DICT[label] for label in self.labels]
 
         self.labels_to_int_done = True
 
@@ -169,7 +170,7 @@ class DataCutter(object):
             signals_rdn_1=np.array(self.signals_rdn_1, dtype=object),
             signals_rdn_2=np.array(self.signals_rdn_2, dtype=object),
             labels=self.labels,
-            labels_dict=self.labels_dict
+            #labels_dict=self.labels_dict
         )
 
 
@@ -190,7 +191,7 @@ class DataCutter(object):
         self.signals_rdn_1      = data['signals_rdn_1']
         self.signals_rdn_2      = data['signals_rdn_2']
         self.labels             = data['labels']
-        self.labels_dict        = data['labels_dict'].item()
+        #self.labels_dict        = data['labels_dict'].item()
 
         if self.signals_mDoppler_1.size != 0:
             self.data.do_mDoppler = True
