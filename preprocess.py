@@ -54,6 +54,11 @@ def reading(data_path:str,
         Whether to read the mDoppler data
     verbose : int
         Verbosity level
+        
+    Returns
+    -------
+    dr : DataReader
+        DataReader object
     """
     if verbose > 0:
         print('Reading data...')
@@ -96,6 +101,11 @@ def cutting(data:DataReader,
         Case to preprocess
     verbose : int
         Verbosity level
+        
+    Returns
+    -------
+    dc : DataCutter
+        DataCutter object
     """
 
     if verbose > 0:
@@ -143,6 +153,11 @@ def process(data:DataCutter,
         Case to preprocess
     verbose : int
         Verbosity level
+        
+    Returns
+    -------
+    dp : DataProcess
+        DataProcess object
     """
     if verbose > 0:
         print('Processing data...')
@@ -188,6 +203,11 @@ def save_h5(data:DataProcess,
         Whether to save the mDoppler data
     verbose : int
         Verbosity level
+        
+    Returns
+    -------
+    file : h5py.File
+        HDF5 file with the data
     """
     
     if verbose > 0:
@@ -283,7 +303,7 @@ def save_h5(data:DataProcess,
         file['labels'].resize((file['labels'].shape[0] + data.labels.shape[0]), axis=0)
         file['labels'][-data.labels.shape[0]:] = data.labels
 
-        return file
+    return file
 
 def preprocess(data_path:str,
                output_path:str,
