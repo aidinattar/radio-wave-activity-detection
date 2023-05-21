@@ -6,7 +6,7 @@ This file contains the train function, which is used to train the model.
 The model is trained using the Adam optimizer and the Cross Entropy loss.
 
 Usage:
-    train.py <model> <data> <input> <case> (--load|--no-load) [--augment|--no-augment] [--n_samples=<n_samples>] [--dropout=<dropout>] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov|--no-nesterov] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
+    train.py <model> <data> <input> <case> (--load|--no-load) [--augment] [--n_samples=<n_samples>] (--aggregate_labels) [--dropout=<dropout>] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov|--no-nesterov] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
     train.py -h | --help
 
 Options:
@@ -62,6 +62,7 @@ import torch
 from docopt                    import docopt
 from models.classifier         import model
 from preprocessing.dataset     import Dataset
+from utils.constants           import MAPPING_LABELS_DICT
 from datetime import datetime
 
 now = datetime.now().strftime("%Y%m%d")
@@ -190,6 +191,7 @@ if __name__ == '__main__':
     load = bool(args['--load'])
     augment = bool(args['--augment'])
     n_samples = int(args['--n_samples'])
+    aggregate = bool(args['--aggregate_labels'])
 
     # set hyperparameters
     case = int(args['<case>'])
@@ -207,12 +209,17 @@ if __name__ == '__main__':
     factor = float(args['--factor'])
     verbose = int(args['--verbose'])
 
+    TYPE = args['<input>']
+    
+    labels_transform = lambda label: MAPPING_LABELS_DICT[label] if aggregate else None
+
     # load data
     data = Dataset(
-        path='DATA_preprocessed',
-        file=args['<data>'],
-        type=args['<input>'],
-        transform=None
+        TYPE=TYPE,
+        dirname='DATA_preprocessed',
+        filename=args['<data>'],
+        features_transform=None,
+        labels_transform=labels_transform,
     )
 
     # load model
