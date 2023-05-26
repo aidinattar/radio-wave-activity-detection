@@ -32,5 +32,5 @@ TODO:
     - [DONE, to be checked, try to plot the signals] take 40 frames
     not random but based on a threshold method
     - [DONE] agglomerate labels to have 10 classes
-    - time and frequency masking in utils/augmentation.py (maybe
+    - [DONE] time and frequency masking in utils/augmentation.py (maybe
     warping too)
