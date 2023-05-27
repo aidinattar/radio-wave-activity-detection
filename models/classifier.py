@@ -94,7 +94,7 @@ class model(object):
     def train_test_split(self,
                          test_size: float=0.2,
                          random_state: int=42,
-                         radar: bool=0):
+                         radar:int=0):
         """
         Split the data into training and testing data
 
