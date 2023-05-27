@@ -59,10 +59,10 @@ Current configuration:
 # Check the correctness of the code
 
 import torch
-from docopt                    import docopt
-from models.classifier         import model
-from preprocessing.dataset     import Dataset
-from utils.constants           import MAPPING_LABELS_DICT
+from docopt import docopt
+from models.classifier import model
+from preprocessing.dataset import Dataset2Channels, Dataset1Channel
+from utils.constants import MAPPING_LABELS_DICT
 from datetime import datetime
 
 now = datetime.now().strftime("%Y%m%d")

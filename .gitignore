@@ -219,3 +219,4 @@ pyrightconfig.json
 /checkpoints/*
 /log
 /log/*
+test.ipynb

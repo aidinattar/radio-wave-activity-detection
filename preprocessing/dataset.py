@@ -16,10 +16,11 @@ import os
 import h5py
 from torch.utils.data import Dataset
 
-class Dataset(Dataset):
+class Dataset2Channels(Dataset):
     """
     Class to create the dataset with rdn or
-    mDoppler data for the model
+    mDoppler data for the model considering 
+    two input channels
     """
     
     def __init__(self,
@@ -110,3 +111,100 @@ class Dataset(Dataset):
             label = self.labels_transform(label)
             
         return features_1, features_2, label
+    
+    
+class Dataset1Channel(Dataset):
+    """
+    Class to create the dataset with rdn or
+    mDoppler data for the model with one input channel
+    """
+    
+    def __init__(self,
+                 TYPE:str,
+                 dirname:str,
+                 filename:str,
+                 features_transform=None,
+                 labels_transform=None,
+                 channel:int=1):
+        """
+        Initialize the dataset
+        
+        Parameters
+        ----------
+        TYPE : str
+            Type of data to load.
+            Possible values are:
+                'mDoppler': mDoppler data
+                'rdn': rdn data
+        dirname : str
+            Name of the directory containing the dataset in .h5 format
+        filename : str
+            Name of the file containing the dataset in .h5 format
+        transform : callable, optional
+            Transform to apply to the data. The default is None.
+        channel : int, optional
+            Channel to load. The default is 1.
+            
+        Raises
+        ------
+        AssertionError
+            If the channel is not 1 or 2
+        """
+        
+        assert channel in [1, 2], "Channel must be 1 or 2"
+        
+        self.features = h5py.File(
+            name=os.path.join(
+                dirname,
+                filename),
+            mode='r'
+        )[f'{TYPE}_{channel}']
+        
+        self.labels = h5py.File(
+            name=os.path.join(
+                dirname,
+                filename),
+            mode='r'
+        )['labels']
+        
+        self.features_transform = features_transform
+        self.labels_transform = labels_transform
+        
+    
+    def __len__(self) -> int:
+        """
+        Get the length of the dataset
+        
+        Returns
+        -------
+        int
+            Length of the dataset
+        """
+        return len(self.labels)
+    
+    
+    def __getitem__(self,
+                    idx:int)->tuple:
+        """
+        Get the item at the given index
+        
+        Parameters
+        ----------
+        idx : int
+            Index of the item to get
+            
+        Returns
+        -------
+        tuple
+            Tuple containing the two rdn data and the label
+        """
+        features = self.features[idx]
+        label = self.labels[idx]
+        
+        if self.features_transform:
+            features = self.features_transform(features)
+            
+        if self.labels_transform:
+            label = self.labels_transform(label)
+            
+        return features, features, label
