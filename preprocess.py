@@ -19,6 +19,9 @@ Options:
     
 We suggest to avoid using tqdm together with the verbose option,
 as it may cause some problems with the progress bar.
+
+Example:
+    python preprocess.py --data_path=DATA --output_path=DATA_preprocessd --all --do_mDoppler --verbose=10
 """
 import os
 import h5py
@@ -227,38 +230,66 @@ def save_h5(data:DataProcess,
         )
         
         if do_rdn:
+            # Get the shape of an inner list
+            inner_shape = np.shape(data.rdn_1[0])
+            # Convert to a numpy array
+            rdn_1 = np.array(data.rdn_1).\
+                reshape((len(data.rdn_1), *inner_shape))
             file.create_dataset(
                 name='rdn_1',
-                data=data.rdn_1,
+                data=rdn_1,
                 dtype='float32',
-                compression='gzip'
+                compression='gzip',
+                maxshape=(None, *inner_shape)
             )
+
+            # Get the shape of an inner list
+            inner_shape = np.shape(data.rdn_2[0])
+            # Convert to a numpy array
+            rdn_2 = np.array(data.rdn_2).\
+                reshape((len(data.rdn_2), *inner_shape))
             file.create_dataset(
                 name='rdn_2',
-                data=data.rdn_2,
+                data=rdn_2,
                 dtype='float32',
-                compression='gzip'
+                compression='gzip',
+                maxshape=(None, *inner_shape)
             )
         
         if do_mDoppler:
+            # Get the shape of an inner list
+            inner_shape = np.shape(data.mDoppler_1[0])
+            # Convert to a numpy array
+            mDoppler_1 = np.array(data.mDoppler_1).\
+                reshape((len(data.mDoppler_1), *inner_shape))
             file.create_dataset(
                 name='mDoppler_1',
-                data=data.mDoppler_1,
+                data=mDoppler_1,
                 dtype='float32',
-                compression='gzip'
+                compression='gzip',
+                maxshape=(None, *inner_shape)
             )
+            
+            # Get the shape of an inner list
+            inner_shape = np.shape(data.mDoppler_2[0])
+            # Convert to a numpy array
+            mDoppler_2 = np.array(data.mDoppler_2).\
+                reshape((len(data.mDoppler_2), *inner_shape))
             file.create_dataset(
                 name='mDoppler_2',
-                data=data.mDoppler_2,
+                data=mDoppler_2,
                 dtype='float32',
-                compression='gzip'
+                compression='gzip',
+                maxshape=(None, *inner_shape)
             )
         
+        labels = np.array(data.labels)
         file.create_dataset(
             name='labels',
-            data=data.labels,
+            data=labels,
             dtype='int32',
-            compression='gzip'
+            compression='gzip',
+            maxshape=(None,)
         )
         
         #group = file.create_group(
@@ -285,23 +316,46 @@ def save_h5(data:DataProcess,
         )
         
         if do_rdn:
-            file['rdn_1'].resize((file['rdn_1'].shape[0] + data.rdn_1.shape[0]), axis=0)
-            file['rdn_1'][-data.rdn_1.shape[0]:] = data.rdn_1
-            file['rdn_2'].resize((file['rdn_2'].shape[0] + data.rdn_2.shape[0]), axis=0)
-            file['rdn_2'][-data.rdn_2.shape[0]:] = data.rdn_2
+            # Get the shape of an inner list
+            inner_shape = np.shape(data.rdn_1[0])
+            # Convert to a numpy array
+            rdn_1 = np.array(data.rdn_1).\
+                reshape((len(data.rdn_1), *inner_shape))
+            # Get the shape of an inner list
+            inner_shape = np.shape(data.rdn_2[0])
+            # Convert to a numpy array
+            rdn_2 = np.array(data.rdn_2).\
+                reshape((len(data.rdn_2), *inner_shape))
+                
+            file['rdn_1'].resize((file['rdn_1'].shape[0] + rdn_1.shape[0]), axis=0)
+            file['rdn_1'][-rdn_1.shape[0]:] = rdn_1
+            file['rdn_2'].resize((file['rdn_2'].shape[0] + rdn_2.shape[0]), axis=0)
+            file['rdn_2'][-rdn_2.shape[0]:] = rdn_2
         
         if do_mDoppler:
-            file['mDoppler_1'].resize((file['mDoppler_1'].shape[0] + data.mDoppler_1.shape[0]), axis=0)
-            file['mDoppler_1'][-data.mDoppler_1.shape[0]:] = data.mDoppler_1
-            file['mDoppler_2'].resize((file['mDoppler_2'].shape[0] + data.mDoppler_2.shape[0]), axis=0)
-            file['mDoppler_2'][-data.mDoppler_2.shape[0]:] = data.mDoppler_2
+            # Get the shape of an inner list
+            inner_shape = np.shape(data.mDoppler_1[0])
+            # Convert to a numpy array
+            mDoppler_1 = np.array(data.mDoppler_1).\
+                reshape((len(data.mDoppler_1), *inner_shape))
+            # Get the shape of an inner list
+            inner_shape = np.shape(data.mDoppler_2[0])
+            # Convert to a numpy array
+            mDoppler_2 = np.array(data.mDoppler_2).\
+                reshape((len(data.mDoppler_2), *inner_shape))
+                
+            file['mDoppler_1'].resize((file['mDoppler_1'].shape[0] + mDoppler_1.shape[0]), axis=0)
+            file['mDoppler_1'][-mDoppler_1.shape[0]:] = mDoppler_1
+            file['mDoppler_2'].resize((file['mDoppler_2'].shape[0] + mDoppler_2.shape[0]), axis=0)
+            file['mDoppler_2'][-mDoppler_2.shape[0]:] = mDoppler_2
         
         #if data.labels_dict != file['labels_dict']:
         #    mapping = {data.labels_dict[key]: file['labels_dict'][key] for key in data.labels_dict.keys()}
         #    data.labels = [mapping[value] for value in data.labels]
         
-        file['labels'].resize((file['labels'].shape[0] + data.labels.shape[0]), axis=0)
-        file['labels'][-data.labels.shape[0]:] = data.labels
+        labels = np.array(data.labels)
+        file['labels'].resize((file['labels'].shape[0] + labels.shape[0]), axis=0)
+        file['labels'][-labels.shape[0]:] = labels
 
     return file
 
@@ -403,6 +457,9 @@ if __name__ == '__main__':
                 else enumerate(subjects)
     
     for i, subject in progress:
+        
+        if verbose > 0:
+            print(f'Processing subject {subject}')
 
         dp = preprocess(
             data_path=data_path,
