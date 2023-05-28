@@ -6,7 +6,7 @@ This file contains the train function, which is used to train the model.
 The model is trained using the Adam optimizer and the Cross Entropy loss.
 
 Usage:
-    train.py <model> <data> <input> <case> (--load|--no-load) [--augment] [--n_samples=<n_samples>] (--aggregate_labels) [--dropout=<dropout>] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov|--no-nesterov] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
+    train.py <model> <data> <input> <case> [--channel=<channel>] (--load|--no-load) [--augment] [--n_samples=<n_samples>] (--aggregate_labels) [--dropout=<dropout>] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov|--no-nesterov] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
     train.py -h | --help
 
 Options:
@@ -211,38 +211,68 @@ if __name__ == '__main__':
 
     TYPE = args['<input>']
     
+    
     labels_transform = lambda label: MAPPING_LABELS_DICT[label] if aggregate else None
 
-    # load data
-    data = Dataset(
-        TYPE=TYPE,
-        dirname='DATA_preprocessed',
-        filename=args['<data>'],
-        features_transform=None,
-        labels_transform=labels_transform,
-    )
+    if case == 0:
+        data = Dataset2Channels(
+            TYPE=TYPE,
+            dirname='DATA_preprocessed',
+            filename=args['<data>'],
+            features_transform=None,
+            labels_transform=labels_transform,
+            combine_channels=True
+        )
+        
+    elif case == 1:
+        data = Dataset2Channels(
+            TYPE=TYPE,
+            dirname='DATA_preprocessed',
+            filename=args['<data>'],
+            features_transform=None,
+            labels_transform=labels_transform,
+            combine_channels=False
+        )
+    
+    elif case == 2:
+        raise NotImplementedError('Case 2 not implemented yet')
+    
+    elif case == 3:
+        data = Dataset1Channel(
+            TYPE=TYPE,
+            dirname='DATA_preprocessed',
+            filename=args['<data>'],
+            features_transform=None,
+            labels_transform=labels_transform,
+            channel=1,
+        )
 
+    else:
+        raise ValueError(f'Case {case} not recognized')
+    
     # load model
     model_name = args['<model>']
 
-    main(model_name=model_name,
-         data=data,
-         case=case,
-         load=load,
-         augment=augment,
-         n_samples=n_samples,
-         dropout=dropout,
-         epochs=epochs,
-         batch_size=batch_size,
-         optimizer=optimizer,
-         lr=lr,
-         weight_decay=weight_decay,
-         momentum=momentum,
-         nesterov=nesterov,
-         loss=loss,
-         patience=patience,
-         min_delta=min_delta,
-         factor=factor,
-         verbose=verbose,
-         device=device,
-         seed=seed)
+    main(
+        model_name=model_name,
+        data=data,
+        case=case,
+        load=load,
+        augment=augment,
+        n_samples=n_samples,
+        dropout=dropout,
+        epochs=epochs,
+        batch_size=batch_size,
+        optimizer=optimizer,
+        lr=lr,
+        weight_decay=weight_decay,
+        momentum=momentum,
+        nesterov=nesterov,
+        loss=loss,
+        patience=patience,
+        min_delta=min_delta,
+        factor=factor,
+        verbose=verbose,
+        device=device,
+        seed=seed
+    )
