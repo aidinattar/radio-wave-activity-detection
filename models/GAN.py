@@ -2,7 +2,6 @@
 GAN model
 """
 
-
 import torch
 from torch.nn import Module, Linear,\
                      Conv2d, MaxPool2d,\
@@ -171,7 +170,8 @@ class Generator(Module):
         elif classname.find('BatchNorm') != -1:
             torch.nn.init.normal_(module.weight.data, 1.0, 0.2)
             torch.nn.init.constant_(module.bias.data, 0)
-    
+
+
 class Discriminator(Module):
     """
     Class to create the discriminator model
