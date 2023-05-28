@@ -92,10 +92,9 @@ class model(object):
 
     # TODO: add also the option to use the validation set
     def train_test_split(self,
-                         test_size: float=0.2,
-                         random_state: int=42,
-                         radar:int=0):
-        """
+                         test_dim: float=0.2,
+                         random_state: int=42):
+        '''
         Split the data into training and testing data
 
         Parameters
@@ -104,60 +103,29 @@ class model(object):
             Size of the test data. The default is 0.2.
         random_state : int, optional
             Random state. The default is 42.
-        """
+        '''
         # define the random generator
         generator = torch.Generator().manual_seed(random_state)
-        
         # Split the data
         if self.case == 0:
-            #raise WorkToDoError('Case 0 not implemented yet')
-            if self.model_type == 'CNN-MD':
-                if radar:
-                    train_size = int((1-test_size) * len(self.data['mDoppler_1']))
-                    test_size = len(self.data['mDoppler_1']) - train_size
-                    self.train_data, self.test_data = random_split(self.data['mDoppler_1'], [train_size, test_size], generator=generator)
-                else:
-                    train_size = int((1-test_size) * len(self.data['mDoppler_2']))
-                    test_size = len(self.data['mDoppler_2']) - train_size
-                    self.train_data, self.test_data = random_split(self.data['mDoppler_2'], [train_size, test_size], generator=generator)
-            else:
-                if radar:
-                    train_size = int((1-test_size) * len(self.data['rdn_1']))
-                    test_size = len(self.data['rdn_1']) - train_size
-                    self.train_data, self.test_data = random_split(self.data['rdn_1'], [train_size, test_size], generator=generator)
-                else:
-                    train_size = int((1-test_size) * len(self.data['rdn_2']))
-                    test_size = len(self.data['rdn_2']) - train_size
-                    self.train_data, self.test_data = random_split(self.data['rdn_2'], [train_size, test_size], generator=generator)
+            train_size = int((1-test_dim) * len(self.data['features_1']))
+            test_size = len(self.data['features_1']) - train_size
+            self.train_data, self.test_data = random_split(self.data, [train_size, test_size], generator=generator)                 
         elif self.case == 1:
-            #raise WorkToDoError('Case 1 not implemented yet')
-            if self.model_type == 'CNN-MD':
-                train_data = self.data['mDoppler_1']
-                test_data = self.data['mDoppler_2']
-            else:
-                train_data = self.data['rdn_1']
-                test_data = self.data['rdn_2']
-            self.train_data=torch.utils.data.Subset(train_data, list(range(0, len(train_data))))
-            self.test_data=torch.utils.data.Subset(test_data, list(range(0, len(test_data))))
+            self.train_data = self.data['features_1']
+            self.test_data = self.data['features_2']
         elif self.case == 2:
             train_size = int((1-test_size) * len(self.data))
             test_size = len(self.data) - train_size
             self.train_data, self.test_data = random_split(self.data, [train_size, test_size], generator=generator)
-            self.input_size = self.train_data[0][0].shape
+        elif self.case == 3:
+            train_size = int((1-test_dim) * len(self.data['features']))
+            test_size = len(self.data['features']) - train_size
+            self.train_data, self.test_data = random_split(self.data['features'], [train_size, test_size], generator=generator)
         else:
             raise ValueError('Invalid case')
         
         self.input_size = self.train_data[0][0].shape
-
-        #for i, data in enumerate(self.train_loader):
-        #    # Assuming your data contains images in 'img' variable
-        #    img = data['img']
-        #    
-        #    # Create a grid of images
-        #    img_grid = vutils.make_grid(img, normalize=True, scale_each=True)
-        #    
-        #    # Add the image grid to Tensorboard
-        #    self.writer.add_image('Image', img_grid, i)
 
         # Set the flag
         self.train_test_split_done = True

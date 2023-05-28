@@ -255,7 +255,7 @@ def time_mask(spectrogram:np.ndarray,
     for _ in range(num_masks):
         t = random.randint(0, time_frames - 1)
         t_mask = random.randint(0, mask_factor)
-        masked_spectrogram[:, t:t + t_mask] = 0
+        masked_spectrogram[t:t + t_mask, :] = 0
     return masked_spectrogram
 
 
@@ -284,7 +284,7 @@ def doppler_mask(spectrogram:np.ndarray,
     for _ in range(num_masks):
         f = random.randint(0, freq_bins - 1)
         f_mask = random.randint(0, mask_factor)
-        masked_spectrogram[f:f + f_mask, :] = 0
+        masked_spectrogram[:, f:f + f_mask] = 0
     return masked_spectrogram
 
 
@@ -318,7 +318,7 @@ def time_doppler_mask(spectrogram:np.ndarray,
         t_mask = random.randint(0, time_mask_factor)
         d = random.randint(0, freq_bins - 1)
         d_mask = random.randint(0, doppler_mask_factor)
-        masked_spectrogram[d:d + d_mask, t:t + t_mask] = 0
+        masked_spectrogram[t:t + t_mask, d:d + d_mask] = 0
     return masked_spectrogram
 
 
