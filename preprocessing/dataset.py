@@ -14,6 +14,7 @@ TODO:
 
 import os
 import h5py
+import torch
 from torch.utils.data import Dataset
 
 class Dataset2Channels(Dataset):
@@ -28,7 +29,8 @@ class Dataset2Channels(Dataset):
                  dirname:str,
                  filename:str,
                  features_transform=None,
-                 labels_transform=None):
+                 labels_transform=None,
+                 combine_channels=True):
         """
         Initialize the dataset
         
@@ -45,6 +47,8 @@ class Dataset2Channels(Dataset):
             Name of the file containing the dataset in .h5 format
         transform : callable, optional
             Transform to apply to the data. The default is None.
+        combine_channels : bool, optional
+            If True, the two channels are combined.
         """
         
         self.features_1 = h5py.File(
@@ -70,6 +74,7 @@ class Dataset2Channels(Dataset):
         
         self.features_transform = features_transform
         self.labels_transform = labels_transform
+        self.combine_channels = combine_channels
         
     
     def __len__(self) -> int:
@@ -110,6 +115,14 @@ class Dataset2Channels(Dataset):
         if self.labels_transform:
             label = self.labels_transform(label)
             
+        if self.combine_channels:
+            features_1 = torch.unsqueeze(features_1, dim=0)
+            features_2 = torch.unsqueeze(features_2, dim=0)
+            features = torch.cat((features_1, features_2), dim=0)
+            
+            return features, label
+
+
         return features_1, features_2, label
     
     
@@ -207,4 +220,4 @@ class Dataset1Channel(Dataset):
         if self.labels_transform:
             label = self.labels_transform(label)
             
-        return features, features, label
+        return features, label
