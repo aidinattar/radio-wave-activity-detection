@@ -59,6 +59,7 @@ Current configuration:
 # Check the correctness of the code
 
 import torch
+import numpy as np
 from docopt import docopt
 from models.classifier import model
 from preprocessing.dataset import Dataset2Channels, Dataset1Channel
@@ -68,7 +69,7 @@ from datetime import datetime
 now = datetime.now().strftime("%Y%m%d")
 
 def main(model_name:str,
-         data:Dataset,
+         data,
          case:int,
          load:bool,
          augment:bool,
@@ -212,7 +213,9 @@ if __name__ == '__main__':
     TYPE = args['<input>']
     
     
-    labels_transform = lambda label: MAPPING_LABELS_DICT[label] if aggregate else None
+    labels_transform = np.vectorize(
+        lambda label: MAPPING_LABELS_DICT[label]
+    ) if aggregate else None
 
     if case == 0:
         data = Dataset2Channels(
