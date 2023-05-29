@@ -84,25 +84,41 @@ class DataProcess(object):
         **kwargs : TYPE
             Keyword arguments to pass to the pad function.
         """
-        for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
-            if rdn_1.shape[0] < padding:
-                self.rdn_1[i] = np.pad(
-                    array=rdn_1,
-                    pad_width=((0, padding - rdn_1.shape[0]), (0, 0), (0, 0)),
-                    mode=mode,
-                    **kwargs
-                )
-            else:
-                self.rdn_1[i] = rdn_1
-            if rdn_2.shape[0] < padding:
-                self.rdn_2[i] = np.pad(
-                    array=rdn_2,
-                    pad_width=((0, padding - rdn_2.shape[0]), (0, 0), (0, 0)),
-                    mode=mode,
-                    **kwargs
-                )
-            else:
-                self.rdn_2[i] = rdn_2
+        if mode != 'last-frame':
+            for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
+                if rdn_1.shape[0] < padding:
+                    self.rdn_1[i] = np.pad(
+                        array=rdn_1,
+                        pad_width=((0, padding - rdn_1.shape[0]), (0, 0), (0, 0)),
+                        mode=mode,
+                        **kwargs
+                    )
+                else:
+                    self.rdn_1[i] = rdn_1
+                if rdn_2.shape[0] < padding:
+                    self.rdn_2[i] = np.pad(
+                        array=rdn_2,
+                        pad_width=((0, padding - rdn_2.shape[0]), (0, 0), (0, 0)),
+                        mode=mode,
+                        **kwargs
+                    )
+                else:
+                    self.rdn_2[i] = rdn_2
+        else:
+            for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
+                if rdn_1.shape[0] < padding:
+                    last_frame_1 = rdn_1[-1]  # Get the last frame
+                    padding_frames_1 = np.tile(last_frame_1, (padding - rdn_1.shape[0], 1, 1))
+                    self.rdn_1[i] = np.concatenate((rdn_1, padding_frames_1), axis=0)
+                else:
+                    self.rdn_1[i] = rdn_1
+                if rdn_2.shape[0] < padding:
+                    last_frame_2 = rdn_2[-1]  # Get the last frame
+                    padding_frames_2 = np.tile(last_frame_2, (padding - rdn_2.shape[0], 1, 1))
+                    self.rdn_2[i] = np.concatenate((rdn_2, padding_frames_2), axis=0)
+                else:
+                    self.rdn_2[i] = rdn_2
+
 
 
     def padding_mDoppler(self, padding:int, mode: str='constant', **kwargs):
@@ -119,25 +135,41 @@ class DataProcess(object):
         **kwargs : TYPE
             Keyword arguments to pass to the pad function.
         """
-        for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
-            if mDoppler_1.shape[0] < padding:
-                self.mDoppler_1[i] = np.pad(
-                    array=mDoppler_1,
-                    pad_width=((0, padding - mDoppler_1.shape[0]), (0, 0)),
-                    mode=mode,
-                    **kwargs
-                )
-            else:
-                self.mDoppler_1[i] = mDoppler_1
-            if mDoppler_2.shape[0] < padding:
-                self.mDoppler_2[i] = np.pad(
-                    array=mDoppler_2,
-                    pad_width=((0, padding - mDoppler_2.shape[0]), (0, 0)),
-                    mode=mode,
-                    **kwargs
-                )
-            else:
-                self.mDoppler_2[i] = mDoppler_2
+        if mode != 'last-frame':
+            for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
+                if mDoppler_1.shape[0] < padding:
+                    self.mDoppler_1[i] = np.pad(
+                        array=mDoppler_1,
+                        pad_width=((0, padding - mDoppler_1.shape[0]), (0, 0)),
+                        mode=mode,
+                        **kwargs
+                    )
+                else:
+                    self.mDoppler_1[i] = mDoppler_1
+                if mDoppler_2.shape[0] < padding:
+                    self.mDoppler_2[i] = np.pad(
+                        array=mDoppler_2,
+                        pad_width=((0, padding - mDoppler_2.shape[0]), (0, 0)),
+                        mode=mode,
+                        **kwargs
+                    )
+                else:
+                    self.mDoppler_2[i] = mDoppler_2
+        else:
+            for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
+                if mDoppler_1.shape[0] < padding:
+                    last_frame_1 = mDoppler_1[-1]  # Get the last frame
+                    padding_frames_1 = np.tile(last_frame_1, (padding - mDoppler_1.shape[0], 1))
+                    self.mDoppler_1[i] = np.concatenate((mDoppler_1, padding_frames_1), axis=0)
+                else:
+                    self.mDoppler_1[i] = mDoppler_1
+                if mDoppler_2.shape[0] < padding:
+                    last_frame_2 = mDoppler_2[-1]  # Get the last frame
+                    padding_frames_2 = np.tile(last_frame_2, (padding - mDoppler_2.shape[0], 1))
+                    self.mDoppler_2[i] = np.concatenate((mDoppler_2, padding_frames_2), axis=0)
+                else:
+                    self.mDoppler_2[i] = mDoppler_2
+
 
 
     def cut_time(self, loc:str='random', len_default:int=40, n_samples:int=1, **kwargs):
@@ -148,7 +180,8 @@ class DataProcess(object):
         ----------
         loc : str, optional
             Location of the cut. Possible values are:
-            'center', 'start', 'end', 'random', 'normal'.
+            'center', 'start', 'end', 'random', 'normal',
+            'threshold-center', 'threshold-start', 'threshold-end'.
             The default is 'random'.
         len_default : int, optional
             Default length of the action. The default is 40.
