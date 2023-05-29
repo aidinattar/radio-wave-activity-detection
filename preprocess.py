@@ -116,7 +116,7 @@ def cutting(data:DataReader,
     dc = DataCutter(data=data)
     if verbose > 1:
         print("Cutting...")
-    dc.cut(11)
+    dc.cut(10.810810811)
     if verbose > 1:
         print("Creating labels...")
     dc.create_labels_list()
@@ -167,10 +167,12 @@ def process(data:DataCutter,
     dp = DataProcess(data=data)
     if verbose > 1:
         print("Separating actions in time...")
-    dp.cut_time(loc='threshold-start', threshold=0.2)
+    dp.cut_time(loc='threshold-center', threshold=0.5)
     if verbose > 1:
         print("Padding...")
-    dp.padding(padding=40)
+    dp.padding(
+        padding=40,
+        mode='last-frame')
     if verbose > 1:
         print("Saving processed data...")
     if len(subjects) > 1:
