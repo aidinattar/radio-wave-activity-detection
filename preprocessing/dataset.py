@@ -14,7 +14,7 @@ TODO:
 
 import os
 import h5py
-import torch
+import numpy as np
 from torch.utils.data import Dataset
 
 class Dataset2Channels(Dataset):
@@ -116,9 +116,9 @@ class Dataset2Channels(Dataset):
             label = self.labels_transform(label)
             
         if self.combine_channels:
-            features_1 = torch.unsqueeze(features_1, dim=0)
-            features_2 = torch.unsqueeze(features_2, dim=0)
-            features = torch.cat((features_1, features_2), dim=0)
+            features_1 = np.expand_dims(features_1, axis=0)
+            features_2 = np.expand_dims(features_2, axis=0)
+            features = np.concatenate((features_1, features_2), axis=0)
             
             return features, label
 
