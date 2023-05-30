@@ -4,10 +4,8 @@ GAN model
 
 import torch
 from torch.nn import Module, Linear,\
-                     Conv2d, MaxPool2d,\
-                     Dropout, Dropout2d,\
+                     Conv2d, Dropout, \
                      Flatten, Sequential,\
-                     ELU, Softmax,\
                      BatchNorm1d, BatchNorm2d,\
                      LeakyReLU, ConvTranspose2d,\
                      Sigmoid, BCEWithLogitsLoss
