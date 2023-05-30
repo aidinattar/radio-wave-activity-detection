@@ -16,9 +16,15 @@ class DataProcess(object):
     Class to process the data
     """
 
-    def __init__(self, data: DataCutter):
+    def __init__(self,
+                 data: DataCutter):
         """
         Constructor
+        
+        Parameters
+        ----------
+        data : DataCutter
+            DataCutter object containing the data
         """
         self.data = data
         self.do_rdn = self.data.data.do_rdn
@@ -41,16 +47,28 @@ class DataProcess(object):
     
     
     @classmethod
-    def from_file(cls, path:str, file:str):
+    def from_file(cls,
+                  path:str,
+                  file:str):
         """
         Constructor from file
+        
+        Parameters
+        ----------
+        path : str
+            Path to the file
+        file : str
+            Name of the file
         """
         processer = cls(DataCutter.empty())
         processer.load(path, file)
         return processer
 
 
-    def padding(self, padding: int, mode: str='constant', **kwargs):
+    def padding(self,
+                padding: int,
+                mode: str='constant',
+                **kwargs):
         """
         Pad the data.
         Check if the action is at least [padding] bins long, if not, pad the data.
@@ -70,7 +88,10 @@ class DataProcess(object):
             self.padding_mDoppler(padding=padding, mode=mode, **kwargs)
 
 
-    def padding_rdn(self, padding: int=40, mode: str='constant', **kwargs):
+    def padding_rdn(self,
+                    padding: int=40,
+                    mode: str='constant',
+                    **kwargs):
         """
         Pad the rdn data.
         Check if the action is at least 40 bins long, if not, pad the data.
@@ -121,7 +142,10 @@ class DataProcess(object):
 
 
 
-    def padding_mDoppler(self, padding:int, mode: str='constant', **kwargs):
+    def padding_mDoppler(self,
+                         padding:int,
+                         mode: str='constant',
+                         **kwargs):
         """
         Pad the mDoppler data.
         Check if the action is at least 40 bins long, if not, pad the data.
@@ -172,7 +196,11 @@ class DataProcess(object):
 
 
 
-    def cut_time(self, loc:str='random', len_default:int=40, n_samples:int=1, **kwargs):
+    def cut_time(self,
+                 loc:str='random',
+                 len_default:int=40,
+                 n_samples:int=1,
+                 **kwargs):
         """
         Cut the data in time
 
@@ -197,7 +225,11 @@ class DataProcess(object):
             self.cut_time_mDoppler(loc=loc, len_default=len_default, n_samples=n_samples, **kwargs)
 
 
-    def cut_time_rdn(self, loc:int='random', len_default:int=40, n_samples:int=1, **kwargs):
+    def cut_time_rdn(self,
+                     loc:int='random',
+                     len_default:int=40,
+                     n_samples:int=1,
+                     **kwargs):
         """
         Cut the rdn data in time
 
@@ -254,7 +286,11 @@ class DataProcess(object):
                 raise ValueError("Invalid location")
 
 
-    def cut_time_mDoppler(self, loc:int='random', len_default:int=40, n_samples:int=1, **kwargs):
+    def cut_time_mDoppler(self,
+                          loc:int='random',
+                          len_default:int=40,
+                          n_samples:int=1,
+                          **kwargs):
         """
         Cut the mDoppler data in time
 
@@ -348,9 +384,18 @@ class DataProcess(object):
             self.mDoppler_2[i] = np.transpose(mDoppler_2)
 
 
-    def save(self, path:str='DATA_preprocessed', filename:str='data_processed.npz'):
+    def save(self,
+             path:str='DATA_preprocessed',
+             filename:str='data_processed.npz'):
         """
         Save the data.
+        
+        Parameters
+        ----------
+        path : str, optional
+            Path to the file, by default 'DATA_preprocessed'
+        filename : str, optional
+            Name of the file, by default 'data_processed.npz'
         """
 
         # Create the path
@@ -368,9 +413,18 @@ class DataProcess(object):
         )
 
 
-    def load(self, path:str='DATA_preprocessed', filename:str='data_processed.npz'):
+    def load(self,
+             path:str='DATA_preprocessed',
+             filename:str='data_processed.npz'):
         """
-        Load the data.
+        Load the data from npz file.
+        
+        Parameters
+        ----------
+        path : str, optional
+            Path to the file, by default 'DATA_preprocessed'
+        filename : str, optional
+            Name of the file, by default 'data_processed.npz'
         """
 
         # Create the path

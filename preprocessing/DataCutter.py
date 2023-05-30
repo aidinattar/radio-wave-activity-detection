@@ -30,9 +30,15 @@ class DataCutter(object):
     labels_dict = np.array([])
 
 
-    def __init__(self, data: DataReader):
+    def __init__(self,
+                 data: DataReader):
         """
         Constructor
+        
+        Parameters
+        ----------
+        data : DataReader
+            DataReader object containing the data
         """
         self.data = data
         self.timestamps = self.data.timestamp_speech
@@ -47,18 +53,34 @@ class DataCutter(object):
 
     
     @classmethod
-    def from_file(cls, path:str, file:str):
+    def from_file(cls,
+                  path:str,
+                  file:str):
         """
         Constructor from file
+        
+        Parameters
+        ----------
+        path : str
+            Path to the file
+        file : str
+            Name of the file
         """
         cutter = cls(DataReader.empty())
         cutter.load(path, file)
         return cutter
 
 
-    def cut(self, conversion_factor:float=1):
+    def cut(self,
+            conversion_factor:float=1):
         """
-        Cut the data into the signals according to the timestamps provided by the timestamp_speech system.
+        Cut the data into the signals according to the
+        timestamps provided by the timestamp_speech system.
+        
+        Parameters
+        ----------
+        conversion_factor : float
+            Conversion factor from seconds to bins
         """
         self.conversion_factor = conversion_factor
 
@@ -81,7 +103,8 @@ class DataCutter(object):
 
     def cut_mDoppler(self):
         """
-        Cut the mDoppler data into the signals according to the timestamps provided by the timestamp_speech system.
+        Cut the mDoppler data into the signals according
+        to the timestamps provided by the timestamp_speech system.
         """
 
         if not self.data.do_mDoppler:
@@ -103,7 +126,8 @@ class DataCutter(object):
 
     def cut_rdn(self):
         """
-        Cut the rdn data into the signals according to the timestamps provided by the timestamp_speech system.
+        Cut the rdn data into the signals according to the
+        timestamps provided by the timestamp_speech system.
         """
 
         if not self.data.do_rdn:
@@ -155,9 +179,18 @@ class DataCutter(object):
 
         self.labels_to_int_done = True
 
-    def save(self, path:str='DATA_preprocessed', filename:str='data_cutted.npz'):
+    def save(self,
+             path:str='DATA_preprocessed',
+             filename:str='data_cutted.npz'):
         """
         Save the data.
+        
+        Parameters
+        ----------
+        path : str
+            Path to the file
+        filename : str
+            Name of the file
         """
         # Create the path
         path = os.path.join(path, filename)
@@ -174,9 +207,18 @@ class DataCutter(object):
         )
 
 
-    def load(self, path:str='DATA_preprocessed', filename:str='data.npz'):
+    def load(self,
+             path:str='DATA_preprocessed',
+             filename:str='data.npz'):
         """
-        Load the data.
+        Load the data from a npz file.
+        
+        Parameters
+        ----------
+        path : str
+            Path to the file
+        filename : str
+            Name of the file
         """
 
         # Create the path
