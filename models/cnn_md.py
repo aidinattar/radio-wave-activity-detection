@@ -38,6 +38,7 @@ class cnn_md(Module):
 
     def __init__(self,
                  in_channels: int=1,
+                 out_channels : int=10,
                  filters: tuple=(8, 16, 32, 64),
                  kernel_size: tuple=(3, 3),
                  stride: int=1,
@@ -134,7 +135,7 @@ class cnn_md(Module):
             Linear(in_features=f4*8*4, out_features=128), ### 6 and 2 are the height and width of the input
             ELU(), # not sure if this is the right activation function
             Dropout(p=dropout),
-            Linear(in_features=128, out_features=14),
+            Linear(in_features=128, out_features=out_channels),
             #Linear(in_features=6, out_features=14),
             Dropout(p=dropout),
             Softmax(dim=1)
