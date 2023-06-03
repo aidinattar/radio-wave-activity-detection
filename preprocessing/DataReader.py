@@ -629,7 +629,7 @@ class DataReader(object):
                              name:str='actions.png',
                              save:bool=False):
         """
-        Function to divide the actions according to the
+        Function to divide th'n_beans'] = self.timestamp_speech[i]['time_passed_bins'].diff().fillna(0).astype(int)e actions according to the
         timestamps recorded in the file
 
         Parameters

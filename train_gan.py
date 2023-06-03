@@ -207,6 +207,11 @@ def train(dataloader: DataLoader,
         gloss.append(np.mean(gen_losses))
         dloss.append(np.mean(disc_losses))
         
+        # save checkpoint if loss is lower than the previous one
+        if gloss[-1] == min(gloss):
+            torch.save(generator.state_dict(), os.path.join('checkpoints', 'generator.pt'))
+            torch.save(discriminator.state_dict(), os.path.join('checkpoints', 'discriminator.pt'))
+        
         # produce images
         display.clear_output(wait=True)
         generate_and_save_images(

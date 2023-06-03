@@ -75,6 +75,7 @@ class Dataset2Channels(Dataset):
         self.features_transform = features_transform
         self.labels_transform = labels_transform
         self.combine_channels = combine_channels
+        self.TYPE = TYPE
         
     
     def __len__(self) -> int:
@@ -182,6 +183,7 @@ class Dataset1Channel(Dataset):
         
         self.features_transform = features_transform
         self.labels_transform = labels_transform
+        self.TYPE = TYPE
         
     
     def __len__(self) -> int:
