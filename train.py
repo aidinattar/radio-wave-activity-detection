@@ -15,6 +15,7 @@ Options:
     <data>                          Name of the data file.
     <input>                         Type of data to use.
     <case>                          Case to use.
+    --channel=<channel>             Channel to use [default: 1].
     --augment                       Augment the data [default: False].
     --load                          Load the model [default: False].
     --n_samples=<n_samples>         Number of samples to take [default: 5].
@@ -59,6 +60,7 @@ Current configuration:
 # Check the correctness of the code
 
 import torch
+import numpy as np
 from docopt import docopt
 from models.classifier import model
 from preprocessing.dataset import Dataset2Channels, Dataset1Channel
@@ -68,9 +70,10 @@ from datetime import datetime
 now = datetime.now().strftime("%Y%m%d")
 
 def main(model_name:str,
-         data:Dataset,
+         data,
          case:int,
          load:bool,
+         channels:int,
          augment:bool,
          n_samples:int,
          dropout:float,
@@ -101,6 +104,8 @@ def main(model_name:str,
         Case to use
     load : bool
         Load the model
+    channels : int
+        Number of input channels
     augment : bool
         Augment the data
     n_samples : int
@@ -133,8 +138,16 @@ def main(model_name:str,
         Device to use
     """
     # Create the model object
-    classifier = model(data=data, case=case, model_type=model_name)
-    classifier.create_model(dropout=dropout)
+    classifier = model(
+        data=data,
+        case=case,
+        model_type=model_name,
+        channels=channels,
+    )
+    classifier.create_model(
+        in_channels=2,
+        dropout=dropout
+    )
 
     # Load the pre-trained model
     if load:
@@ -154,7 +167,10 @@ def main(model_name:str,
     classifier.create_DataLoaders(batch_size=batch_size)
     
     # Print the model summary
-    classifier.summary(save=True, name=f'{model_name}_case{case}_summary.txt')
+    classifier.summary(
+        save=True,
+        name=f'{model_name}_case{case}_summary.txt'
+    )
 
     # Create the optimizer, loss function
     classifier.create_optimizer(optimizer=optimizer, lr=lr, weight_decay=weight_decay, momentum=momentum, nesterov=nesterov)
@@ -212,32 +228,11 @@ if __name__ == '__main__':
     TYPE = args['<input>']
     
     
-    labels_transform = lambda label: MAPPING_LABELS_DICT[label] if aggregate else None
-
+    labels_transform = np.vectorize(
+        lambda label: MAPPING_LABELS_DICT[label]
+    ) if aggregate else None
+    
     if case == 0:
-        data = Dataset2Channels(
-            TYPE=TYPE,
-            dirname='DATA_preprocessed',
-            filename=args['<data>'],
-            features_transform=None,
-            labels_transform=labels_transform,
-            combine_channels=True
-        )
-        
-    elif case == 1:
-        data = Dataset2Channels(
-            TYPE=TYPE,
-            dirname='DATA_preprocessed',
-            filename=args['<data>'],
-            features_transform=None,
-            labels_transform=labels_transform,
-            combine_channels=False
-        )
-    
-    elif case == 2:
-        raise NotImplementedError('Case 2 not implemented yet')
-    
-    elif case == 3:
         data = Dataset1Channel(
             TYPE=TYPE,
             dirname='DATA_preprocessed',
@@ -246,9 +241,40 @@ if __name__ == '__main__':
             labels_transform=labels_transform,
             channel=1,
         )
+        channels = 1
+        
+    elif case == 1:
+        raise NotImplementedError('Case 1 not implemented yet')
+        data = Dataset2Channels(
+            TYPE=TYPE,
+            dirname='DATA_preprocessed',
+            filename=args['<data>'],
+            features_transform=None,
+            labels_transform=labels_transform,
+            combine_channels=False
+        )
+        channels = None
+    
+    elif case == 2:
+        raise NotImplementedError('Case 2 not implemented yet')
+        channels = None
+    
+    elif case == 3:
+        data = Dataset2Channels(
+            TYPE=TYPE,
+            dirname='DATA_preprocessed',
+            filename=args['<data>'],
+            features_transform=None,
+            labels_transform=labels_transform,
+            combine_channels=True
+        )
+        channels = 2
 
     else:
         raise ValueError(f'Case {case} not recognized')
+
+    
+    
     
     # load model
     model_name = args['<model>']
@@ -258,6 +284,7 @@ if __name__ == '__main__':
         data=data,
         case=case,
         load=load,
+        channels=channels,
         augment=augment,
         n_samples=n_samples,
         dropout=dropout,

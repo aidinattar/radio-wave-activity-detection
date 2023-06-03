@@ -19,8 +19,8 @@ class Generator(Module):
                  filters:tuple=(128, 64),
                  kernel_size:int=5,
                  channels:int=256,
-                 height:int=7,
-                 width:int=7,
+                 height:int=10,
+                 width:int=20,
                  bias:bool=False,
                  padding:int=2,
                  stride:int=2,
@@ -84,7 +84,7 @@ class Generator(Module):
         f1, f2 = filters
         self.conv_model = Sequential(
             ConvTranspose2d(
-                in_channels=channels,
+                in_channels=channels + num_classes,
                 out_channels=f1,
                 kernel_size=kernel_size,
                 bias=bias,
@@ -96,7 +96,7 @@ class Generator(Module):
             LeakyReLU(),
             
             ConvTranspose2d(
-                in_channels=f1,
+                in_channels=f1 + num_classes,
                 out_channels=f2,
                 kernel_size=kernel_size,
                 stride=stride,
@@ -110,7 +110,7 @@ class Generator(Module):
             LeakyReLU(),
             
             ConvTranspose2d(
-                in_channels=f2,
+                in_channels=f2 + num_classes,
                 out_channels=1,
                 kernel_size=kernel_size,
                 stride=stride,
@@ -134,12 +134,31 @@ class Generator(Module):
             Input tensor
         labels : torch.Tensor
             Labels tensor
+            
+        Returns
+        -------
+        y : torch.Tensor
+            Output tensor
         """
-        y = torch.cat([x, labels], dim=1)
-        y = self.fc_net(y)
-        y = y.reshape((-1, self.channels, self.height, self.width))
+        x = torch.cat((x, labels), dim=1)
+        y = self.fc_net(x)
+        y = y.reshape((
+            -1,
+            self.channels,
+            self.width,
+            self.height
+        ))
+        y = torch.cat((y, y.new_full((y.size(0), y.size(1), y.size(2), y.size(3)), y.size(1) * y.size(2) * y.size(3), dtype=torch.float32).unsqueeze(-1) * y.new_full((y.size(0), y.size(1), y.size(2), y.size(3)), y.size(1) * y.size(2) * y.size(3), dtype=torch.float32).unsqueeze(-1)), dim=1)
+        y = torch.cat((y, y.new_full((y.size(0), y.size(1), y.size(2), y.size(3)), y.size(1) * y.size(2) * y.size(3), dtype=torch.float32).unsqueeze(-1) * y.new_full((y.size(0), y.size(1), y.size(2), y.size(3)), y.size(1) * y.size(2) * y.size(3), dtype=torch.float32).unsqueeze(-1)), dim=1)
+        y = torch.cat((y, y.new_full((y.size(0), y.size(1), y.size(2), y.size(3)), y.size(1) * y.size(2) * y.size(3), dtype=torch.float32).unsqueeze(-1) * y.new_full((y.size(0), y.size(1), y.size(2), y.size(3)), y.size(1) * y.size(2) * y.size(3), dtype=torch.float32).unsqueeze(-1)), dim=1)
         y = self.conv_model(y)
         return y
+        
+        #y = torch.cat([x, labels], dim=1)
+        #y = self.fc_net(y)
+        #y = y.reshape((-1, self.channels, self.height, self.width))
+        #y = self.conv_model(y)
+        #return y
     
     
     def _init_weights(self, module):
@@ -175,11 +194,37 @@ class Discriminator(Module):
                  padding=2,
                  stride=2,
                  dropout=0.3):
+        """
+        Initialize the discriminator model
+        
+        Parameters
+        ----------
+        in_channels : int, optional
+            Number of input channels. The default is 1.
+        num_classes : int, optional
+            Number of classes. The default is 10.
+        filters : tuple, optional
+            Number of filters for each convolutional layer.
+            The default is (64, 128, 2048).
+        kernel_size : int, optional
+            Kernel size for the convolutional layers.
+            The default is 5.
+        padding : int, optional
+            Padding for the convolutional layers.
+            The default is 2.
+        stride : int, optional
+            Stride for the convolutional layers.
+            The default is 2.
+        dropout : float, optional
+            Dropout probability. The default is 0.3.
+        """
+
         super().__init__()
+
         f1, f2, f3 = filters
 
         self.model = Sequential(
-            Conv2d(in_channels=in_channels,
+            Conv2d(in_channels=in_channels + num_classes,
                    out_channels=f1,
                    kernel_size=kernel_size,
                    stride=stride,
@@ -191,7 +236,7 @@ class Discriminator(Module):
             ),
 
             Conv2d(
-                in_channels=f1,
+                in_channels=f1 + num_classes,
                 out_channels=f2,
                 kernel_size=kernel_size,
                 stride=stride,
@@ -203,7 +248,7 @@ class Discriminator(Module):
             ),
 
             Conv2d(
-                in_channels=f2,
+                in_channels=f2 + num_classes,
                 out_channels=f3,
                 kernel_size=kernel_size,
                 stride=stride,
@@ -216,7 +261,7 @@ class Discriminator(Module):
 
             Flatten(),
             Linear(
-                in_features=f3 * 4 * 4 + num_classes,
+                in_features=f3 * 10 * 5,
                 out_features=1
             )
         )
@@ -242,8 +287,8 @@ class Discriminator(Module):
         y : torch.Tensor
             Output tensor
         """        
+        x = torch.cat((x, labels), dim=1)
         y = self.model(x)
-        y = torch.cat([y, labels], dim=1)
         return y
 
 

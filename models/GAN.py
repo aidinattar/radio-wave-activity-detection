@@ -4,15 +4,12 @@ GAN model
 
 import torch
 from torch.nn import Module, Linear,\
-                     Conv2d, MaxPool2d,\
-                     Dropout, Dropout2d,\
+                     Conv2d, Dropout, \
                      Flatten, Sequential,\
-                     ELU, Softmax,\
                      BatchNorm1d, BatchNorm2d,\
                      LeakyReLU, ConvTranspose2d,\
                      Sigmoid, BCEWithLogitsLoss
 
-from torchvision.utils import make_grid
 import time as time
 
 
@@ -25,8 +22,8 @@ class Generator(Module):
                  filters: tuple=(128, 64),
                  kernel_size: int=5,
                  channels:int=256,
-                 height:int=7,
-                 width:int=7,
+                 height:int=10,
+                 width:int=20,
                  bias:bool=False,
                  padding:int=2,
                  stride:int=2,
@@ -48,9 +45,11 @@ class Generator(Module):
             Number of channels for the convolutional layers.
             The default is 256.
         height : int, optional
-            Height of the input image. The default is 7.
+            Height of the input image.
+            The default is 20.
         width : int, optional
-            Width of the input image. The default is 7.
+            Width of the input image.
+            The default is 10.
         bias : bool, optional
             Whether to use bias in the convolutional layers.
             The default is False.
@@ -145,7 +144,7 @@ class Generator(Module):
         y = y.reshape((
             -1,
             self.channels,
-            self.weigth,
+            self.width,
             self.height
         ))
         y = self.conv_model(y)
@@ -218,7 +217,7 @@ class Discriminator(Module):
                 kernel_size=kernel_size,
                 stride=stride,
                 padding=padding
-            )
+            ),
             LeakyReLU(),
             Dropout(dropout),
 
@@ -228,7 +227,7 @@ class Discriminator(Module):
                 kernel_size=kernel_size,
                 stride=stride,
                 padding=padding
-            )
+            ),
             LeakyReLU(),
             Dropout(dropout),
 
@@ -238,13 +237,13 @@ class Discriminator(Module):
                 kernel_size=kernel_size,
                 stride=stride,
                 padding=padding
-            )
+            ),
             LeakyReLU(),
             Dropout(dropout),
 
             Flatten(),
             ##### TODO: Check if this is correct
-            Linear(f3 * 4 * 4, 1),
+            Linear(f3 * 10 * 5, 1)
         )
         
         self.apply(self._init_weights)

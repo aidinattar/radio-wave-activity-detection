@@ -16,9 +16,15 @@ class DataProcess(object):
     Class to process the data
     """
 
-    def __init__(self, data: DataCutter):
+    def __init__(self,
+                 data: DataCutter):
         """
         Constructor
+        
+        Parameters
+        ----------
+        data : DataCutter
+            DataCutter object containing the data
         """
         self.data = data
         self.do_rdn = self.data.data.do_rdn
@@ -41,16 +47,28 @@ class DataProcess(object):
     
     
     @classmethod
-    def from_file(cls, path:str, file:str):
+    def from_file(cls,
+                  path:str,
+                  file:str):
         """
         Constructor from file
+        
+        Parameters
+        ----------
+        path : str
+            Path to the file
+        file : str
+            Name of the file
         """
         processer = cls(DataCutter.empty())
         processer.load(path, file)
         return processer
 
 
-    def padding(self, padding: int, mode: str='constant', **kwargs):
+    def padding(self,
+                padding: int,
+                mode: str='constant',
+                **kwargs):
         """
         Pad the data.
         Check if the action is at least [padding] bins long, if not, pad the data.
@@ -70,7 +88,10 @@ class DataProcess(object):
             self.padding_mDoppler(padding=padding, mode=mode, **kwargs)
 
 
-    def padding_rdn(self, padding: int=40, mode: str='constant', **kwargs):
+    def padding_rdn(self,
+                    padding: int=40,
+                    mode: str='constant',
+                    **kwargs):
         """
         Pad the rdn data.
         Check if the action is at least 40 bins long, if not, pad the data.
@@ -84,28 +105,47 @@ class DataProcess(object):
         **kwargs : TYPE
             Keyword arguments to pass to the pad function.
         """
-        for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
-            if rdn_1.shape[0] < padding:
-                self.rdn_1[i] = np.pad(
-                    array=rdn_1,
-                    pad_width=((0, padding - rdn_1.shape[0]), (0, 0), (0, 0)),
-                    mode=mode,
-                    **kwargs
-                )
-            else:
-                self.rdn_1[i] = rdn_1
-            if rdn_2.shape[0] < padding:
-                self.rdn_2[i] = np.pad(
-                    array=rdn_2,
-                    pad_width=((0, padding - rdn_2.shape[0]), (0, 0), (0, 0)),
-                    mode=mode,
-                    **kwargs
-                )
-            else:
-                self.rdn_2[i] = rdn_2
+        if mode != 'last-frame':
+            for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
+                if rdn_1.shape[0] < padding:
+                    self.rdn_1[i] = np.pad(
+                        array=rdn_1,
+                        pad_width=((0, padding - rdn_1.shape[0]), (0, 0), (0, 0)),
+                        mode=mode,
+                        **kwargs
+                    )
+                else:
+                    self.rdn_1[i] = rdn_1
+                if rdn_2.shape[0] < padding:
+                    self.rdn_2[i] = np.pad(
+                        array=rdn_2,
+                        pad_width=((0, padding - rdn_2.shape[0]), (0, 0), (0, 0)),
+                        mode=mode,
+                        **kwargs
+                    )
+                else:
+                    self.rdn_2[i] = rdn_2
+        else:
+            for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
+                if rdn_1.shape[0] < padding:
+                    last_frame_1 = rdn_1[-1]  # Get the last frame
+                    padding_frames_1 = np.tile(last_frame_1, (padding - rdn_1.shape[0], 1, 1))
+                    self.rdn_1[i] = np.concatenate((rdn_1, padding_frames_1), axis=0)
+                else:
+                    self.rdn_1[i] = rdn_1
+                if rdn_2.shape[0] < padding:
+                    last_frame_2 = rdn_2[-1]  # Get the last frame
+                    padding_frames_2 = np.tile(last_frame_2, (padding - rdn_2.shape[0], 1, 1))
+                    self.rdn_2[i] = np.concatenate((rdn_2, padding_frames_2), axis=0)
+                else:
+                    self.rdn_2[i] = rdn_2
 
 
-    def padding_mDoppler(self, padding:int, mode: str='constant', **kwargs):
+
+    def padding_mDoppler(self,
+                         padding:int,
+                         mode: str='constant',
+                         **kwargs):
         """
         Pad the mDoppler data.
         Check if the action is at least 40 bins long, if not, pad the data.
@@ -119,28 +159,48 @@ class DataProcess(object):
         **kwargs : TYPE
             Keyword arguments to pass to the pad function.
         """
-        for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
-            if mDoppler_1.shape[0] < padding:
-                self.mDoppler_1[i] = np.pad(
-                    array=mDoppler_1,
-                    pad_width=((0, padding - mDoppler_1.shape[0]), (0, 0)),
-                    mode=mode,
-                    **kwargs
-                )
-            else:
-                self.mDoppler_1[i] = mDoppler_1
-            if mDoppler_2.shape[0] < padding:
-                self.mDoppler_2[i] = np.pad(
-                    array=mDoppler_2,
-                    pad_width=((0, padding - mDoppler_2.shape[0]), (0, 0)),
-                    mode=mode,
-                    **kwargs
-                )
-            else:
-                self.mDoppler_2[i] = mDoppler_2
+        if mode != 'last-frame':
+            for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
+                if mDoppler_1.shape[0] < padding:
+                    self.mDoppler_1[i] = np.pad(
+                        array=mDoppler_1,
+                        pad_width=((0, padding - mDoppler_1.shape[0]), (0, 0)),
+                        mode=mode,
+                        **kwargs
+                    )
+                else:
+                    self.mDoppler_1[i] = mDoppler_1
+                if mDoppler_2.shape[0] < padding:
+                    self.mDoppler_2[i] = np.pad(
+                        array=mDoppler_2,
+                        pad_width=((0, padding - mDoppler_2.shape[0]), (0, 0)),
+                        mode=mode,
+                        **kwargs
+                    )
+                else:
+                    self.mDoppler_2[i] = mDoppler_2
+        else:
+            for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
+                if mDoppler_1.shape[0] < padding:
+                    last_frame_1 = mDoppler_1[-1]  # Get the last frame
+                    padding_frames_1 = np.tile(last_frame_1, (padding - mDoppler_1.shape[0], 1))
+                    self.mDoppler_1[i] = np.concatenate((mDoppler_1, padding_frames_1), axis=0)
+                else:
+                    self.mDoppler_1[i] = mDoppler_1
+                if mDoppler_2.shape[0] < padding:
+                    last_frame_2 = mDoppler_2[-1]  # Get the last frame
+                    padding_frames_2 = np.tile(last_frame_2, (padding - mDoppler_2.shape[0], 1))
+                    self.mDoppler_2[i] = np.concatenate((mDoppler_2, padding_frames_2), axis=0)
+                else:
+                    self.mDoppler_2[i] = mDoppler_2
 
 
-    def cut_time(self, loc:str='random', len_default:int=40, n_samples:int=1, **kwargs):
+
+    def cut_time(self,
+                 loc:str='random',
+                 len_default:int=40,
+                 n_samples:int=1,
+                 **kwargs):
         """
         Cut the data in time
 
@@ -148,7 +208,8 @@ class DataProcess(object):
         ----------
         loc : str, optional
             Location of the cut. Possible values are:
-            'center', 'start', 'end', 'random', 'normal'.
+            'center', 'start', 'end', 'random', 'normal',
+            'threshold-center', 'threshold-start', 'threshold-end'.
             The default is 'random'.
         len_default : int, optional
             Default length of the action. The default is 40.
@@ -164,7 +225,11 @@ class DataProcess(object):
             self.cut_time_mDoppler(loc=loc, len_default=len_default, n_samples=n_samples, **kwargs)
 
 
-    def cut_time_rdn(self, loc:int='random', len_default:int=40, n_samples:int=1, **kwargs):
+    def cut_time_rdn(self,
+                     loc:int='random',
+                     len_default:int=40,
+                     n_samples:int=1,
+                     **kwargs):
         """
         Cut the rdn data in time
 
@@ -221,7 +286,11 @@ class DataProcess(object):
                 raise ValueError("Invalid location")
 
 
-    def cut_time_mDoppler(self, loc:int='random', len_default:int=40, n_samples:int=1, **kwargs):
+    def cut_time_mDoppler(self,
+                          loc:int='random',
+                          len_default:int=40,
+                          n_samples:int=1,
+                          **kwargs):
         """
         Cut the mDoppler data in time
 
@@ -315,9 +384,18 @@ class DataProcess(object):
             self.mDoppler_2[i] = np.transpose(mDoppler_2)
 
 
-    def save(self, path:str='DATA_preprocessed', filename:str='data_processed.npz'):
+    def save(self,
+             path:str='DATA_preprocessed',
+             filename:str='data_processed.npz'):
         """
         Save the data.
+        
+        Parameters
+        ----------
+        path : str, optional
+            Path to the file, by default 'DATA_preprocessed'
+        filename : str, optional
+            Name of the file, by default 'data_processed.npz'
         """
 
         # Create the path
@@ -335,9 +413,18 @@ class DataProcess(object):
         )
 
 
-    def load(self, path:str='DATA_preprocessed', filename:str='data_processed.npz'):
+    def load(self,
+             path:str='DATA_preprocessed',
+             filename:str='data_processed.npz'):
         """
-        Load the data.
+        Load the data from npz file.
+        
+        Parameters
+        ----------
+        path : str, optional
+            Path to the file, by default 'DATA_preprocessed'
+        filename : str, optional
+            Name of the file, by default 'data_processed.npz'
         """
 
         # Create the path
