@@ -132,7 +132,7 @@ class cnn_md(Module):
             # num_filters * height * width
             # height = (input_height - kernel_size + 2 * padding) / stride + 1
             # width = (input_width - kernel_size + 2 * padding) / stride + 1
-            Linear(in_features=f4*8*4, out_features=128), ### 6 and 2 are the height and width of the input
+            Linear(in_features=f4*5*5, out_features=128), ### 6 and 2 are the height and width of the input
             ELU(), # not sure if this is the right activation function
             Dropout(p=dropout),
             Linear(in_features=128, out_features=out_channels),
