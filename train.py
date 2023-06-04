@@ -66,6 +66,7 @@ from models.classifier import model
 from preprocessing.dataset import Dataset2Channels, Dataset1Channel
 from utils.constants import MAPPING_LABELS_DICT
 from datetime import datetime
+from torchvision import transforms
 
 now = datetime.now().strftime("%Y%m%d")
 
@@ -145,7 +146,7 @@ def main(model_name:str,
         channels=channels,
     )
     classifier.create_model(
-        in_channels=2,
+        in_channels=channels,
         dropout=dropout
     )
 
@@ -231,13 +232,20 @@ if __name__ == '__main__':
     labels_transform = np.vectorize(
         lambda label: MAPPING_LABELS_DICT[label]
     ) if aggregate else None
+
+    features_transform = transforms.Compose([
+        lambda x: x[:, :, 20:-20],
+        transforms.ToTensor(),
+        transforms.Normalize((0,), (1,))
+    ])
+    
     
     if case == 0:
         data = Dataset1Channel(
             TYPE=TYPE,
             dirname='DATA_preprocessed',
             filename=args['<data>'],
-            features_transform=None,
+            features_transform=features_transform,
             labels_transform=labels_transform,
             channel=1,
         )
@@ -249,7 +257,7 @@ if __name__ == '__main__':
             TYPE=TYPE,
             dirname='DATA_preprocessed',
             filename=args['<data>'],
-            features_transform=None,
+            features_transform=features_transform,
             labels_transform=labels_transform,
             combine_channels=False
         )
@@ -264,7 +272,7 @@ if __name__ == '__main__':
             TYPE=TYPE,
             dirname='DATA_preprocessed',
             filename=args['<data>'],
-            features_transform=None,
+            features_transform=features_transform,
             labels_transform=labels_transform,
             combine_channels=True
         )
@@ -272,9 +280,6 @@ if __name__ == '__main__':
 
     else:
         raise ValueError(f'Case {case} not recognized')
-
-    
-    
     
     # load model
     model_name = args['<model>']

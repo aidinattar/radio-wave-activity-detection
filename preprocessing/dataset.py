@@ -108,11 +108,7 @@ class Dataset2Channels(Dataset):
         features_1 = self.features_1[idx]
         features_2 = self.features_2[idx]
         label = self.labels[idx]
-        
-        if self.features_transform:
-            features_1 = self.features_transform(features_1)
-            features_2 = self.features_transform(features_2)
-            
+
         if self.labels_transform:
             label = self.labels_transform(label)
             
@@ -121,8 +117,14 @@ class Dataset2Channels(Dataset):
             features_2 = np.expand_dims(features_2, axis=0)
             features = np.concatenate((features_1, features_2), axis=0)
             
+            if self.features_transform:
+                features = self.features_transform(features).permute(1, 0, 2)
+            
             return features, label
 
+        if self.features_transform:
+            features_1 = self.features_transform(features_1)
+            features_2 = self.features_transform(features_2)
 
         return features_1, features_2, label
     
