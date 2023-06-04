@@ -365,7 +365,7 @@ class model(object):
     ######################################
     ######           CHECK         #######
     ######################################
-    @profile
+    #@profile
     def train_model(self,
                     epochs: int=10,
                     checkpoint: bool=False,
@@ -419,10 +419,7 @@ class model(object):
             preds, targets = [], []
             for batch in iterator:
                 # Get the data
-                if self.channels==1:
-                    data = batch[0].unsqueeze(1).to(self.device) #### batch['data'].to(device)
-                else:
-                    data = batch[0].to(self.device)
+                data = batch[0].to(self.device)
                 target = batch[1].to(self.device) #### batch['target'].to(device)
 
                 # Forward pass
@@ -454,10 +451,7 @@ class model(object):
                 preds, targets = [], []
                 for batch in self.test_loader:
                     # Get the data
-                    if self.channels==1:
-                        data = batch[0].unsqueeze(1).to(self.device) #### batch['data'].to(device)
-                    else:
-                        data = batch[0].to(self.device)
+                    data = batch[0].to(self.device)
                     target = batch[1].to(self.device)
 
                     # Forward pass
@@ -553,10 +547,7 @@ class model(object):
             preds, targets = [], []
             for batch in self.test_loader:
                 # Get the data
-                if self.channels==1:
-                    data = batch[0].unsqueeze(1).to(self.device) #### batch['data'].to(device)
-                else:
-                    data = batch[0].to(self.device)
+                data = batch[0].to(self.device)
                 target = batch[1]
 
                 # Forward pass
@@ -938,20 +929,15 @@ class model(object):
         if not self.model_created:
             raise WorkToDoError('model_created')
         
-        if self.channels == 1:
-            summary(self.model, (1,)+self.input_size)
-        else:
-            summary(self.model, self.input_size)
+        print(self.input_size)
+        summary(self.model, self.input_size)
         
         if save:
             # Redirect stdout to a file
             sys.stdout = open(os.path.join(path, name), 'w')
 
             # Generate summary
-            if self.channels == 1:
-                summary(self.model, (1,)+self.input_size)
-            else:
-                summary(self.model, self.input_size)
+            summary(self.model, self.input_size)
 
             # Reset stdout
             sys.stdout = sys.__stdout__
