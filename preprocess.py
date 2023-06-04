@@ -8,8 +8,8 @@ Usage:
 
 Options:
     -h --help                       Show this screen.
-    --data_path=<data_path>         Path to the data
-    --output_path=<output_path>     Path to save the data
+    --data_path <data_path>         Path to the data
+    --output_path <output_path>     Path to save the data
     --all                           Read all the data
     --selection <start-stop>        Read a selection of the data
     --do_rdn                        Whether to read the rdn data
@@ -75,10 +75,12 @@ def reading(data_path:str,
     if verbose > 1:
         print("Rescaling...")
     dr.rescaling(method='norm')
-    if do_mDoppler:
-        if verbose > 1:
-            print("Filtering...")
-        dr.filter_mDoppler(size=(21, 11), sigma=15)
+    if verbose > 1:
+        print("Saving...")
+    #if do_mDoppler:
+    #    if verbose > 1:
+    #        print("Filtering...")
+    #    dr.filter_mDoppler(size=(21, 11), sigma=15)
     return dr
             
 
@@ -116,7 +118,7 @@ def cutting(data:DataReader,
     dc = DataCutter(data=data)
     if verbose > 1:
         print("Cutting...")
-    dc.cut(10.810810811)
+    dc.cut(11.008949618993466)
     if verbose > 1:
         print("Creating labels...")
     dc.create_labels_list()
@@ -125,12 +127,12 @@ def cutting(data:DataReader,
     dc.labels_to_int()
     if verbose > 1:
         print("Saving cutted data...")
-    if len(subjects) > 1:
-        dc.save(path=output_path,
-            filename=f'cutted_data_{subjects[0]}_{subjects[-1]}_{sets[0]}_{sets[-1]}.npz')
-    else:
-        dc.save(path=output_path,
-                filename=f'cutted_data_{subjects[0]}_{sets[0]}_{sets[-1]}.npz')
+    #if len(subjects) > 1:
+    #    dc.save(path=output_path,
+    #        filename=f'cutted_data_{subjects[0]}_{subjects[-1]}_{sets[0]}_{sets[-1]}.npz')
+    #else:
+    #    dc.save(path=output_path,
+    #            filename=f'cutted_data_{subjects[0]}_{sets[0]}_{sets[-1]}.npz')
     
     return dc
     
@@ -167,20 +169,24 @@ def process(data:DataCutter,
     dp = DataProcess(data=data)
     if verbose > 1:
         print("Separating actions in time...")
-    dp.cut_time(loc='threshold-center', threshold=0.5)
+    dp.cut_time(
+        len_default=58,
+        loc='threshold-start',
+        threshold=0.5
+    )
     if verbose > 1:
         print("Padding...")
     dp.padding(
-        padding=40,
+        padding=58,
         mode='last-frame')
     if verbose > 1:
         print("Saving processed data...")
-    if len(subjects) > 1:
-        dp.save(path=output_path,
-                filename=f'processed_data_{subjects[0]}_{subjects[-1]}_{sets[0]}_{sets[-1]}.npz')
-    else:
-        dp.save(path=output_path,
-                filename=f'processed_data_{subjects[0]}_{sets[0]}_{sets[-1]}.npz')
+    #if len(subjects) > 1:
+    #    dp.save(path=output_path,
+    #            filename=f'processed_data_{subjects[0]}_{subjects[-1]}_{sets[0]}_{sets[-1]}.npz')
+    #else:
+    #    dp.save(path=output_path,
+    #            filename=f'processed_data_{subjects[0]}_{sets[0]}_{sets[-1]}.npz')
     
     return dp
 
