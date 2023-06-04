@@ -29,15 +29,20 @@ from sklearn.metrics           import confusion_matrix, accuracy_score,\
                                       precision_recall_fscore_support,\
                                       roc_curve, roc_auc_score,\
                                       precision_recall_curve, average_precision_score,\
-                                      classification_report, auc
+                                      classification_report, auc, precision_score,\
+                                      recall_score, f1_score
 from utils                     import plotting, augmentation
 from torchsummary              import summary
 from torch.utils.data          import Subset
 from memory_profiler           import profile
 from sklearn.preprocessing     import label_binarize
-#from torch.utils.tensorboard import SummaryWriter
+from sklearn.utils             import class_weight
+from utils.constants           import NON_AGGREGATED_LABELS_DICT_REVERSE,\
+    AGGREGATED_LABELS_DICT_REVERSE, MAPPING_LABELS_DICT
+#from torch.utils.tensorboaro import SummaryWriter
 
 fig_dir = 'figures'
+sns.set_style('darkgrid')
 
 class model(object):
     """
@@ -54,7 +59,6 @@ class model(object):
         data: Dataset,
         case: int=0,
         model_type: str='CNN-MD',
-        channels: int=1,
         device= torch.device('cuda' if torch.cuda.is_available() else 'cpu'),    
     ):
         """
@@ -91,10 +95,6 @@ class model(object):
         
         # Get the device
         self.device = device
-        
-        # Get the number of channels
-        assert channels in [1, 2], "The number of channels must be 1 or 2"
-        self.channels = channels
         
         # Add tensorboard writer
         #self.writer = SummaryWriter()
@@ -141,7 +141,10 @@ class model(object):
         self.train_test_split_done = True
 
 
-    def create_DataLoaders(self, batch_size: int=32, shuffle: bool=True, num_workers: int=0):
+    def create_DataLoaders(self,
+                           batch_size: int=32,
+                           shuffle: bool=True,
+                           num_workers: int=os.cpu_count()):
         """
         Create the data loaders
         
@@ -166,7 +169,10 @@ class model(object):
                                         num_workers=num_workers)
 
 
-    def augmentation(self, method=['time-mask'], **kwargs):
+    def augmentation(self,
+                     method=['time-mask'],
+                     augmentation_factor: int=2,
+                     **kwargs):
         """
         Augment the data.
 
@@ -185,17 +191,19 @@ class model(object):
         ValueError
             Invalid data type.
         """
-        if self.data.type=='rdn':
-            self.augmentation_rdn(method=method, **kwargs)
-        elif self.data.type=='mDoppler':
-            self.augmentation_mDoppler(method=method, **kwargs)
+        if self.data.TYPE=='rdn':
+            self.augmentation_rdn(
+                method=method,
+                augmentation_factor=augmentation_factor,
+                **kwargs)
+        elif self.data.TYPE=='mDoppler':
+            self.augmentation_mDoppler(
+                method=method,
+                augmentation_factor=augmentation_factor,
+                **kwargs)
         else:
             raise ValueError('Invalid data type')
         
-        # Remove duplicates
-        self.train_data.dataset.drop_duplicates()
-        self.train_data.indices = np.arange(len(self.train_data.dataset))
-
 
     def augmentation_rdn(self, method=['time-mask'], **kwargs):
         """
@@ -231,7 +239,10 @@ class model(object):
             self.train_data = augmentation.time_doppler_mask(self.train_data)
 
 
-    def augmentation_mDoppler(self, method=['time-mask'], **kwargs):
+    def augmentation_mDoppler(self,
+                              method=['time-mask'],
+                              augmentation_factor: int=2,
+                              **kwargs):
         """
         Augment the mDoppler data
         
@@ -239,10 +250,30 @@ class model(object):
         ----------
         method : list, optional
             List of methods to use.
+        augmentation_factor : int, optional
+            Augmentation factor. The default is 2.
         **kwargs : TYPE
             Keyword arguments to pass to the augmentation function.
         """
+        augmented_data = []
+        if self.out_channels == 10:
+            labels_transform = np.vectorize(
+                lambda label: MAPPING_LABELS_DICT[label]
+            )
+            labels = labels_transform(self.train_data.dataset.labels[:])
+        else:
+            labels = self.train_data.dataset.labels[:]
+        class_weights = class_weight.compute_class_weight(
+                class_weight='balanced',
+                classes=np.unique(labels),
+                y=labels
+            )
+        augmentation_factor_dict={
+            label: int(np.ceil(class_weights[label]))*augmentation_factor for label in np.unique(labels)
+        }
+
         if 'resample' in method:
+            raise DeprecationWarning('Resample is not available')
             try:
                 n_samples = kwargs['n_samples']
             except KeyError:
@@ -255,19 +286,47 @@ class model(object):
                                                     n_samples=n_samples)
             
         if 'time-mask' in method:
-            self.train_data = augmentation.time_mask(self.train_data)
+            augmented_data += augmentation.time_mask(
+                self.train_data,
+                augmentation_factor_dict=augmentation_factor_dict,
+                num_masks=3,
+                mask_factor=3
+            )
             
         if 'doppler-mask' in method:
-            self.train_data = augmentation.doppler_mask(self.train_data)
+            augmented_data += augmentation.doppler_mask(
+                self.train_data,
+                augmentation_factor_dict=augmentation_factor_dict,
+                num_masks=3,
+                mask_factor=3
+            )
             
         if 'time-doppler-mask' in method:
-            self.train_data = augmentation.time_doppler_mask(self.train_data)
-            
-        if 'time-doppler-mask' in method:
-            self.train_data = augmentation.time_doppler_mask(self.train_data)
-        
+            augmented_data += augmentation.time_doppler_mask(
+                self.train_data,
+                augmentation_factor_dict=augmentation_factor_dict,
+                num_masks=3,
+                time_mask_factor=3,
+                doppler_mask_factor=3
+            )
 
-    def create_model(self, **kwargs):
+        features_tensor = torch.stack([data[0] for data in augmented_data])
+        labels_tensor = torch.tensor(
+            [torch.from_numpy(label) for label in [data[1] for data in augmented_data]]
+        )
+        augmented_dataset = torch.utils.data.TensorDataset(
+            features_tensor,
+            labels_tensor
+        )
+        
+        self.train_data = torch.utils.data.ConcatDataset(
+            [self.train_data, augmented_dataset]
+        )
+            
+
+    def create_model(self,
+                     out_channels:int=10,
+                     **kwargs):
         """
         Create the model
         
@@ -276,17 +335,21 @@ class model(object):
         **kwargs : TYPE
             Keyword arguments to pass to the model class.
         """
+        self.out_channels = out_channels
+
         # call cnn_rd or cnn_md class
         if self.model_type == 'CNN-MD':
             if self.data.TYPE != 'mDoppler':
                 OptionIsFalseError('do_mDoppler')
             self.model = cnn_md(
+                out_channels=out_channels,
                 **kwargs
             )
         elif self.model_type == 'CNN-RD':
             if self.data.type != 'rdn':
                 OptionIsFalseError('do_rdn')
             self.model = cnn_rd(
+                out_channels=out_channels,
                 **kwargs
             )
         else:
@@ -335,7 +398,11 @@ class model(object):
         self.optimizer_created = True
 
 
-    def create_loss(self, loss: str='CrossEntropyLoss'):
+    def create_loss(self,
+                    loss: str='CrossEntropyLoss',
+                    use_weight: bool=False,
+                    weight: list=None,
+                    **kwargs):
         """
         Create the loss function
 
@@ -345,18 +412,59 @@ class model(object):
             Loss function to use. The default is 'CrossEntropyLoss'.
             Possible values are:
                 'CrossEntropyLoss': Cross Entropy Loss
-                
+        use_weight : bool, optional
+            Use weight for the loss function. The default is False.
+        weight : list, optional
+            Weight for the loss function. The default is None.
+            If None, the weight is set to the proportion of each class.
+        **kwargs : TYPE
+            Keyword arguments to pass to the loss function.
+
         Raises
         ------
         ValueError
             Invalid loss function.
         """
+        
+        if use_weight:
+            if weight is None:
+                if self.out_channels == 10:
+                    labels_transform = np.vectorize(
+                        lambda label: MAPPING_LABELS_DICT[label]
+                    )
+                    if isinstance(self.train_data, torch.utils.data.ConcatDataset):
+                        labels = np.concatenate([
+                            self.train_data.datasets[0].dataset.labels[:],
+                            self.train_data.datasets[1].tensors[1].numpy()
+                        ])
+                        labels = labels_transform(labels)
+                    else:
+                        labels = labels_transform(self.train_data.dataset.labels[:])
+                else:
+                    labels = self.train_data.dataset.labels[:]
+                class_weights = torch.tensor(
+                    class_weight.compute_class_weight(
+                        class_weight='balanced',
+                        classes=np.unique(labels),
+                        y=labels
+                    )
+                )
+            else:
+                class_weights = torch.tensor(weight)
+        else:
+            class_weights = None
+        
         if loss == 'CrossEntropyLoss':
-            self.loss = CrossEntropyLoss()
+            self.loss = CrossEntropyLoss(
+                weight=class_weights,
+                **kwargs
+            )
         #elif loss == :
             #self.loss = BCEWithLogitsLoss()
         else:
             raise ValueError('Invalid loss function')
+
+        self.loss.weight = self.loss.weight.float()
 
         # Set the flag
         self.loss_created = True
@@ -365,7 +473,7 @@ class model(object):
     ######################################
     ######           CHECK         #######
     ######################################
-    @profile
+    #@profile
     def train_model(self,
                     epochs: int=10,
                     checkpoint: bool=False,
@@ -417,13 +525,10 @@ class model(object):
             print(f'Epoch {epoch+1}/{epochs}')
             iterator = tqdm(self.train_loader)
             preds, targets = [], []
-            for batch in iterator:
+            for batch_features, batch_targets in iterator:
                 # Get the data
-                if self.channels==1:
-                    data = batch[0].unsqueeze(1).to(self.device) #### batch['data'].to(device)
-                else:
-                    data = batch[0].to(self.device)
-                target = batch[1].to(self.device) #### batch['target'].to(device)
+                data = batch_features.to(self.device)
+                target = batch_targets.long().to(self.device)
 
                 # Forward pass
                 output = self.model(data)
@@ -436,7 +541,6 @@ class model(object):
 
                 # Update the progress bar
                 iterator.set_postfix(loss=loss.item())
-                #iterator.set_description(f"Train loss: {loss.detach().cpu().numpy()}")
                 
                 # Get the predictions
                 preds.append(output)
@@ -452,28 +556,22 @@ class model(object):
             self.model.eval()
             with torch.no_grad():
                 preds, targets = [], []
-                for batch in self.test_loader:
+                iterator = tqdm(self.test_loader)
+                for batch_features, batch_targets in iterator:
                     # Get the data
-                    if self.channels==1:
-                        data = batch[0].unsqueeze(1).to(self.device) #### batch['data'].to(device)
-                    else:
-                        data = batch[0].to(self.device)
-                    target = batch[1].to(self.device)
+                    data = batch_features.to(self.device)
+                    target = batch_targets.long().to(self.device)
 
                     # Forward pass
                     output = self.model(data)
-                    loss = self.loss(output, target)
 
                     # Get the predictions
                     preds.append(output)
                     targets.append(target)
                 preds = torch.cat(preds, axis=0)
                 targets = torch.cat(targets, axis=0)
-
-                # Calculate the loss and accuracy for the test set
-                test_loss = self.loss(preds, targets)
+                test_loss = self.loss(output, target)
                 test_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().argmax(axis=1))
-
 
                 print(f'Test loss: {test_loss.detach().cpu().numpy():.2f}')
                 print(f'Test accuracy: {test_acc:.2f}')
@@ -516,6 +614,11 @@ class model(object):
                        do_acc: bool=True,
                        do_prec_rec_f1: bool=True,
                        do_roc_auc: bool=True,
+                       do_pr_curve: bool=True,
+                       do_classification_report: bool=True,
+                       do_f1_score: bool=True,
+                       do_recall_score: bool=True,
+                       do_precision_score: bool=False,
                        save: bool=True,
                        ):
         """
@@ -551,13 +654,10 @@ class model(object):
         with torch.no_grad():
             # Get the predictions
             preds, targets = [], []
-            for batch in self.test_loader:
+            for batch_features, batch_targets in self.test_loader:
                 # Get the data
-                if self.channels==1:
-                    data = batch[0].unsqueeze(1).to(self.device) #### batch['data'].to(device)
-                else:
-                    data = batch[0].to(self.device)
-                target = batch[1]
+                data = batch_features.to(self.device)
+                target = batch_targets.long().to(self.device)
 
                 # Forward pass
                 output = self.model(data)
@@ -566,12 +666,24 @@ class model(object):
             preds = torch.cat(preds, axis=0)
             targets = torch.cat(targets, axis=0)
             loss = self.loss(preds, targets).detach().cpu().numpy()
+            probs = preds.detach().cpu().numpy()
             preds = preds.detach().cpu().numpy().argmax(axis=1)
             targets = targets.detach().cpu().numpy()
 
+        if self.out_channels==10:
+            target_names = AGGREGATED_LABELS_DICT_REVERSE.values()
+        else:
+            target_names = NON_AGGREGATED_LABELS_DICT_REVERSE.values()
+            
+
         # Confusion matrix
         if do_cm:
-            self.confusion_matrix(targets=targets, preds=preds, save=save)
+            self.confusion_matrix(
+                targets=targets,
+                preds=preds,
+                target_names=target_names,
+                save=save
+            )
 
         # Accuracy
         if do_acc:
@@ -583,10 +695,359 @@ class model(object):
 
         # ROC curve
         if do_roc_auc:
-            self.roc_auc_curve(targets=targets, preds=preds, save=save)
+            self._roc_curve(
+                y_pred_prob=probs,
+                y_true=targets,
+                target_names=target_names,
+                save=save,
+                return_roc=False,
+                display=False,
+                dir=fig_dir,
+            )
+            
+        # PR curve
+        if do_pr_curve:
+            self._pr_curve(
+                y_true=targets,
+                y_pred_prob=probs,
+                target_names=target_names,
+                save=save,
+                return_pr=False,
+                display=False,
+                dir=fig_dir,
+            )
+            
+        # Classification report
+        if do_classification_report:
+            print(
+                self._classification_report(
+                    y_true=targets,
+                    y_pred=preds,
+                    target_names=target_names,
+                )
+            )
+            
+
+    def _precision(self,
+                   y_true:np.ndarray,
+                   y_pred:np.ndarray,
+                   average:str='macro',
+                   **kwargs):
+        """
+        Compute the precision.
+        
+        Parameters
+        ----------
+        y_true : np.ndarray
+            The true labels.
+        y_pred : np.ndarray
+            The predicted labels.
+        average : str
+            The averaging method.
+        **kwargs : dict
+            The arguments to pass to the precision object.
+            
+        Returns
+        -------
+        precision : float
+            The precision.
+        """
+        return precision_score(
+            y_true,
+            y_pred,
+            average=average,
+            **kwargs
+        )
 
 
-    def confusion_matrix(self, targets, preds, save: bool=True, show: bool=False):
+    def _recall(self,
+                y_true:np.ndarray,
+                y_pred:np.ndarray,
+                average:str='macro',
+                **kwargs):
+        """
+        Compute the recall.
+        
+        Parameters
+        ----------
+        y_true : np.ndarray
+            The true labels.
+        y_pred : np.ndarray
+            The predicted labels.
+        average : str
+            The averaging method.
+        **kwargs : dict
+            The arguments to pass to the recall object.
+            
+        Returns
+        -------
+        recall : float
+            The recall.
+        """
+        return recall_score(
+            y_true,
+            y_pred,
+            average=average,
+            **kwargs
+        )
+
+
+    def _f1(self,
+            y_true:np.ndarray,
+            y_pred:np.ndarray,
+            average:str='macro',
+            **kwargs):
+        """
+        Compute the F1 score.
+        
+        Parameters
+        y_true : np.ndarray
+            The true labels.
+        y_pred : np.ndarray
+            The predicted labels.
+        **kwargs : dict
+            The arguments to pass to the F1 score object.
+            
+        Returns
+        -------
+        f1 : float
+            The F1 score.
+        """
+        return f1_score(
+            y_true,
+            y_pred,
+            average=average,
+            **kwargs
+        )
+        
+        
+    def _classification_report(self,
+                               y_true:np.ndarray,
+                               y_pred:np.ndarray,
+                               target_names:list=None,
+                               **kwargs):
+        """
+        Compute the classification report.
+        
+        Parameters
+        ----------
+        y_true : np.ndarray
+            The true labels.
+        y_pred : np.ndarray
+            The predicted labels.
+        target_names : list
+            The names of the classes.
+        **kwargs : dict
+            The arguments to pass to the classification report object.
+            
+        Returns
+        -------
+        classification_report : str
+            The classification report.
+        """
+        
+        return classification_report(
+            y_true,
+            y_pred,
+            target_names=target_names,
+            **kwargs
+        )
+
+
+    def _roc_curve(self,
+                   y_pred_prob:np.ndarray,
+                   y_true:np.ndarray,
+                   target_names:list=None,
+                   return_roc:bool=True,
+                   display:bool=True,
+                   save:bool=True,
+                   dir:str=None,
+                   name:str=None,
+                   **kwargs):
+        """
+        Compute the ROC curve of the model.
+
+        Parameters
+        ----------
+        y_pred_prob: np.array
+            Predicted label probabilities.
+            Default: None
+        y_true: np.array
+            True labels.
+            Default: None
+        return_roc: bool
+            Whether to return the ROC curve or not.
+            Default: True
+        display: bool
+            Whether to display the figure or not.
+            Default: True
+        save: bool
+            Whether to save the figure or not.
+            Default: True
+        dir: str
+            Directory to save the figure.
+            Default: None
+        name: str
+            Name of the figure.
+            Default: None
+        **kwargs:
+            Parameters for the ROC curve method.
+        """
+        if not self.model_trained:
+            raise ValueError('Model not trained')
+
+        target_names = list(target_names)
+
+        # Binarize the labels
+        y_binarized = label_binarize(y_true, classes=range(self.out_channels))
+
+        # Compute the ROC curve and AUC for each class
+        fpr = dict()
+        tpr = dict()
+        roc_auc = dict()
+        for i in range(self.out_channels):
+            fpr[i], tpr[i], _ = roc_curve(y_binarized[:, i], y_pred_prob[:, i])
+            roc_auc[i] = auc(fpr[i], tpr[i])
+
+        # Compute micro-average ROC curve and AUC
+        fpr_micro, tpr_micro, _ = roc_curve(y_binarized.ravel(), y_pred_prob.ravel())
+        roc_auc_micro = auc(fpr_micro, tpr_micro)
+
+        if display or save:
+            # Plot the ROC curves for each class
+            plt.figure(figsize=(10, 10))
+            for i in range(self.out_channels):
+                plt.plot(fpr[i], tpr[i], label='{0} (AUC = {1:.2f})'.format(target_names[i], roc_auc[i]))
+            plt.plot(fpr_micro, tpr_micro, label='Micro-average (AUC = {0:.2f})'.format(roc_auc_micro))
+
+            plt.plot([0, 1], [0, 1], 'k--')  # Plot diagonal line
+            plt.xlabel('False Positive Rate')
+            plt.ylabel('True Positive Rate')
+            plt.title(f'ROC Curve - {self.model_type}')
+            plt.legend(loc='lower right', )            
+            
+            if display:
+                plt.show()
+            
+            if save:
+                if dir is None:
+                    dir='figures'
+                if name is None:
+                    name=f'{self.model_type}_roc_curve.png'
+                plt.savefig(
+                    os.path.join(
+                        dir,
+                        name
+                    )
+                )
+                
+        if return_roc:
+            return fpr, tpr, roc_auc
+
+
+    def _pr_curve(self,
+                  y_pred_prob:np.ndarray,
+                  y_true:np.ndarray,
+                  target_names:list=None,
+                  return_pr:bool=True,
+                  display:bool=True,
+                  save:bool=True,
+                  dir:str=None,
+                  name:str=None,
+                  **kwargs):
+        """
+        Compute the PR curve of the model.
+
+        Parameters
+        ----------
+        y_pred_prob: np.array
+            Predicted label probabilities.
+            Default: None
+        y_true: np.array
+            True labels.
+            Default: None
+        target_names: list
+            The names of the classes.
+        return_pr: bool
+            Whether to return the PR curve or not.
+            Default: True
+        display: bool
+            Whether to display the figure or not.
+            Default: True
+        save: bool
+            Whether to save the figure or not.
+            Default: True
+        dir: str
+            Directory to save the figure.
+            Default: None
+        name: str
+            Name of the figure.
+            Default: None
+        **kwargs:
+            Parameters for the PR curve method.
+            
+        Returns
+        -------
+        precision : np.ndarray
+            Precision values.
+        """
+        if not self.model_trained:
+            raise ValueError('Model not trained')
+
+        target_names = list(target_names)
+
+        # Binarize the labels
+        y_binarized = label_binarize(y_true, classes=range(self.out_channels))
+        
+        # Compute the PR curve and AUC for each class
+        precision = dict()
+        recall = dict()
+        pr_auc = dict()
+        for i in range(self.out_channels):
+            precision[i], recall[i], _ = precision_recall_curve(y_binarized[:, i], y_pred_prob[:, i])
+            pr_auc[i] = auc(recall[i], precision[i])
+        
+        # Compute micro-average PR curve and AUC
+        precision_micro, recall_micro, _ = precision_recall_curve(y_binarized.ravel(), y_pred_prob.ravel())
+        pr_auc_micro = auc(recall_micro, precision_micro)
+        
+        if display or save:
+            fig, ax = plt.subplots(figsize=(10, 10))
+
+            for i in range(self.out_channels):
+                ax.plot(recall[i], precision[i], label='{0} (AUC = {1:.2f})'.format(target_names[i], pr_auc[i]))
+            ax.plot(recall_micro, precision_micro, label='Micro-average (AUC = {0:.2f})'.format(pr_auc_micro))
+
+            ax.set_xlabel('Recall')
+            ax.set_ylabel('Precision')
+            ax.set_title(f'PR Curve - {self.model_type}')
+            ax.legend(loc='upper right', )
+            
+            if display:
+                plt.show()
+            
+            if save:
+                if dir is None:
+                    dir='figures'
+                if name is None:
+                    name=f'{self.model_type}_pr_curve.png'
+                plt.savefig(
+                    os.path.join(
+                        dir,
+                        name
+                    )
+                )
+                
+        if return_pr:
+            return precision, recall, pr_auc
+
+
+    def confusion_matrix(self,
+                         targets,
+                         preds,
+                         target_names: list=None,
+                         save: bool=True,
+                         show: bool=False):
         """
         Calculate the confusion matrix
 
@@ -601,15 +1062,26 @@ class model(object):
         """
 
         # Calculate the confusion matrix
-        cm = confusion_matrix(targets, preds)
+        cm = confusion_matrix(
+            targets,
+            preds
+        )
         print(cm)
 
         # Plot the confusion matrix
         fig, ax = plt.subplots(figsize=(10, 10))
-        sns.heatmap(cm, annot=True, fmt='d', ax=ax)
+        sns.heatmap(
+            cm,
+            annot=True,
+            fmt='d',
+            ax=ax,
+            xticklabels=target_names,
+            yticklabels=target_names
+        )
         ax.set_title('Confusion matrix')
         ax.set_ylabel('Actual')
         ax.set_xlabel('Predicted')
+        fig.tight_layout()
 
         if show:
             plt.show()
@@ -622,7 +1094,10 @@ class model(object):
     def accuracy(self, targets, preds, save: bool=False):
         """
         Calculate the accuracy
- --weight_decay=0. --no-nesterov
+
+        Parameters
+        ----------
+        targets : numpy.ndarray
             The targets.
         preds : numpy.ndarray
             The predictions.
@@ -660,7 +1135,7 @@ class model(object):
             Save the precision, recall and f1-score. The default is False.
         """
         preds = preds.round()
-        precision, recall, fscore, _= precision_recall_fscore_support(targets, preds, average=None)
+        precision, recall, fscore, _= precision_recall_fscore_support(targets, preds, average=average)
 
         print(f'Precision: {precision}')
         print(f'Recall: {recall}')
@@ -673,185 +1148,6 @@ class model(object):
                 f.write(f'Recall: {recall}\n')
                 f.write(f'F1-score: {fscore}\n')
 
-
-    def _roc_curve(self,
-                   y_pred_prob:np.ndarray,
-                   y_true:np.ndarray,
-                   return_roc:bool=True,
-                   display:bool=True,
-                   save:bool=True,
-                   dir:str=None,
-                   name:str=None,
-                   **kwargs):
-        """
-        Compute the ROC curve of the model.
-
-        Parameters
-        ----------
-        y_pred_prob: np.array
-            Predicted label probabilities.
-            Default: None
-        y_true: np.array
-            True labels.
-            Default: None
-        return_roc: bool
-            Whether to return the ROC curve or not.
-            Default: True
-        display: bool
-            Whether to display the figure or not.
-            Default: True
-        save: bool
-            Whether to save the figure or not.
-            Default: True
-        dir: str
-            Directory to save the figure.
-            Default: None
-        name: str
-            Name of the figure.
-            Default: None
-        **kwargs:
-            Parameters for the ROC curve method.
-        """
-        if not self.trained:
-            raise ValueError('Model not trained')
-
-        # Binarize the labels
-        y_binarized = label_binarize(y_true, classes=range(self.num_classes))
-
-        # Compute the ROC curve and AUC for each class
-        fpr = dict()
-        tpr = dict()
-        roc_auc = dict()
-        for i in range(self.num_classes):
-            fpr[i], tpr[i], _ = roc_curve(y_binarized[:, i], y_pred_prob[:, i])
-            roc_auc[i] = auc(fpr[i], tpr[i])
-
-        # Compute micro-average ROC curve and AUC
-        fpr_micro, tpr_micro, _ = roc_curve(y_binarized.ravel(), y_pred_prob.ravel())
-        roc_auc_micro = auc(fpr_micro, tpr_micro)
-
-        if display or save:
-            # Plot the ROC curves for each class
-            plt.figure(figsize=(10, 10))
-            for i in range(self.num_classes):
-                plt.plot(fpr[i], tpr[i], label='Class {0} (AUC = {1:.2f})'.format(i, roc_auc[i]))
-            plt.plot(fpr_micro, tpr_micro, label='Micro-average (AUC = {0:.2f})'.format(roc_auc_micro))
-
-            plt.plot([0, 1], [0, 1], 'k--')  # Plot diagonal line
-            plt.xlabel('False Positive Rate')
-            plt.ylabel('True Positive Rate')
-            plt.title('ROC Curve - {0}'.format(self.model_type))
-            #plt.legend(loc='lower right')
-            
-            if display:
-                plt.show()
-            
-            if save:
-                if dir is None:
-                    dir='figures'
-                if name is None:
-                    name='roc_curve.png'
-                plt.savefig(
-                    os.path.join(
-                        dir,
-                        name
-                    )
-                )
-                
-        if return_roc:
-            return fpr, tpr, roc_auc
-
-
-    def _pr_curve(self,
-                  y_pred_prob:np.ndarray,
-                  y_true:np.ndarray,
-                  return_pr:bool=True,
-                  display:bool=True,
-                  save:bool=True,
-                  dir:str=None,
-                  name:str=None,
-                  **kwargs):
-        """
-        Compute the PR curve of the model.
-
-        Parameters
-        ----------
-        y_pred_prob: np.array
-            Predicted label probabilities.
-            Default: None
-        y_true: np.array
-            True labels.
-            Default: None
-        return_pr: bool
-            Whether to return the PR curve or not.
-            Default: True
-        display: bool
-            Whether to display the figure or not.
-            Default: True
-        save: bool
-            Whether to save the figure or not.
-            Default: True
-        dir: str
-            Directory to save the figure.
-            Default: None
-        name: str
-            Name of the figure.
-            Default: None
-        **kwargs:
-            Parameters for the PR curve method.
-            
-        Returns
-        -------
-        precision : np.ndarray
-            Precision values.
-        """
-        if not self.trained:
-            raise ValueError('Model not trained')
-
-        # Binarize the labels
-        y_binarized = label_binarize(y_true, classes=range(self.num_classes))
-        
-        # Compute the PR curve and AUC for each class
-        precision = dict()
-        recall = dict()
-        pr_auc = dict()
-        for i in range(self.num_classes):
-            precision[i], recall[i], _ = precision_recall_curve(y_binarized[:, i], y_pred_prob[:, i])
-            pr_auc[i] = auc(recall[i], precision[i])
-        
-        # Compute micro-average PR curve and AUC
-        precision_micro, recall_micro, _ = precision_recall_curve(y_binarized.ravel(), y_pred_prob.ravel())
-        pr_auc_micro = auc(recall_micro, precision_micro)
-        
-        if display or save:
-            fig, ax = plt.subplots(figsize=(10, 10))
-
-            for i in range(self.num_classes):
-                ax.plot(recall[i], precision[i], label='Class {0} (AUC = {1:.2f})'.format(i, pr_auc[i]))
-            ax.plot(recall_micro, precision_micro, label='Micro-average (AUC = {0:.2f})'.format(pr_auc_micro))
-
-            ax.set_xlabel('Recall')
-            ax.set_ylabel('Precision')
-            ax.set_title('PR Curve - {0}'.format(self.model_type))
-            #ax.legend(loc='lower right')
-            
-            if display:
-                plt.show()
-            
-            if save:
-                if dir is None:
-                    dir='figures'
-                if name is None:
-                    name='pr_curve.png'
-                plt.savefig(
-                    os.path.join(
-                        dir,
-                        name
-                    )
-                )
-                
-        if return_pr:
-            return precision, recall, pr_auc
 
 
     def predict(self, data):
@@ -938,20 +1234,15 @@ class model(object):
         if not self.model_created:
             raise WorkToDoError('model_created')
         
-        if self.channels == 1:
-            summary(self.model, (1,)+self.input_size)
-        else:
-            summary(self.model, self.input_size)
+        print(self.input_size)
+        summary(self.model, self.input_size)
         
         if save:
             # Redirect stdout to a file
             sys.stdout = open(os.path.join(path, name), 'w')
 
             # Generate summary
-            if self.channels == 1:
-                summary(self.model, (1,)+self.input_size)
-            else:
-                summary(self.model, self.input_size)
+            summary(self.model, self.input_size)
 
             # Reset stdout
             sys.stdout = sys.__stdout__

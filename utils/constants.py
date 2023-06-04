@@ -55,3 +55,35 @@ AGGREGATED_LABELS_DICT = {
 MAPPING_LABELS_DICT = {
     NON_AGGREGATED_LABELS_DICT[key]: AGGREGATED_LABELS_DICT[key] for key in NON_AGGREGATED_LABELS_DICT.keys()
 }
+
+
+AGGREGATED_LABELS_DICT_REVERSE = {
+    0: 'walk',
+    1: 'sit down',
+    2: 'stand up',
+    3: 'fall on the floor',
+    4: 'stand up from the floor',
+    5: 'get in bed',
+    6: 'lie in bed',
+    7: 'get out of bed',
+    8: 'roll in bed',
+    9: 'sit in bed'
+}
+
+
+NON_AGGREGATED_LABELS_DICT_REVERSE = {
+    0: 'walk to bed',
+    1: 'sit down on bed',
+    2: 'stand up from bed',
+    3: 'walk to chair',
+    4: 'sit down on chair',
+    5: 'stand up from chair',
+    6: 'walk to room',
+    7: 'fall on floor of room',
+    8: 'stand up from floor of room',
+    9: 'get in  bed',
+    10: 'lie in bed',
+    11: 'get out  bed',
+    12: 'roll in bed',
+    13: 'sit in bed',
+}

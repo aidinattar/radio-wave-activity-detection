@@ -618,8 +618,8 @@ class DataReader(object):
             self.timestamp_speech[i]['time_passed'] = (self.timestamp_speech[i]['timestamp'] - self.timestamp_speech[i]['timestamp'].iloc[0]).dt.total_seconds()
             # compute the time passed in bins
             self.timestamp_speech[i]['time_passed_bins'] = (self.timestamp_speech[i]['time_passed']*conversion_factor).astype(int)
-            # compute number of beans per action
-            self.timestamp_speech[i]['n_beans'] = self.timestamp_speech[i]['time_passed_bins'].diff().fillna(0).astype(int)
+            # compute number of bins per action
+            self.timestamp_speech[i]['n_bins'] = self.timestamp_speech[i]['time_passed_bins'].diff().fillna(0).astype(int)
 
         self.timestamp_to_bins_done = True
 
@@ -629,7 +629,7 @@ class DataReader(object):
                              name:str='actions.png',
                              save:bool=False):
         """
-        Function to divide th'n_beans'] = self.timestamp_speech[i]['time_passed_bins'].diff().fillna(0).astype(int)e actions according to the
+        Function to divide the actions in the file
         timestamps recorded in the file
 
         Parameters

@@ -7,7 +7,9 @@ Classes and functions for plotting the results
 import os
 import pandas            as pd
 import matplotlib.pyplot as plt
+import seaborn           as sns
 
+sns.set_style('darkgrid')
 class PlotHistory:
     """
     Plot the history of the training
@@ -38,8 +40,6 @@ class PlotHistory:
         name : str, optional
             Name of the plot. The default is 'plot.png'.
         """
-        plt.style.use('dark_background')
-
         # Set font size
         plt.rcParams.update({'font.size': 14})
 

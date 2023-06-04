@@ -230,121 +230,144 @@ def resample(train_data: torch.utils.data.dataset.Subset,
     return train_data
 
 
-def time_mask(spectrogram:np.ndarray,
-              num_masks:int=1,
-              mask_factor:int=40):
+def time_mask(
+    dataset: torch.utils.data.dataset.Subset,
+    augmentation_factor_dict: dict,
+    num_masks: int = 1,
+    mask_factor: int = 5
+):
     """
-    Apply time masking to the spectrograms of the data
+    Apply time masking to the spectrograms of the data in a Subset object
+    with different augmentation factors for different classes.
     
     Parameters
     ----------
-    spectrogram : np.ndarray
-        Spectrogram to which the time masking will be applied.
+    dataset : torch.utils.data.dataset.Subset
+        Subset object containing the spectrograms
+        to which the time masking will be applied.
+    augmentation_factor_dict : dict
+        Dictionary mapping class labels to augmentation factors.
     num_masks : int, optional
         Number of masks to apply. The default is 1.
     mask_factor : int, optional
-        Maximum length of the mask. The default is 40.
+        Maximum length of the mask. The default is 5.
     
     Returns
     -------
-    masked_spectrogram : np.ndarray
-        Masked spectrogram.
+    dataset : torch.utils.data.dataset.Subset
+        Augmented Subset object with masked spectrograms added.
     """
-    masked_spectrogram = spectrogram.copy()
-    freq_bins, time_frames = masked_spectrogram.shape
-    for _ in range(num_masks):
-        t = random.randint(0, time_frames - 1)
-        t_mask = random.randint(0, mask_factor)
-        masked_spectrogram[t:t + t_mask, :] = 0
-    return masked_spectrogram
+    original_ds = dataset.dataset
+    augmented_ds = []
+    for i in range(len(dataset)):
+        spectrogram, label = dataset[i]
+        augmentation_factor = augmentation_factor_dict.get(label.item(), 1)
+        for j in range(augmentation_factor):
+            masked_spectrogram = spectrogram.clone()
+            channels, freq_bins, time_frames = masked_spectrogram.shape
+            n_masks = random.randint(1, num_masks)
+            for _ in range(n_masks):
+                t = random.randint(0, time_frames - 1)
+                t_mask = random.randint(0, mask_factor)
+                masked_spectrogram[:, :, t:t + t_mask] = 0
+            augmented_sample = (masked_spectrogram, label)
+            augmented_ds.append(augmented_sample)
+    return augmented_ds
+    return torch.utils.data.dataset.Subset(original_ds, indices=dataset.indices) + augmented_ds
 
 
-def doppler_mask(spectrogram:np.ndarray,
-                 num_masks:int=1,
-                 mask_factor:int=20):
+def doppler_mask(
+    dataset: torch.utils.data.dataset.Subset,
+    augmentation_factor_dict: dict,
+    num_masks: int = 1,
+    mask_factor: int = 5
+):
     """
-    Apply doppler masking to the spectrograms of the data
+    Apply doppler masking to the spectrograms of the data in a Subset object
+    with different augmentation factors for different classes.
     
     Parameters
     ----------
-    spectrogram : np.ndarray
-        Spectrogram to which the doppler masking will be applied.
+    dataset : torch.utils.data.dataset.Subset
+        Subset object containing the spectrograms
+        to which the doppler masking will be applied.
+    augmentation_factor_dict : dict
+        Dictionary mapping class labels to augmentation factors.
     num_masks : int, optional
         Number of masks to apply. The default is 1.
     mask_factor : int, optional
-        Maximum length of the mask. The default is 20.
+        Maximum length of the mask. The default is 5.
         
     Returns
     -------
-    masked_spectrogram : np.ndarray
-        Masked spectrogram.
+    dataset : torch.utils.data.dataset.Subset
+        Augmented Subset object with masked spectrograms added.
     """
-    masked_spectrogram = spectrogram.copy()
-    freq_bins, time_frames = masked_spectrogram.shape
-    for _ in range(num_masks):
-        f = random.randint(0, freq_bins - 1)
-        f_mask = random.randint(0, mask_factor)
-        masked_spectrogram[:, f:f + f_mask] = 0
-    return masked_spectrogram
+    original_ds = dataset.dataset
+    augmented_ds = []
+    for i in range(len(dataset)):
+        spectrogram, label = dataset[i]
+        augmentation_factor = augmentation_factor_dict.get(label.item(), 1)
+        for j in range(augmentation_factor):
+            masked_spectrogram = spectrogram.clone()
+            channels, freq_bins, time_frames = masked_spectrogram.shape
+            n_masks = random.randint(1, num_masks)
+            for _ in range(n_masks):
+                f = random.randint(0, freq_bins - 1)
+                f_mask = random.randint(0, mask_factor)
+                masked_spectrogram[:, f:f + f_mask, :] = 0
+            augmented_sample = (masked_spectrogram, label)
+            augmented_ds.append(augmented_sample)
+    return augmented_ds
+    return torch.utils.data.dataset.Subset(original_ds, indices=dataset.indices) + augmented_ds
 
 
-def time_doppler_mask(spectrogram:np.ndarray,
-                      num_masks:int=1,
-                      time_mask_factor:int=40,
-                      doppler_mask_factor:int=20):
+def time_doppler_mask(
+    dataset: torch.utils.data.dataset.Subset,
+    augmentation_factor_dict: dict,
+    num_masks: int = 1,
+    time_mask_factor: int = 4,
+    doppler_mask_factor: int = 4
+):
     """
-    Apply time and doppler masking to the spectrograms of the data
+    Apply time and doppler masking to the spectrograms of the data in a Subset object
+    with different augmentation factors for different classes.
     
     Parameters
     ----------
-    spectrogram : np.ndarray
-        Spectrogram to which the time and doppler masking will be applied.
+    dataset : torch.utils.data.dataset.Subset
+        Subset object containing the spectrograms
+        to which the time and doppler masking will be applied.
+    augmentation_factor_dict : dict
+        Dictionary mapping class labels to augmentation factors.
     num_masks : int, optional
         Number of masks to apply. The default is 1.
     time_mask_factor : int, optional
-        Maximum length of the time mask. The default is 40.
+        Maximum length of the time mask. The default is 4.
     doppler_mask_factor : int, optional
-        Maximum length of the doppler mask. The default is 20.
+        Maximum length of the doppler mask. The default is 4.
         
     Returns
     -------
-    masked_spectrogram : np.ndarray
-        Masked spectrogram.
+    dataset : torch.utils.data.dataset.Subset
+        Augmented Subset object with masked spectrograms added.
     """
-    masked_spectrogram = spectrogram.copy()
-    freq_bins, time_frames = masked_spectrogram.shape
-    for _ in range(num_masks):
-        t = random.randint(0, time_frames - 1)
-        t_mask = random.randint(0, time_mask_factor)
-        d = random.randint(0, freq_bins - 1)
-        d_mask = random.randint(0, doppler_mask_factor)
-        masked_spectrogram[t:t + t_mask, d:d + d_mask] = 0
-    return masked_spectrogram
-
-
-def apply_time_warp(spectrogram:np.ndarray,
-                    warp_factor:int=80):
-    """
-    Apply time warping to a spectrogram
-    
-    Parameters
-    ----------
-    spectrogram : np.ndarray
-        Spectrogram to which the time warping will be applied.
-    warp_factor : int, optional
-        Maximum length of the warping. The default is 80.
-    
-    Returns
-    -------
-    warped_spectrogram : np.ndarray
-        Warped spectrogram.
-    """
-    warped_spectrogram = spectrogram.copy()
-    time_frames = warped_spectrogram.shape[1]
-    center_time = time_frames // 2
-    warp_distance = random.randint(0, warp_factor)
-    time_start = max(0, center_time - warp_distance)
-    time_end = min(time_frames, center_time + warp_distance)
-    time_warping_segment = warped_spectrogram[:, time_start:time_end]
-    warped_spectrogram[:, center_time - time_warping_segment.shape[1] // 2:center_time + time_warping_segment.shape[1] // 2] = time_warping_segment
-    return warped_spectrogram
+    original_ds = dataset.dataset
+    augmented_ds = []
+    for i in range(len(dataset)):
+        spectrogram, label = dataset[i]
+        augmentation_factor = augmentation_factor_dict.get(label.item(), 1)
+        for j in range(augmentation_factor):
+            masked_spectrogram = spectrogram.clone()
+            channels, freq_bins, time_frames = masked_spectrogram.shape
+            n_masks = random.randint(1, num_masks)
+            for _ in range(n_masks):
+                t = random.randint(0, time_frames - 1)
+                t_mask = random.randint(0, time_mask_factor)
+                d = random.randint(0, freq_bins - 1)
+                d_mask = random.randint(0, doppler_mask_factor)
+                masked_spectrogram[:, d:d + d_mask, t:t + t_mask] = 0
+            augmented_sample = (masked_spectrogram, label)
+            augmented_ds.append(augmented_sample)
+    return augmented_ds
+    return torch.utils.data.dataset.Subset(original_ds, indices=dataset.indices) + augmented_ds
