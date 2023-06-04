@@ -6,7 +6,7 @@ This file contains the train function, which is used to train the model.
 The model is trained using the Adam optimizer and the Cross Entropy loss.
 
 Usage:
-    train.py <model> <data> <input> <case> [--channel=<channel>] (--load|--no-load) [--augment] [--n_samples=<n_samples>] (--aggregate_labels) [--dropout=<dropout>] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov|--no-nesterov] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
+    train.py <model> <data> <input> <case> [--channel=<channel>] (--load|--no-load) [--augment] [--n_samples=<n_samples>] [--aggregate_labels] [--dropout=<dropout>] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov|--no-nesterov] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
     train.py -h | --help
 
 Options:
@@ -19,6 +19,7 @@ Options:
     --augment                       Augment the data [default: False].
     --load                          Load the model [default: False].
     --n_samples=<n_samples>         Number of samples to take [default: 5].
+    --aggregate_labels              Aggregate the labels [default: False].
     --dropout=<dropout>             Dropout [default: 0.5].
     --epochs=<epochs>               Number of epochs [default: 100].
     --batch_size=<batch_size>       Batch size [default: 32].
@@ -74,7 +75,8 @@ def main(model_name:str,
          data,
          case:int,
          load:bool,
-         channels:int,
+         in_channels:int,
+         out_channels:int,
          augment:bool,
          n_samples:int,
          dropout:float,
@@ -105,8 +107,10 @@ def main(model_name:str,
         Case to use
     load : bool
         Load the model
-    channels : int
+    in_channels : int
         Number of input channels
+    out_channels : int
+        Number of output channels
     augment : bool
         Augment the data
     n_samples : int
@@ -143,10 +147,10 @@ def main(model_name:str,
         data=data,
         case=case,
         model_type=model_name,
-        channels=channels,
     )
     classifier.create_model(
-        in_channels=channels,
+        in_channels=in_channels,
+        out_channels=out_channels,
         dropout=dropout
     )
 
@@ -162,7 +166,10 @@ def main(model_name:str,
     # Augment the data
     if augment:
         print('Augmenting the data')
-        classifier.augmentation(method=['resample'], n_samples=n_samples)
+        classifier.augmentation(
+            method=['time-mask', 'doppler-mask', 'time-doppler-mask'],
+            augmentation_factor=5
+        )
         
     # Create the DataLoaders
     classifier.create_DataLoaders(batch_size=batch_size)
@@ -175,9 +182,12 @@ def main(model_name:str,
 
     # Create the optimizer, loss function
     classifier.create_optimizer(optimizer=optimizer, lr=lr, weight_decay=weight_decay, momentum=momentum, nesterov=nesterov)
-    classifier.create_loss(loss=loss)
+    classifier.create_loss(
+        loss=loss,
+        use_weight=True,
+    )
     
-    del data, classifier.data, classifier.train_data, classifier.test_data
+    #del data, classifier.data, classifier.train_data, classifier.test_data
 
     # Train the model
     print('Training the model')
@@ -188,7 +198,7 @@ def main(model_name:str,
 
     # Evaluate the model
     print('Evaluating the model')
-    classifier.evaluate_model(do_roc_auc=False)
+    classifier.evaluate_model(save=True)
 
     # Save the model trained
     print('Saving the model')
@@ -233,14 +243,17 @@ if __name__ == '__main__':
         lambda label: MAPPING_LABELS_DICT[label]
     ) if aggregate else None
 
-    features_transform = transforms.Compose([
-        lambda x: x[:, :, 20:-20],
-        transforms.ToTensor(),
-        transforms.Normalize((0,), (1,))
-    ])
+    out_channels = 10 if aggregate else 14
     
     
     if case == 0:
+
+        features_transform = transforms.Compose([
+            lambda x: x[:, 20:-20],
+            transforms.ToTensor(),
+            transforms.Normalize((0,), (1,))
+        ])
+
         data = Dataset1Channel(
             TYPE=TYPE,
             dirname='DATA_preprocessed',
@@ -249,10 +262,17 @@ if __name__ == '__main__':
             labels_transform=labels_transform,
             channel=1,
         )
-        channels = 1
+        in_channels = 1
         
     elif case == 1:
         raise NotImplementedError('Case 1 not implemented yet')
+
+        features_transform = transforms.Compose([
+            lambda x: x[:, 20:-20],
+            transforms.ToTensor(),
+            transforms.Normalize((0,), (1,))
+        ])
+        
         data = Dataset2Channels(
             TYPE=TYPE,
             dirname='DATA_preprocessed',
@@ -261,13 +281,27 @@ if __name__ == '__main__':
             labels_transform=labels_transform,
             combine_channels=False
         )
-        channels = None
+        in_channels = None
     
     elif case == 2:
         raise NotImplementedError('Case 2 not implemented yet')
-        channels = None
+        
+        features_transform = transforms.Compose([
+            lambda x: x[:, :, 20:-20],
+            transforms.ToTensor(),
+            transforms.Normalize((0,), (1,))
+        ])
+        
+        in_channels = None
     
     elif case == 3:
+        
+        features_transform = transforms.Compose([
+            lambda x: x[:, :, 20:-20],
+            transforms.ToTensor(),
+            transforms.Normalize((0,), (1,))
+        ])
+        
         data = Dataset2Channels(
             TYPE=TYPE,
             dirname='DATA_preprocessed',
@@ -276,7 +310,7 @@ if __name__ == '__main__':
             labels_transform=labels_transform,
             combine_channels=True
         )
-        channels = 2
+        in_channels = 2
 
     else:
         raise ValueError(f'Case {case} not recognized')
@@ -289,7 +323,8 @@ if __name__ == '__main__':
         data=data,
         case=case,
         load=load,
-        channels=channels,
+        in_channels=in_channels,
+        out_channels=out_channels,
         augment=augment,
         n_samples=n_samples,
         dropout=dropout,
