@@ -6,13 +6,14 @@ This file contains the train function, which is used to train the model.
 The model is trained using the Adam optimizer and the Cross Entropy loss.
 
 Usage:
-    train.py <model> <data> <input> <case> [--channel=<channel>] (--load|--no-load) [--augment] [--n_samples=<n_samples>] [--aggregate_labels] [--dropout=<dropout>] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov|--no-nesterov] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
+    train.py <model> <train_data> <test_data> <input> <case> [--channel=<channel>] (--load|--no-load) [--augment] [--n_samples=<n_samples>] [--aggregate_labels] [--dropout=<dropout>] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov|--no-nesterov] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
     train.py -h | --help
 
 Options:
     -h --help                       Show this screen.
     <model>                         Model to use.
-    <data>                          Name of the data file.
+    <train_data>                    Name of the training data file.
+    <test_data>                     Name of the test data file.
     <input>                         Type of data to use.
     <case>                          Case to use.
     --channel=<channel>             Channel to use [default: 1].
@@ -171,7 +172,13 @@ def main(model_name:str,
     )
 
     # Create the optimizer, loss function
-    classifier.create_optimizer(optimizer=optimizer, lr=lr, weight_decay=weight_decay, momentum=momentum, nesterov=nesterov)
+    classifier.create_optimizer(
+        optimizer=optimizer,
+        lr=lr,
+        weight_decay=weight_decay,
+        momentum=momentum,
+        nesterov=nesterov
+    )
     classifier.create_loss(
         loss=loss,
         use_weight=True,
@@ -234,7 +241,7 @@ if __name__ == '__main__':
     ) if aggregate else None
 
     num_classes = 10 if aggregate else 14
-    
+
     
     if case == 0:
 
@@ -250,7 +257,7 @@ if __name__ == '__main__':
             filename=args['<train_data>'],
             features_transform=features_transform,
             labels_transform=labels_transform,
-            channel=1,
+            channel=int(args['--channel']),
         )
         
         test_data = Dataset1Channel(
@@ -259,18 +266,46 @@ if __name__ == '__main__':
             filename=args['<test_data>'],
             features_transform=features_transform,
             labels_transform=labels_transform,
-            channel=1,
+            channel=int(args['--channel']),
         )
         in_channels = 1
         
     elif case == 1:
-        raise NotImplementedError('Case 1 not implemented yet')
+        
+        features_transform = transforms.Compose([
+            lambda x: x[:, 20:-20],
+            transforms.ToTensor(),
+            transforms.Normalize((0,), (1,))
+        ])
+        
+        train_data = Dataset1Channel(
+            TYPE=TYPE,
+            dirname='DATA_preprocessed',
+            filename=args['<train_data>'],
+            features_transform=features_transform,
+            labels_transform=labels_transform,
+            channel=1,
+        )
+        
+        #### ATTENTION ####
+        # The test data is the same as the train data
+        # TODO: generate a new test set
+        test_data = Dataset1Channel(
+            TYPE=TYPE,
+            dirname='DATA_preprocessed',
+            filename=args['<train_data>'],
+            features_transform=features_transform,
+            labels_transform=labels_transform,
+            channel=2,
+        )
+        in_channels = 1
 
     elif case == 2:
+        # train and test on whole dataset
+        # regardless of the radar, not suggested
         raise NotImplementedError('Case 2 not implemented yet')
     
     elif case == 3:
-
         features_transform = transforms.Compose([
             lambda x: x[:, :, 20:-20],
             transforms.ToTensor(),
@@ -299,6 +334,10 @@ if __name__ == '__main__':
 
     else:
         raise ValueError(f'Case {case} not recognized')
+    
+    # shuffle data
+    train_data.shuffle()
+    test_data.shuffle()
     
     # load model
     model_name = args['<model>']
