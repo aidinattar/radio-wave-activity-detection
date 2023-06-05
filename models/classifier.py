@@ -502,16 +502,13 @@ class model(object):
             # Add the loss to Tensorboard
             #self.writer.add_scalar('Loss/train', loss, epoch)
 
-
+            # Save the model if the loss is the best we've seen so far
             self.early_stopping.check_improvement(
                 test_loss,
             )
 
-            # Save the model
-            if checkpoint:
-                if test_loss < best_loss:
-                    best_loss = test_loss
-                    torch.save(self.model.state_dict(), os.path.join(checkpoint_dir, checkpoint_path))
+            if self.scheduler_created:
+                self.scheduler.step()
 
         # don't like this, to be changed
         train_losses = [x.detach().cpu().numpy() for x in train_losses]
@@ -1106,7 +1103,7 @@ class model(object):
                      path: str='figures',
                      name: str='history.png',
                      show: bool=True,
-                     save_csv: bool=False,
+                     save_csv: bool=True,
                      path_csv: str='results',
                      name_csv: str='history.csv'
                      ):
