@@ -15,13 +15,6 @@ The model is trained using the Adam optimizer and the Cross Entropy loss.
 
 The model is trained on the following data:
 [LINK]
-
-TODO:
-    - add the link to the data
-    - add the link to the paper
-    - add dropout
-    - add initial weights
-
 """
 
 import torch
