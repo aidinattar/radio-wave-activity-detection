@@ -56,7 +56,8 @@ class model(object):
 
     def __init__(
         self, 
-        data: Dataset,
+        train_data: Dataset,
+        test_data: Dataset,
         case: int=0,
         model_type: str='CNN-MD',
         device= torch.device('cuda' if torch.cuda.is_available() else 'cpu'),    
@@ -66,8 +67,10 @@ class model(object):
 
         Parameters
         ----------
-        data : Dataset
-            Dataset object.
+        train_data : Dataset
+            Dataset object containing the training data
+        test_data : Dataset
+            Dataset object containing the test data
         case : int, optional
             Case to use. The default is 0.
             Possible values are:
@@ -85,7 +88,8 @@ class model(object):
                 'cuda': GPU
         """
         # Get the data
-        self.data = data
+        self.train_data = train_data
+        self.test_data = test_data
 
         # Get the case
         self.case = case
@@ -100,7 +104,6 @@ class model(object):
         #self.writer = SummaryWriter()
 
 
-    # TODO: add also the option to use the validation set
     def train_test_split(self,
                          test_size: float=0.2,
                          random_state: int=42):
@@ -114,6 +117,7 @@ class model(object):
         random_state : int, optional
             Random state. The default is 42.
         '''
+        raise DeprecationWarning('This method is deprecated. Use make_datasets.py instead.')
         # define the random generator
         generator = torch.Generator().manual_seed(random_state)
         # Split the data
@@ -191,6 +195,7 @@ class model(object):
         ValueError
             Invalid data type.
         """
+        raise DeprecationWarning('This function is deprecated. Use make_datasets.py instead')
         if self.data.TYPE=='rdn':
             self.augmentation_rdn(
                 method=method,
@@ -216,6 +221,7 @@ class model(object):
         **kwargs : TYPE
             Keyword arguments to pass to the augmentation function.
         """
+        raise DeprecationWarning('This function is deprecated. Use make_datasets.py instead')
 
         if 'resample' in method:
             try:
@@ -255,8 +261,9 @@ class model(object):
         **kwargs : TYPE
             Keyword arguments to pass to the augmentation function.
         """
+        raise DeprecationWarning('This function is deprecated. Use make_datasets.py instead')
         augmented_data = []
-        if self.out_channels == 10:
+        if self.num_classes == 10:
             labels_transform = np.vectorize(
                 lambda label: MAPPING_LABELS_DICT[label]
             )
@@ -325,7 +332,7 @@ class model(object):
             
 
     def create_model(self,
-                     out_channels:int=10,
+                     num_classes:int=10,
                      **kwargs):
         """
         Create the model
@@ -335,21 +342,21 @@ class model(object):
         **kwargs : TYPE
             Keyword arguments to pass to the model class.
         """
-        self.out_channels = out_channels
+        self.num_classes = num_classes
 
         # call cnn_rd or cnn_md class
         if self.model_type == 'CNN-MD':
             if self.data.TYPE != 'mDoppler':
                 OptionIsFalseError('do_mDoppler')
             self.model = cnn_md(
-                out_channels=out_channels,
+                num_classes=num_classes,
                 **kwargs
             )
         elif self.model_type == 'CNN-RD':
             if self.data.type != 'rdn':
                 OptionIsFalseError('do_rdn')
             self.model = cnn_rd(
-                out_channels=out_channels,
+                num_classes=num_classes,
                 **kwargs
             )
         else:
@@ -428,7 +435,7 @@ class model(object):
         
         if use_weight:
             if weight is None:
-                if self.out_channels == 10:
+                if self.num_classes == 10:
                     labels_transform = np.vectorize(
                         lambda label: MAPPING_LABELS_DICT[label]
                     )
@@ -670,7 +677,7 @@ class model(object):
             preds = preds.detach().cpu().numpy().argmax(axis=1)
             targets = targets.detach().cpu().numpy()
 
-        if self.out_channels==10:
+        if self.num_classes==10:
             target_names = AGGREGATED_LABELS_DICT_REVERSE.values()
         else:
             target_names = NON_AGGREGATED_LABELS_DICT_REVERSE.values()
@@ -899,13 +906,13 @@ class model(object):
         target_names = list(target_names)
 
         # Binarize the labels
-        y_binarized = label_binarize(y_true, classes=range(self.out_channels))
+        y_binarized = label_binarize(y_true, classes=range(self.num_classes))
 
         # Compute the ROC curve and AUC for each class
         fpr = dict()
         tpr = dict()
         roc_auc = dict()
-        for i in range(self.out_channels):
+        for i in range(self.num_classes):
             fpr[i], tpr[i], _ = roc_curve(y_binarized[:, i], y_pred_prob[:, i])
             roc_auc[i] = auc(fpr[i], tpr[i])
 
@@ -916,7 +923,7 @@ class model(object):
         if display or save:
             # Plot the ROC curves for each class
             plt.figure(figsize=(10, 10))
-            for i in range(self.out_channels):
+            for i in range(self.num_classes):
                 plt.plot(fpr[i], tpr[i], label='{0} (AUC = {1:.2f})'.format(target_names[i], roc_auc[i]))
             plt.plot(fpr_micro, tpr_micro, label='Micro-average (AUC = {0:.2f})'.format(roc_auc_micro))
 
@@ -997,13 +1004,13 @@ class model(object):
         target_names = list(target_names)
 
         # Binarize the labels
-        y_binarized = label_binarize(y_true, classes=range(self.out_channels))
+        y_binarized = label_binarize(y_true, classes=range(self.num_classes))
         
         # Compute the PR curve and AUC for each class
         precision = dict()
         recall = dict()
         pr_auc = dict()
-        for i in range(self.out_channels):
+        for i in range(self.num_classes):
             precision[i], recall[i], _ = precision_recall_curve(y_binarized[:, i], y_pred_prob[:, i])
             pr_auc[i] = auc(recall[i], precision[i])
         
@@ -1014,7 +1021,7 @@ class model(object):
         if display or save:
             fig, ax = plt.subplots(figsize=(10, 10))
 
-            for i in range(self.out_channels):
+            for i in range(self.num_classes):
                 ax.plot(recall[i], precision[i], label='{0} (AUC = {1:.2f})'.format(target_names[i], pr_auc[i]))
             ax.plot(recall_micro, precision_micro, label='Micro-average (AUC = {0:.2f})'.format(pr_auc_micro))
 
