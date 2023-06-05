@@ -253,18 +253,29 @@ def main(
 
     # Train the model
     print('Training the model')
-    classifier.train_model(epochs=epochs, checkpoint=True, checkpoint_path=f'{model_name}__case_{case}_checkpoint.pt')
+    classifier.train_model(
+        epochs=epochs,
+        checkpoint=True
+    )
 
     # Plot the training history
-    classifier.plot_history(save=True, show=False, save_csv=True)
+    classifier.plot_history(
+        save=True,
+        show=False,
+        save_csv=True
+    )
 
     # Evaluate the model
     print('Evaluating the model')
-    classifier.evaluate_model(save=True)
+    classifier.evaluate_model(
+        save=True
+    )
 
     # Save the model trained
     print('Saving the model')
-    classifier.save_trained_model(name=f'{model_name}_{now}_case{case}')
+    classifier.save_trained_model(
+        name=f'{model_name}_{now}_case{case}'
+    )
 
 
 if __name__ == '__main__':
@@ -292,7 +303,8 @@ if __name__ == '__main__':
     nesterov = bool(args['--nesterov'])
     loss = args['--loss']
     
-    early_stopping = bool(args['--early_stopping'])
+    scheduler = args['--scheduler']
+    early_stopping = bool(args['--early-stopping'])
     patience = int(args['--patience'])
     min_delta = float(args['--min_delta'])
     verbose = int(args['--verbose'])
@@ -422,6 +434,7 @@ if __name__ == '__main__':
         momentum=momentum,
         nesterov=nesterov,
         loss=loss,
+        scheduler=scheduler,
         early_stopping=early_stopping,
         patience=patience,
         min_delta=min_delta,
