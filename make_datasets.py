@@ -8,7 +8,7 @@ Usage:
     
 Options:
     -h --help       Show this screen.
-    -a --augment    Augment the data by applying data augmentation techniques to the samples.
+    -a --augment    Augment the data by applying data augmentation techniques to the samples. [default: False]
 """
 
 
@@ -47,28 +47,34 @@ def split_train_test(
             for dataset_name, dataset in f.items():
                 # Get the dataset shape
                 dataset_shape = dataset.shape
-                
-                # Calculate the split index based on the split ratio
-                split_index = int(dataset_shape[0] * split_ratio)
-                
+                train_shape = (int(dataset_shape[0] * split_ratio), *dataset_shape[1:])
+                test_shape = (dataset_shape[0] - train_shape[0], *dataset_shape[1:])
                 # Create datasets in the new H5 files with the same shape as the original dataset
-                train_dataset = train_f.create_dataset(dataset_name, shape=dataset_shape, dtype=dataset.dtype,
+                train_dataset = train_f.create_dataset(dataset_name, shape=train_shape, dtype=dataset.dtype,
                                                        chunks=True, compression="gzip")
-                test_dataset = test_f.create_dataset(dataset_name, shape=dataset_shape, dtype=dataset.dtype,
+                test_dataset = test_f.create_dataset(dataset_name, shape=test_shape, dtype=dataset.dtype,
                                                       chunks=True, compression="gzip")
                 
+                train_index, test_index = 0, 0
                 # Copy the data chunk by chunk
-                for i in range(0, dataset_shape[0], 1000):  # Adjust chunk size as per your memory constraints
+                for i in range(0, dataset_shape[0], 1000):
                     chunk = dataset[i:i+1000]
+                    
+                    # Calculate the split index based on the split ratio
+                    split_index = int(chunk.shape[0] * split_ratio)
                     
                     # Split the chunk into training and test data
                     train_chunk = chunk[:split_index]
                     test_chunk = chunk[split_index:]
                     
                     # Write the data to the new H5 files
-                    train_dataset[i:i+train_chunk.shape[0]] = train_chunk
-                    test_dataset[i:i+test_chunk.shape[0]] = test_chunk
-                    
+                    train_dataset[train_index:train_index+train_chunk.shape[0]] = train_chunk
+                    test_dataset[test_index:test_index+test_chunk.shape[0]] = test_chunk
+
+                    # Update the current positions in each dataset
+                    train_index += train_chunk.shape[0]
+                    test_index += test_chunk.shape[0]
+
 
 def augment_data(
     data: np.ndarray,
@@ -141,6 +147,7 @@ def add_augmented_samples_to_h5(
     -------
     None
     """
+    label_done = False
     # Load the original H5 file
     with h5py.File(input_file, 'r') as f:
         input_h5 = h5py.File(input_file, 'r')
@@ -194,10 +201,13 @@ def add_augmented_samples_to_h5(
                 output_h5[dataset_name].resize((output_h5[dataset_name].shape[0] + augmented_data.shape[0]), axis=0)
                 output_h5[dataset_name][-augmented_data.shape[0]:] = augmented_data
 
-                # Append labels to the output H5 file
-                output_h5['labels'].resize((output_h5['labels'].shape[0] + augmented_labels.shape[0]), axis=0)
-                output_h5['labels'][-augmented_labels.shape[0]:] = augmented_labels
+                if not label_done:
+                    # Append labels to the output H5 file
+                    output_h5['labels'].resize((output_h5['labels'].shape[0] + augmented_labels.shape[0]), axis=0)
+                    output_h5['labels'][-augmented_labels.shape[0]:] = augmented_labels
 
+            label_done = True
+            
     # Close the input and output H5 files
     input_h5.close()
     output_h5.close()
