@@ -15,6 +15,7 @@ TODO:
 import os
 import h5py
 import numpy as np
+from torch import randperm
 from torch.utils.data import Dataset
 
 class Dataset2Channels(Dataset):
@@ -128,6 +129,21 @@ class Dataset2Channels(Dataset):
 
         return features_1, features_2, label
     
+    def shuffle(self):
+        # Shuffle the indices
+        shuffled_indices = randperm(len(self))
+        
+        # Update the indices for subsequent data retrieval
+        self.indices = shuffled_indices
+        
+    def __iter__(self):
+        # Shuffle the dataset when creating an iterator
+        self.shuffle()
+        
+        # Return an iterator over the shuffled indices
+        return iter(self.indices.tolist())
+    
+    
     
 class Dataset1Channel(Dataset):
     """
@@ -225,3 +241,18 @@ class Dataset1Channel(Dataset):
             label = self.labels_transform(label)
             
         return features, label
+    
+    
+    def shuffle(self):
+        # Shuffle the indices
+        shuffled_indices = randperm(len(self))
+        
+        # Update the indices for subsequent data retrieval
+        self.indices = shuffled_indices
+        
+    def __iter__(self):
+        # Shuffle the dataset when creating an iterator
+        self.shuffle()
+        
+        # Return an iterator over the shuffled indices
+        return iter(self.indices.tolist())
