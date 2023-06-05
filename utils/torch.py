@@ -6,7 +6,7 @@ class EarlyStopping:
     Early stopping to stop the training when
     the monitored metric does not improve after certain epochs.
     """
-    def init(
+    def __init__(
         self,
         patience: int = 7,
         min_delta: float = 0,
