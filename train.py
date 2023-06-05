@@ -1,12 +1,23 @@
 """
 train.py
 
-This file contains the train function, which is used to train the model.
+This file contains the train function, which is used to
+train the model.
 
-The model is trained using the Adam optimizer and the Cross Entropy loss.
+The model is trained using the Adam optimizer and
+the Cross Entropy loss.
 
 Usage:
-    train.py <model> <train_data> <test_data> <input> <case> [--channel=<channel>] (--load|--no-load) [--augment] [--n_samples=<n_samples>] [--aggregate_labels] [--dropout=<dropout>] [--epochs=<epochs>] [--batch_size=<batch_size>] [--optimizer=<optimizer>] [--lr=<lr>] [--weight_decay=<weight_decay>] [--momentum=<momentum>] [--nesterov|--no-nesterov] [--loss=<loss>] [--patience=<patience>] [--min_delta=<min_delta>] [--factor=<factor>] [--verbose=<verbose>] [--seed=<seed>]
+    train.py <model> <train_data> <test_data> <input> <case>
+            [--channel=<channel>] [--load=<model_name>]
+            [--aggregate_labels] [--dropout=<dropout>]
+            [--epochs=<epochs>] [--batch_size=<batch_size>]
+            [--optimizer=<optimizer>] [--lr=<lr>]
+            [--weight_decay=<weight_decay>] [--momentum=<momentum>]
+            [--nesterov] [--scheduler=<scheduler>]
+            [--loss=<loss>] [--early-stopping]
+            [--patience=<patience>] [--min_delta=<min_delta>]
+            [--verbose=<verbose>] [--seed=<seed>]
     train.py -h | --help
 
 Options:
@@ -17,9 +28,7 @@ Options:
     <input>                         Type of data to use.
     <case>                          Case to use.
     --channel=<channel>             Channel to use [default: 1].
-    --augment                       Augment the data [default: False].
-    --load                          Load the model [default: False].
-    --n_samples=<n_samples>         Number of samples to take [default: 5].
+    --load=<model_name>             Load a model [default: None].
     --aggregate_labels              Aggregate the labels [default: False].
     --dropout=<dropout>             Dropout [default: 0.5].
     --epochs=<epochs>               Number of epochs [default: 100].
@@ -29,37 +38,34 @@ Options:
     --weight_decay=<weight_decay>   Weight decay [default: 0.0001].
     --momentum=<momentum>           Momentum [default: 0.9].
     --nesterov                      Nesterov [default: False].
+    --scheduler=<scheduler>         Scheduler [default: None].
     --loss=<loss>                   Loss [default: CrossEntropyLoss].
+    --early-stopping                Early stopping [default: False].
     --patience=<patience>           Patience [default: 10].
     --min_delta=<min_delta>         Minimum delta [default: 0.0001].
-    --factor=<factor>               Factor [default: 0.1].
     --verbose=<verbose>             Verbose [default: 1].
     --seed=<seed>                   Seed [default: 42].
 
 Example:
-    python train.py CNN-MD data_processed.npz mDoppler 2 --load --augment --n_samples=5 --dropout=.2 --epochs=1500 --batch_size=32 --optimizer=Adam --lr=0.001 --weight_decay=0.0001 --momentum=0.9 --nesterov=True --loss=Adam --patience=10 --min_delta=0.0001 --factor=0.1 --verbose=1 --seed=42
+    python train.py CNN-MD train_mDoppler_2channels.h5 test_mDoppler_2channels.h5  mDoppler 3 --aggregate_labels --epochs=10  --weight_decay=0. --no-nesterov --dropout=0. --load
 
 Current configuration:
     model: CNN-MD
-    data: data_processed.npz
+    train_data: train_mDoppler_2channels_augmented.h5
+    test_data: test_mDoppler_2channels.h5
     input: mDoppler
-    case: 2
-    load: False
-    augment: True
-    n_samples: 15
-    dropout: 0.2
+    case: 3
+    dropout: 0.
     epochs: 100
-    batch_size: 256
-    weight_decay: 0.0    
-    nesterov: False
+    batch_size: 128
+    weight_decay: 0.0
+    aggregate_labels: True
+    optimizer: Adam
+    lr: 0.001
+    loss: CrossEntropyLoss
     
-    python train.py CNN-MD data_processed.npz mDoppler 2  --no-load --augment --n_sample=15 --dropout=.2 --epochs=100 --batch_size=256 --weight_decay=0. --no-nesterov
+    python train.py CNN-MD train_mDoppler_2channels_augmented.h5 test_mDoppler_2channels.h5 mDoppler 3 --dropout=0. --epochs=100 --batch_size=128 --weight_decay=0. --no-nesterov
 """
-
-# TODO:
-# Add parameters to the docstring
-# Add the parameters not used to the class
-# Check the correctness of the code
 
 import torch
 import numpy as np
@@ -72,32 +78,34 @@ from torchvision import transforms
 
 now = datetime.now().strftime("%Y%m%d")
 
-def main(model_name:str,
-         train_data,
-         test_data,
-         case:int,
-         load:bool,
-         in_channels:int,
-         num_classes:int,
-         augment:bool,
-         n_samples:int,
-         dropout:float,
-         epochs:int,
-         batch_size:int,
-         optimizer:str,
-         lr:float,
-         weight_decay:float,
-         momentum:float,
-         nesterov:bool,
-         loss:str,
-         patience:int,
-         min_delta:float,
-         factor:float,
-         verbose:int,
-         device:torch.device,
-         seed:int):
+def main(
+    model_name:str,
+    train_data,
+    test_data,
+    case:int,
+    load:bool,
+    in_channels:int,
+    num_classes:int,
+    dropout:float,
+    epochs:int,
+    batch_size:int,
+    optimizer:str,
+    lr:float,
+    weight_decay:float,
+    momentum:float,
+    nesterov:bool,
+    scheduler:str,
+    loss:str,
+    early_stopping:bool,
+    patience:int,
+    min_delta:float,
+    verbose:int,
+    device:torch.device,
+    seed:int
+):
     """
-    Train the model, save the best model and save the training history
+    Train the model, save the best model and
+    save the training history
 
     Parameters
     ----------
@@ -113,10 +121,6 @@ def main(model_name:str,
         Number of input channels
     num_classes : int
         Number of output channels
-    augment : bool
-        Augment the data
-    n_samples : int
-        Number of samples to take in the augmented data
     epochs : int
         Number of epochs
     batch_size : int
@@ -137,19 +141,19 @@ def main(model_name:str,
         Patience
     min_delta : float
         Minimum delta
-    factor : float
-        Factor
     verbose : int
         Verbose
     device : torch.device
         Device to use
     """
+
     # Create the model object
     classifier = model(
         train_data=train_data,
         test_data=test_data,
         case=case,
         model_type=model_name,
+        device=device,
     )
     classifier.create_model(
         in_channels=in_channels,
@@ -158,9 +162,11 @@ def main(model_name:str,
     )
 
     # Load the pre-trained model
-    if load:
-        print(f'Loading model {model_name}__case_{case}_checkpoint.pt')
-        classifier.load_model(name=f'{model_name}__case_{case}_checkpoint', path='checkpoints')
+    if load != "None":
+        print(f'Loading model {load}')
+        classifier.load_model(
+            name=load,
+        )
         
     # Create the DataLoaders
     classifier.create_DataLoaders(batch_size=batch_size)
@@ -184,7 +190,66 @@ def main(model_name:str,
         use_weight=True,
     )
     
-    #del data, classifier.data, classifier.train_data, classifier.test_data
+    del classifier.train_data, classifier.test_data
+
+    # Create the early stopping
+    if early_stopping:
+        classifier.create_early_stopping(
+            patience=patience,
+            min_delta=min_delta,
+            verbose=verbose,
+            mode='min',
+            baseline=1.5,
+            start_epoch=30,
+            path=f'{model_name}__case_{case}_checkpoint.pt',
+        )
+
+    if scheduler != 'None':
+        params = {
+            'ReduceLROnPlateau': {
+                'mode': 'min',
+                'factor': 0.1,
+                'patience': 10,
+                'verbose': True,
+                'threshold': 0.0001,
+                'threshold_mode': 'rel',
+                'cooldown': 0,
+                'min_lr': 0,
+                'eps': 1e-08
+            },
+            'StepLR': {
+                'step_size': 10,
+                'gamma': 0.1
+            },
+            'MultiStepLR': {
+                'milestones': [10, 30, 60],
+                'gamma': 0.1
+            },
+            'ExponentialLR': {
+                'gamma': 0.1
+            },
+            'CosineAnnealingLR': {
+                'T_max': 10,
+                'eta_min': 0
+            },
+            'CyclicLR': {
+                'base_lr': 0.001,
+                'max_lr': 0.01,
+                'step_size_up': 2000,
+                'mode': 'triangular',
+                'gamma': 1.0,
+                'scale_fn': None,
+                'scale_mode': 'cycle',
+                'cycle_momentum': True,
+                'base_momentum': 0.8,
+                'max_momentum': 0.9,
+                'last_epoch': -1
+            },
+        }
+        classifier.create_scheduler(
+            scheduler=scheduler,
+            **params[scheduler]
+        )
 
     # Train the model
     print('Training the model')
@@ -212,9 +277,7 @@ if __name__ == '__main__':
     # set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    load = bool(args['--load'])
-    augment = bool(args['--augment'])
-    n_samples = int(args['--n_samples'])
+    load = args['--load']
     aggregate = bool(args['--aggregate_labels'])
 
     # set hyperparameters
@@ -228,13 +291,13 @@ if __name__ == '__main__':
     momentum = float(args['--momentum'])
     nesterov = bool(args['--nesterov'])
     loss = args['--loss']
+    
+    early_stopping = bool(args['--early_stopping'])
     patience = int(args['--patience'])
     min_delta = float(args['--min_delta'])
-    factor = float(args['--factor'])
     verbose = int(args['--verbose'])
 
     TYPE = args['<input>']
-    
     
     labels_transform = np.vectorize(
         lambda label: MAPPING_LABELS_DICT[label]
@@ -350,8 +413,6 @@ if __name__ == '__main__':
         load=load,
         in_channels=in_channels,
         num_classes=num_classes,
-        augment=augment,
-        n_samples=n_samples,
         dropout=dropout,
         epochs=epochs,
         batch_size=batch_size,
@@ -361,9 +422,9 @@ if __name__ == '__main__':
         momentum=momentum,
         nesterov=nesterov,
         loss=loss,
+        early_stopping=early_stopping,
         patience=patience,
         min_delta=min_delta,
-        factor=factor,
         verbose=verbose,
         device=device,
         seed=seed

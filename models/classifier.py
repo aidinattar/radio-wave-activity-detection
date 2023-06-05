@@ -16,8 +16,8 @@ import pandas            as pd
 import seaborn           as sns
 import matplotlib.pyplot as plt
 #import torchvision.utils as vutils
-
-from torch.utils.data          import DataLoader, random_split
+from utils.torch               import EarlyStopping
+from torch.utils.data          import DataLoader
 from torch.optim               import SGD, Adam, NAdam
 from torch.nn                  import CrossEntropyLoss
 from preprocessing.dataset     import Dataset
@@ -31,15 +31,16 @@ from sklearn.metrics           import confusion_matrix, accuracy_score,\
                                       precision_recall_curve, average_precision_score,\
                                       classification_report, auc, precision_score,\
                                       recall_score, f1_score
-from utils                     import plotting, augmentation
+from utils                     import plotting
 from torchsummary              import summary
-from torch.utils.data          import Subset
 from memory_profiler           import profile
 from sklearn.preprocessing     import label_binarize
 from sklearn.utils             import class_weight
 from utils.constants           import NON_AGGREGATED_LABELS_DICT_REVERSE,\
     AGGREGATED_LABELS_DICT_REVERSE, MAPPING_LABELS_DICT
 #from torch.utils.tensorboaro import SummaryWriter
+from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR,\
+    CosineAnnealingLR, MultiStepLR, ExponentialLR
 
 fig_dir = 'figures'
 sns.set_style('darkgrid')
@@ -52,6 +53,7 @@ class model(object):
     optimizer_created = False
     loss_created = False
     model_trained = False
+    scheduler_created = False
 
     def __init__(
         self, 
@@ -284,12 +286,120 @@ class model(object):
         self.loss_created = True
 
 
+    def create_early_stopping(
+        self,
+        patience: int=10,
+        min_delta: float=0.0,
+        verbose: bool=False,
+        mode: str='min',
+        baseline: float=None,
+        start_epoch: int=0,
+        path: str='chekpoints/checkpoint.pt',
+    ):
+        """
+        Create the early stopping object
+        
+        Parameters
+        ----------
+        patience : int, optional
+            Number of epochs with no
+            improvement after which training will be stopped.
+            The default is 10.
+        delta : float, optional
+            Minimum change in the monitored
+            The default is 0.0.
+        verbose : bool, optional
+            Verbosity mode. The default is False.
+        baseline : float, optional
+            Baseline value for the monitored quantity.
+            Training will stop if the model doesn't
+            show improvement over the baseline.
+            The default is None.
+        start_epoch : int, optional
+            Epoch from which to start counting the patience.
+            The default is 0.
+        path : str, optional
+            Path for the checkpoint. The default is 'checkpoint.pt'.
+        """
+        self.early_stopping = EarlyStopping(
+            patience=patience,
+            min_delta=min_delta,
+            verbose=verbose,
+            mode=mode,
+            path=path,
+            baseline=baseline,
+            start_from_epoch=start_epoch
+        )
+
+
+    def create_scheduler(
+        self,
+        scheduler: str='ReduceLROnPlateau',
+        **kwargs
+    ):
+        """
+        Create the scheduler object
+        
+        Parameters
+        ----------
+        scheduler : str, optional
+            Scheduler to use. The default is 'ReduceLROnPlateau'.
+            Possible values are:
+                'ReduceLROnPlateau': Reduce learning rate when a
+                    metric has stopped improving.
+                'StepLR': Decay the learning rate of each parameter
+                    group by gamma every step_size epochs.
+                'MultiStepLR': Decays the learning rate of each
+                    parameter group by gamma once the number of
+                    epoch reaches one of the milestones.
+                'ExponentialLR': Decays the learning rate of each
+                    parameter group by gamma every epoch.
+                'CosineAnnealingLR': Set the learning rate of each
+                    parameter group using a cosine annealing 
+                    schedule.
+        **kwargs : TYPE
+            Keyword arguments to pass to the scheduler.
+        """
+
+        if not self.optimizer_created:
+            raise WorkToDoError('Create the optimizer first')
+
+        if scheduler == 'ReduceLROnPlateau':
+            self.scheduler = ReduceLROnPlateau(
+                self.optimizer,
+                **kwargs
+            )
+        elif scheduler == 'StepLR':
+            self.scheduler = StepLR(
+                self.optimizer,
+                **kwargs
+            )
+        elif scheduler == 'MultiStepLR':
+            self.scheduler = MultiStepLR(
+                self.optimizer,
+                **kwargs
+            )
+        elif scheduler == 'ExponentialLR':
+            self.scheduler = ExponentialLR(
+                self.optimizer,
+                **kwargs
+            )
+        elif scheduler == 'CosineAnnealingLR':
+            self.scheduler = CosineAnnealingLR(
+                self.optimizer,
+                **kwargs
+            )
+        else:
+            raise ValueError('Invalid scheduler')
+
+        # Set the flag
+        self.scheduler_created = True
+
+
     #@profile
     def train_model(self,
                     epochs: int=10,
-                    checkpoint: bool=False,
-                    checkpoint_path: str='checkpoint.pt',
-                    checkpoint_dir: str='checkpoints'
+                    checkpoint:bool=True,
                     ):
         """
         Train the model
@@ -300,8 +410,6 @@ class model(object):
             Number of epochs. The default is 10.
         checkpoint : bool, optional
             Save the model after every epoch. The default is False.
-        checkpoint_path : str, optional
-            Path to save the model. The default is 'checkpoint.pt'.
 
         Raises
         ------
@@ -394,6 +502,10 @@ class model(object):
             # Add the loss to Tensorboard
             #self.writer.add_scalar('Loss/train', loss, epoch)
 
+
+            self.early_stopping.check_improvement(
+                test_loss,
+            )
 
             # Save the model
             if checkpoint:
