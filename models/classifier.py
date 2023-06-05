@@ -48,7 +48,6 @@ class model(object):
     """
     Class to create the model
     """
-    train_test_split_done = False
     model_created = False
     optimizer_created = False
     loss_created = False
@@ -90,6 +89,8 @@ class model(object):
         # Get the data
         self.train_data = train_data
         self.test_data = test_data
+        
+        self.input_size = self.train_data[0][0].shape
 
         # Get the case
         self.case = case
@@ -102,47 +103,6 @@ class model(object):
         
         # Add tensorboard writer
         #self.writer = SummaryWriter()
-
-
-    def train_test_split(self,
-                         test_size: float=0.2,
-                         random_state: int=42):
-        '''
-        Split the data into training and testing data
-
-        Parameters
-        ----------
-        test_size : float, optional
-            Size of the test data. The default is 0.2.
-        random_state : int, optional
-            Random state. The default is 42.
-        '''
-        raise DeprecationWarning('This method is deprecated. Use make_datasets.py instead.')
-        # define the random generator
-        generator = torch.Generator().manual_seed(random_state)
-        # Split the data
-        if self.case == 0:            
-            test_dim = int(test_size*len(self.data))
-            train_dim = len(self.data) - test_dim
-            self.train_data, self.test_data = random_split(self.data, [train_dim, test_dim], generator=generator)                 
-        elif self.case == 1:    #this in standby
-            self.train_data = self.data[0]
-            self.test_data = self.data[1]
-        elif self.case == 2:    #this in standby
-            test_dim = int(test_size*len(self.data))
-            train_dim = len(self.data) - test_dim
-            self.train_data, self.test_data = random_split(self.data, [train_dim, test_dim], generator=generator)
-        elif self.case == 3:
-            test_dim = int(test_size*len(self.data))
-            train_dim = len(self.data) - test_dim
-            self.train_data, self.test_data = random_split(self.data, [train_dim, test_dim], generator=generator)
-        else:
-            raise ValueError('Invalid case')
-        
-        self.input_size = self.train_data[0][0].shape
-
-        # Set the flag
-        self.train_test_split_done = True
 
 
     def create_DataLoaders(self,
@@ -173,164 +133,6 @@ class model(object):
                                         num_workers=num_workers)
 
 
-    def augmentation(self,
-                     method=['time-mask'],
-                     augmentation_factor: int=2,
-                     **kwargs):
-        """
-        Augment the data.
-
-        Parameters
-        ----------
-        method : list, optional
-            List of methods to use.
-            Possible values are:
-                'resample', 'time-mask', 'doppler-mask', 'time-doppler-mask'
-            The default is ['time-mask'].
-        **kwargs : TYPE
-            Keyword arguments to pass to the augmentation function.
-            
-        Raises
-        ------
-        ValueError
-            Invalid data type.
-        """
-        raise DeprecationWarning('This function is deprecated. Use make_datasets.py instead')
-        if self.data.TYPE=='rdn':
-            self.augmentation_rdn(
-                method=method,
-                augmentation_factor=augmentation_factor,
-                **kwargs)
-        elif self.data.TYPE=='mDoppler':
-            self.augmentation_mDoppler(
-                method=method,
-                augmentation_factor=augmentation_factor,
-                **kwargs)
-        else:
-            raise ValueError('Invalid data type')
-        
-
-    def augmentation_rdn(self, method=['time-mask'], **kwargs):
-        """
-        Augment the rdn data
-
-        Parameters
-        ----------
-        method : list, optional
-            List of methods to use.
-        **kwargs : TYPE
-            Keyword arguments to pass to the augmentation function.
-        """
-        raise DeprecationWarning('This function is deprecated. Use make_datasets.py instead')
-
-        if 'resample' in method:
-            try:
-                n_samples = kwargs['n_samples']
-            except KeyError:
-                n_samples = 5
-            self.train_data = augmentation.resample(self.train_data,
-                                                    data_dir='DATA_preprocessed',
-                                                    data_file='data_cutted.npz',
-                                                    data_type='rdn',
-                                                    len_default=40,
-                                                    n_samples=n_samples)
-            
-        if 'time-mask' in method:
-            self.train_data = augmentation.time_mask(self.train_data)
-
-        if 'doppler-mask' in method:
-            self.train_data = augmentation.doppler_mask(self.train_data)
-        
-        if 'time-doppler-mask' in method:
-            self.train_data = augmentation.time_doppler_mask(self.train_data)
-
-
-    def augmentation_mDoppler(self,
-                              method=['time-mask'],
-                              augmentation_factor: int=2,
-                              **kwargs):
-        """
-        Augment the mDoppler data
-        
-        Parameters
-        ----------
-        method : list, optional
-            List of methods to use.
-        augmentation_factor : int, optional
-            Augmentation factor. The default is 2.
-        **kwargs : TYPE
-            Keyword arguments to pass to the augmentation function.
-        """
-        raise DeprecationWarning('This function is deprecated. Use make_datasets.py instead')
-        augmented_data = []
-        if self.num_classes == 10:
-            labels_transform = np.vectorize(
-                lambda label: MAPPING_LABELS_DICT[label]
-            )
-            labels = labels_transform(self.train_data.dataset.labels[:])
-        else:
-            labels = self.train_data.dataset.labels[:]
-        class_weights = class_weight.compute_class_weight(
-                class_weight='balanced',
-                classes=np.unique(labels),
-                y=labels
-            )
-        augmentation_factor_dict={
-            label: int(np.ceil(class_weights[label]))*augmentation_factor for label in np.unique(labels)
-        }
-
-        if 'resample' in method:
-            raise DeprecationWarning('Resample is not available')
-            try:
-                n_samples = kwargs['n_samples']
-            except KeyError:
-                n_samples = 5
-            self.train_data = augmentation.resample(self.train_data,
-                                                    data_dir='DATA_preprocessed',
-                                                    data_file='data_cutted.npz',
-                                                    data_type='mDoppler',
-                                                    len_default=40,
-                                                    n_samples=n_samples)
-            
-        if 'time-mask' in method:
-            augmented_data += augmentation.time_mask(
-                self.train_data,
-                augmentation_factor_dict=augmentation_factor_dict,
-                num_masks=3,
-                mask_factor=3
-            )
-            
-        if 'doppler-mask' in method:
-            augmented_data += augmentation.doppler_mask(
-                self.train_data,
-                augmentation_factor_dict=augmentation_factor_dict,
-                num_masks=3,
-                mask_factor=3
-            )
-            
-        if 'time-doppler-mask' in method:
-            augmented_data += augmentation.time_doppler_mask(
-                self.train_data,
-                augmentation_factor_dict=augmentation_factor_dict,
-                num_masks=3,
-                time_mask_factor=3,
-                doppler_mask_factor=3
-            )
-
-        features_tensor = torch.stack([data[0] for data in augmented_data])
-        labels_tensor = torch.tensor(
-            [torch.from_numpy(label) for label in [data[1] for data in augmented_data]]
-        )
-        augmented_dataset = torch.utils.data.TensorDataset(
-            features_tensor,
-            labels_tensor
-        )
-        
-        self.train_data = torch.utils.data.ConcatDataset(
-            [self.train_data, augmented_dataset]
-        )
-            
-
     def create_model(self,
                      num_classes:int=10,
                      **kwargs):
@@ -346,17 +148,17 @@ class model(object):
 
         # call cnn_rd or cnn_md class
         if self.model_type == 'CNN-MD':
-            if self.data.TYPE != 'mDoppler':
+            if self.train_data.TYPE != 'mDoppler':
                 OptionIsFalseError('do_mDoppler')
             self.model = cnn_md(
-                num_classes=num_classes,
+                out_channels=num_classes,
                 **kwargs
             )
         elif self.model_type == 'CNN-RD':
-            if self.data.type != 'rdn':
+            if self.test_data.type != 'rdn':
                 OptionIsFalseError('do_rdn')
             self.model = cnn_rd(
-                num_classes=num_classes,
+                out_channels=num_classes,
                 **kwargs
             )
         else:
@@ -392,12 +194,24 @@ class model(object):
             Nesterov. The default is True.
         """
         if optimizer == 'SGD':
-            self.optimizer = SGD(self.model.parameters(), lr=lr, momentum=momentum)
+            self.optimizer = SGD(
+                self.model.parameters(),
+                lr=lr,
+                momentum=momentum
+            )
         elif optimizer == 'Adam':
             if not nesterov:
-                self.optimizer = Adam(self.model.parameters(), lr=lr, weight_decay=weight_decay)
+                self.optimizer = Adam(
+                    self.model.parameters(),
+                    lr=lr,
+                    weight_decay=weight_decay
+                )
             else:
-                self.optimizer = NAdam(self.model.parameters(), lr=lr, weight_decay=weight_decay)
+                self.optimizer = NAdam(
+                    self.model.parameters(),
+                    lr=lr,
+                    weight_decay=weight_decay
+                )
         else:
             raise ValueError('Invalid optimizer')
 
@@ -439,14 +253,7 @@ class model(object):
                     labels_transform = np.vectorize(
                         lambda label: MAPPING_LABELS_DICT[label]
                     )
-                    if isinstance(self.train_data, torch.utils.data.ConcatDataset):
-                        labels = np.concatenate([
-                            self.train_data.datasets[0].dataset.labels[:],
-                            self.train_data.datasets[1].tensors[1].numpy()
-                        ])
-                        labels = labels_transform(labels)
-                    else:
-                        labels = labels_transform(self.train_data.dataset.labels[:])
+                    labels = labels_transform(self.train_data.labels[:])
                 else:
                     labels = self.train_data.dataset.labels[:]
                 class_weights = torch.tensor(
@@ -477,9 +284,6 @@ class model(object):
         self.loss_created = True
 
 
-    ######################################
-    ######           CHECK         #######
-    ######################################
     #@profile
     def train_model(self,
                     epochs: int=10,
@@ -505,8 +309,6 @@ class model(object):
             If the train_test_split, create_model, create_optimizer,
             create_loss methods have not been called
         """
-        if not self.train_test_split_done:
-            raise WorkToDoError('train_test_split_done')
         if not self.model_created:
             raise WorkToDoError('model_created')
         if not self.optimizer_created:
@@ -613,9 +415,6 @@ class model(object):
         self.model_trained = True
 
 
-    ######################################
-    ######           CHECK         #######
-    ######################################
     def evaluate_model(self,
                        do_cm: bool=True,
                        do_acc: bool=True,
@@ -1232,12 +1031,22 @@ class model(object):
         return self.history
 
 
-    def summary(self, save: bool=False, path: str='log', name: str='summary.txt'):
+    def summary(self,
+                save: bool=False,
+                path: str='log',
+                name: str='summary.txt'):
         """
         Print the summary of the model
+        
+        Parameters
+        ----------
+        save : bool, optional
+            Save the summary. The default is False.
+        path : str, optional
+            The path to save the summary. The default is 'log'.
+        name : str, optional
+            The name of the summary. The default is 'summary.txt'.
         """
-        if not self.train_test_split_done:
-            raise WorkToDoError('train_test_split_done')
         if not self.model_created:
             raise WorkToDoError('model_created')
         
@@ -1255,7 +1064,9 @@ class model(object):
             sys.stdout = sys.__stdout__
 
 
-    def save_trained_model(self, name: str, path: str='trained_models'):
+    def save_trained_model(self,
+                           name: str,
+                           path: str='trained_models'):
         """
         Save the model
 
@@ -1282,7 +1093,9 @@ class model(object):
         torch.save(self.model.state_dict(), os.path.join(path, f'{name}.pt'))
 
 
-    def load_model(self, name: str, path: str='trained_models'):
+    def load_model(self,
+                   name: str,
+                   path: str='trained_models'):
         """
         Load the model
 
