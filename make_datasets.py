@@ -252,7 +252,7 @@ if __name__=='__main__':
 
         labels = h5py.File(train_filename, 'r')['labels'][:]
 
-        augmentation_factor = 10
+        augmentation_factor = 3
 
         class_weights = class_weight.compute_class_weight(
             class_weight='balanced',
