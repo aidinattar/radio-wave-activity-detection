@@ -387,6 +387,58 @@ class DataProcess(object):
             self.mDoppler_2[i] = np.transpose(mDoppler_2)
 
 
+    def remove_low_mean(self,
+                        threshold:float=0.1):
+        """
+        Remove the data with a low mean.
+        
+        Parameters
+        ----------
+        threshold : float, optional
+            Threshold to remove the data. The default is 0.1.
+        """
+        if self.do_rdn:
+            self.remove_low_mean_rdn(threshold)
+        if self.do_mDoppler:
+            self.remove_low_mean_mDoppler(threshold)
+            
+            
+    def remove_low_mean_rdn(self,
+                            threshold:float=0.1):
+        """
+        Remove the rdn data with a low mean.
+        
+        Parameters
+        ----------
+        threshold : float, optional
+            Threshold to remove the data. The default is 0.1.
+        """
+        for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
+            if np.mean(rdn_1) < threshold or np.mean(rdn_2) < threshold:
+                self.rdn_1.pop(i)
+                self.rdn_2.pop(i)
+                self.labels.pop(i)
+                self.labels_dict.pop(i)
+                
+    
+    def remove_low_mean_mDoppler(self,
+                                 threshold:float=0.1):
+        """
+        Remove the mDoppler data with a low mean.
+        
+        Parameters
+        ----------
+        threshold : float, optional
+            Threshold to remove the data. The default is 0.1.
+        """
+        for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
+            if np.mean(mDoppler_1) < threshold or np.mean(mDoppler_2) < threshold:
+                self.mDoppler_1.pop(i)
+                self.mDoppler_2.pop(i)
+                self.labels.pop(i)
+                self.labels_dict.pop(i)
+
+
     def save(self,
              path:str='DATA_preprocessed',
              filename:str='data_processed.npz'):
