@@ -204,8 +204,8 @@ def main(
             patience=patience,
             min_delta=min_delta,
             verbose=verbose,
-            mode='min',
-            baseline=1.8,
+            mode='max',
+            baseline=.6,
             start_epoch=15,
             path=f'checkpoints/{model_name}__case_{case}_checkpoint.pt',
         )
