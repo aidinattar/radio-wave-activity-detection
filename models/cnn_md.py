@@ -22,7 +22,7 @@ from torch.nn import Module, Linear,\
                      Conv2d, MaxPool2d,\
                      Dropout, Dropout2d,\
                      Flatten, Sequential,\
-                     ELU, Softmax
+                     ELU, Softmax, ReLU
 
 class cnn_md(Module):
     """
@@ -126,11 +126,10 @@ class cnn_md(Module):
             # height = (input_height - kernel_size + 2 * padding) / stride + 1
             # width = (input_width - kernel_size + 2 * padding) / stride + 1
             Linear(in_features=f4*5*5, out_features=128), ### 6 and 2 are the height and width of the input
-            ELU(), # not sure if this is the right activation function
+            ReLU(),
+            #ELU(), # not sure if this is the right activation function
             Dropout(p=dropout),
             Linear(in_features=128, out_features=out_channels),
-            #Linear(in_features=6, out_features=14),
-            Dropout(p=dropout),
             Softmax(dim=1)
         )
 
