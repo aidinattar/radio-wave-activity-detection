@@ -71,22 +71,15 @@ class DataCutter(object):
         return cutter
 
 
-    def cut(self,
-            conversion_factor:float=1):
+    def cut(self):
         """
         Cut the data into the signals according to the
         timestamps provided by the timestamp_speech system.
-        
-        Parameters
-        ----------
-        conversion_factor : float
-            Conversion factor from seconds to bins
         """
-        self.conversion_factor = conversion_factor
 
         # Convert the timestamps to bins
         if not self.data.timestamp_to_bins_done:
-            self.data.timestamp_to_bins(conversion_factor=self.conversion_factor)
+            self.data.timestamp_to_bins()
 
         # Divide data in two radars
         if not self.data.radar_division_done:
@@ -116,7 +109,8 @@ class DataCutter(object):
         # Cut the data
         for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.data.mDoppler_1, self.data.mDoppler_2)):
             # Get the time bins
-            time_bins = self.timestamps[i]['time_passed_bins'].values
+            time_bins = self.timestamps[i].n_bins.cumsum().shift().fillna(0).astype(int).values
+
             # Loop over the time bins
             for j in range(len(time_bins)):
                 # Cut the data
@@ -167,12 +161,6 @@ class DataCutter(object):
         # Create the list of labels
         if not self.labels_extraction_done:
             self.create_labels_list()
-
-        # Find unique labels
-        unique_labels = np.unique(self.labels)
-
-        # Create the dictionary
-        #self.labels_dict = {label: i for i, label in enumerate(unique_labels)}
 
         # Convert the labels to integers
         self.labels = [NON_AGGREGATED_LABELS_DICT[label] for label in self.labels]
