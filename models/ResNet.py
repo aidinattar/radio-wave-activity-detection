@@ -103,13 +103,16 @@ class ResNet50(Module):
             Conv2d(
                 in_channels=in_channels,
                 out_channels=64,
-                kernel_size=7,
-                stride=2
+                kernel_size=3,
+                stride=1,
+                padding=1
             ),
             BatchNorm2d(64),
+            ReLU(),
             MaxPool2d(
                 kernel_size=3,
-                stride=2
+                stride=2,
+                padding=1
             ),
             ConvolutionalBlock(64, [64, 64, 256], kernel_size=3),
             Dropout(dropout),
@@ -131,7 +134,7 @@ class ResNet50(Module):
             Dropout(dropout),
             IdentityBlock(2048, [512, 512, 2048], kernel_size=3),
             IdentityBlock(2048, [512, 512, 2048], kernel_size=3),
-            AvgPool2d(kernel_size=2, stride=2)
+            AvgPool2d(kernel_size=2)
         )
         self.classification_layer = Linear(
             in_features=2048,
@@ -140,7 +143,8 @@ class ResNet50(Module):
         self.apply(self._init_weights)
 
     def forward(self, x):
-        y = self.network(x).reshape((x.shape[0], -1))
+        y = self.network(x)
+        y = y.mean(dim=(2, 3))
         y = self.classification_layer(y)
         y = F.softmax(y, dim=1)
         return y

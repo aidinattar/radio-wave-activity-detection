@@ -24,6 +24,9 @@ from preprocessing.dataset     import Dataset
 from exceptions                import OptionIsFalseError, WorkToDoError
 from models.cnn_rd             import cnn_rd
 from models.cnn_md             import cnn_md
+from models.cnn_md_baseline    import cnn_md_baseline
+from models.ResNet             import ResNet50
+from models.inception_v4       import InceptionV4
 from tqdm                      import tqdm
 from sklearn.metrics           import confusion_matrix, accuracy_score,\
                                       precision_recall_fscore_support,\
@@ -161,6 +164,27 @@ class model(object):
                 OptionIsFalseError('do_rdn')
             self.model = cnn_rd(
                 out_channels=num_classes,
+                **kwargs
+            )
+        elif self.model_type == 'CNN-MD-Baseline':
+            if self.train_data.TYPE != 'mDoppler':
+                OptionIsFalseError('do_mDoppler')
+            self.model = cnn_md_baseline(
+                out_channels=num_classes,
+                **kwargs
+            )
+        elif self.model_type == 'ResNet':
+            if self.train_data.TYPE != 'mDoppler':
+                OptionIsFalseError('do_mDoppler')
+            self.model = ResNet50(
+                num_classes=num_classes,
+                **kwargs
+            )
+        elif self.model_type == 'InceptionV4':
+            if self.train_data.TYPE != 'mDoppler':
+                OptionIsFalseError('do_mDoppler')
+            self.model = InceptionV4(
+                num_classes=num_classes,
                 **kwargs
             )
         else:
@@ -399,7 +423,7 @@ class model(object):
     #@profile
     def train_model(self,
                     epochs: int=10,
-                    checkpoint:bool=True,
+                    accumulate_grad: int=1,
                     ):
         """
         Train the model
@@ -428,52 +452,19 @@ class model(object):
         self.model = self.model.to(self.device)
 
         # Define first best loss
-        best_loss = np.inf
+        #best_loss = np.inf
 
         # Lists to store the losses and accuracies
-        train_losses = []
-        train_accs = []
+        #train_losses = []
+        #train_accs = []
         test_losses = []
         test_accs = []
-
-        # Train the model
-        for epoch in range(epochs):
-            self.model.train()
-            print(f'Epoch {epoch+1}/{epochs}')
-            iterator = tqdm(self.train_loader)
-            preds, targets = [], []
-            for batch_features, batch_targets in iterator:
-                # Get the data
-                data = batch_features.to(self.device)
-                target = batch_targets.long().to(self.device)
-
-                # Forward pass
-                output = self.model(data)
-                loss = self.loss(output, target)
-
-                # Backward pass
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
-
-                # Update the progress bar
-                iterator.set_postfix(loss=loss.item())
-                
-                # Get the predictions
-                preds.append(output)
-                targets.append(target)
-            
-            preds = torch.cat(preds, axis=0)
-            targets = torch.cat(targets, axis=0)
-
-            # Calculate the loss and accuracy for the training set
-            train_loss = self.loss(preds, targets)
-            train_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().argmax(axis=1))
-
-            self.model.eval()
-            with torch.no_grad():
-                preds, targets = [], []
-                iterator = tqdm(self.test_loader)
+        try:
+            # Train the model
+            for epoch in range(epochs):
+                self.model.train()
+                print(f'Epoch {epoch+1}/{epochs}')
+                iterator = tqdm(self.train_loader)
                 for batch_features, batch_targets in iterator:
                     # Get the data
                     data = batch_features.to(self.device)
@@ -481,42 +472,82 @@ class model(object):
 
                     # Forward pass
                     output = self.model(data)
+                    loss = self.loss(output, target)
 
-                    # Get the predictions
-                    preds.append(output)
-                    targets.append(target)
-                preds = torch.cat(preds, axis=0)
-                targets = torch.cat(targets, axis=0)
-                test_loss = self.loss(output, target)
-                test_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().argmax(axis=1))
+                    # Backward pass
+                    loss.backward()
+    
+                    # gradient accumulation to avoid memory overflow                
+                    if ((iterator.n + 1) % accumulate_grad == 0) or (iterator.n == len(iterator) - 1):
+                        self.optimizer.step()
+                        self.optimizer.zero_grad()
 
-                print(f'Test loss: {test_loss.detach().cpu().numpy():.2f}')
-                print(f'Test accuracy: {test_acc:.2f}')
+                    # Update the progress bar
+                    iterator.set_postfix(loss=loss.item())
 
-                # Save the loss and accuracy values for plotting later
-                train_losses.append(train_loss)
-                train_accs.append(train_acc)
-                test_losses.append(test_loss)
-                test_accs.append(test_acc)
-                
-            # Add the loss to Tensorboard
-            #self.writer.add_scalar('Loss/train', loss, epoch)
+                # Calculate the loss and accuracy for the training set
+                #train_loss = self.loss(preds, targets)
+                #train_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().argmax(axis=1))
 
-            # Save the model if the loss is the best we've seen so far
-            self.early_stopping.check_improvement(
-                test_loss,
-            )
+                self.model.eval()
+                with torch.no_grad():
+                    preds, targets = [], []
+                    iterator = tqdm(self.test_loader)
+                    for batch_features, batch_targets in iterator:
+                        # Get the data
+                        data = batch_features.to(self.device)
+                        target = batch_targets.long().to(self.device)
 
-            if self.scheduler_created:
-                self.scheduler.step()
+                        # Forward pass
+                        output = self.model(data)
+
+                        # Get the predictions
+                        preds.append(output)
+                        targets.append(target)
+                    preds = torch.cat(preds, axis=0)
+                    targets = torch.cat(targets, axis=0)
+                    test_loss = self.loss(output, target)
+                    test_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().argmax(axis=1))
+
+                    print(f'Test loss: {test_loss.detach().cpu().numpy():.2f}')
+                    print(f'Test accuracy: {test_acc:.2f}')
+
+                    # Save the loss and accuracy values for plotting later
+                    #train_losses.append(train_loss)
+                    #train_accs.append(train_acc)
+                    test_losses.append(test_loss)
+                    test_accs.append(test_acc)
+                    
+                # Add the loss to Tensorboard
+                #self.writer.add_scalar('Loss/train', loss, epoch)
+
+                # Save the model if the loss is the best we've seen so far
+                self.early_stopping.check_improvement(
+                    test_loss,
+                )
+
+                if self.scheduler_created:
+                    self.scheduler.step(
+                        metrics=test_loss,
+                    )
+        except KeyboardInterrupt:
+            print('Interrupted by the user')
+            print('Removing extra elements from the history')
+            #train_losses = train_losses[:epoch]
+            #train_accs = train_accs[:epoch]
+            test_losses = test_losses[:epoch]
+            test_accs = test_accs[:epoch]
+            print('Last epoch: ', epoch)
+            print('Best loss: ', self.early_stopping.best_score)
+
 
         # don't like this, to be changed
-        train_losses = [x.detach().cpu().numpy() for x in train_losses]
+        #train_losses = [x.detach().cpu().numpy() for x in train_losses]
 
         # Create dataframe with the losses and accuracies history
         self.history = pd.DataFrame({
-            'train_loss': train_losses,
-            'train_acc': train_accs,
+            #'train_loss': train_losses,
+            #'train_acc': train_accs,
             'test_loss': test_losses,
             'test_acc': test_accs
         })

@@ -118,7 +118,7 @@ def cutting(data:DataReader,
     dc = DataCutter(data=data)
     if verbose > 1:
         print("Cutting...")
-    dc.cut(11.008949618993466)
+    dc.cut()
     if verbose > 1:
         print("Creating labels...")
     dc.create_labels_list()

@@ -128,24 +128,24 @@ class DataProcess(object):
         else:
             for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
                 if rdn_1.shape[0] < padding:
-                    last_frame_1 = rdn_1[-1]  # Get the last frame
-                    padding_frames_1 = np.tile(last_frame_1, (padding - rdn_1.shape[0], 1, 1))
+                    last_frames_1 = rdn_1[-n:]  # Get the last n frames
+                    padding_frames_1 = np.tile(last_frames_1, (padding - rdn_1.shape[0], 1))
                     self.rdn_1[i] = np.concatenate((rdn_1, padding_frames_1), axis=0)
                 else:
                     self.rdn_1[i] = rdn_1
                 if rdn_2.shape[0] < padding:
-                    last_frame_2 = rdn_2[-1]  # Get the last frame
-                    padding_frames_2 = np.tile(last_frame_2, (padding - rdn_2.shape[0], 1, 1))
+                    last_frames_2 = rdn_2[-n:]  # Get the last n frames
+                    padding_frames_2 = np.tile(last_frames_2, (padding - rdn_2.shape[0], 1))
                     self.rdn_2[i] = np.concatenate((rdn_2, padding_frames_2), axis=0)
                 else:
                     self.rdn_2[i] = rdn_2
 
 
-
     def padding_mDoppler(self,
-                         padding:int,
-                         mode: str='constant',
-                         **kwargs):
+                        padding: int,
+                        n: int = 5,
+                        mode: str = 'last-frame',
+                        **kwargs):
         """
         Pad the mDoppler data.
         Check if the action is at least 40 bins long, if not, pad the data.
@@ -154,6 +154,8 @@ class DataProcess(object):
         ----------
         padding : int
             Number of bins to pad.
+        n : int
+            Number of last frames to repeat for padding.
         mode : str, optional
             Mode to use to pad the data. The default is 'constant'.
         **kwargs : TYPE
@@ -182,18 +184,19 @@ class DataProcess(object):
         else:
             for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
                 if mDoppler_1.shape[0] < padding:
-                    last_frame_1 = mDoppler_1[-1]  # Get the last frame
-                    padding_frames_1 = np.tile(last_frame_1, (padding - mDoppler_1.shape[0], 1))
+                    padding_length = padding - mDoppler_1.shape[0]
+                    last_frames_1 = mDoppler_1[-n:]  # Get the last n frames
+                    padding_frames_1 = np.tile(last_frames_1, (padding - mDoppler_1.shape[0], 1))[:padding_length]
                     self.mDoppler_1[i] = np.concatenate((mDoppler_1, padding_frames_1), axis=0)
                 else:
                     self.mDoppler_1[i] = mDoppler_1
                 if mDoppler_2.shape[0] < padding:
-                    last_frame_2 = mDoppler_2[-1]  # Get the last frame
-                    padding_frames_2 = np.tile(last_frame_2, (padding - mDoppler_2.shape[0], 1))
+                    padding_length = padding - mDoppler_2.shape[0]
+                    last_frames_2 = mDoppler_2[-n:]  # Get the last n frames
+                    padding_frames_2 = np.tile(last_frames_2, (padding - mDoppler_2.shape[0], 1))[:padding_length]
                     self.mDoppler_2[i] = np.concatenate((mDoppler_2, padding_frames_2), axis=0)
                 else:
                     self.mDoppler_2[i] = mDoppler_2
-
 
 
     def cut_time(self,

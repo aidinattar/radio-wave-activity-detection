@@ -22,9 +22,9 @@ from torch.nn import Module, Linear,\
                      Conv2d, MaxPool2d,\
                      Dropout, Dropout2d,\
                      Flatten, Sequential,\
-                     ELU, Softmax, ReLU
+                     ELU, Softmax
 
-class cnn_md(Module):
+class cnn_md_baseline(Module):
     """
     Class to create the model for the mDoppler data
     """
@@ -32,10 +32,10 @@ class cnn_md(Module):
     def __init__(self,
                  in_channels: int=1,
                  out_channels : int=10,
-                 filters: tuple=(8, 16, 32, 64),
+                 filters: tuple=(32, 64),
                  kernel_size: tuple=(3, 3),
                  stride: int=1,
-                 padding= 'same',
+                 padding= 0,
                  pool_size: tuple=(2, 2),
                  pool_stride: int=2,
                  pool_padding: int=1,
@@ -48,7 +48,7 @@ class cnn_md(Module):
         Constructor
         """
         super().__init__()
-        f1, f2, f3, f4 = filters
+        f1, f2 = filters
 
         # Convolutional layers
         self.cnn = Sequential(
@@ -85,36 +85,6 @@ class cnn_md(Module):
 
             Dropout2d(p=dropout),
 
-            Conv2d(in_channels=f2,
-                   out_channels=f3,
-                   kernel_size=kernel_size,
-                   stride=stride,
-                   padding=padding,
-                   groups=groups, bias=bias,
-                   dilation=dilation,
-                   padding_mode=padding_mode),
-            ELU(),
-            MaxPool2d(kernel_size=pool_size,
-                      stride=pool_stride,
-                      padding=pool_padding,
-                      dilation=dilation),
-
-            Dropout2d(p=dropout),
-
-            Conv2d(in_channels=f3,
-                   out_channels=f4,
-                   kernel_size=kernel_size,
-                   stride=stride,
-                   padding=padding,
-                   groups=groups, bias=bias,
-                   dilation=dilation,
-                   padding_mode=padding_mode),
-            ELU(),
-            MaxPool2d(kernel_size=pool_size,
-                      stride=pool_stride,
-                      padding=pool_padding,
-                      dilation=dilation),
-
         )
 
         # Flatten the output of the convolutional layers
@@ -125,9 +95,8 @@ class cnn_md(Module):
             # num_filters * height * width
             # height = (input_height - kernel_size + 2 * padding) / stride + 1
             # width = (input_width - kernel_size + 2 * padding) / stride + 1
-            Linear(in_features=f4*5*5, out_features=128), ### 6 and 2 are the height and width of the input
-            ReLU(),
-            #ELU(), # not sure if this is the right activation function
+            Linear(in_features=f2*196, out_features=128), ### 6 and 2 are the height and width of the input
+            ELU(), # not sure if this is the right activation function
             Dropout(p=dropout),
             Linear(in_features=128, out_features=out_channels),
             Softmax(dim=1)

@@ -46,27 +46,22 @@ class PlotHistory:
         # Set figure size
         fig, ax = plt.subplots(1, 2, figsize=(16, 6))
 
-        # Set title and labels
-        ax[0].set_title('Loss', fontsize=16)
-        ax[0].set_xlabel('Epoch', fontsize=14)
-        ax[0].set_ylabel('Loss', fontsize=14)
+        for AX, metric in zip(ax, ['acc', 'loss']):
+            # Set title and labels
+            AX.set_title('Loss' if metric == 'loss' else 'Accuracy', fontsize=16)
+            AX.set_xlabel('Epoch', fontsize=14)
+            AX.set_ylabel('Loss' if metric == 'loss' else 'Accuracy', fontsize=14)
 
-        ax[1].set_title('Accuracy', fontsize=16)
-        ax[1].set_xlabel('Epoch', fontsize=14)
-        ax[1].set_ylabel('Accuracy', fontsize=14)
+            # Plot the history
+            AX.plot(self.history[f'test_{metric}'], label=f'Validation {metric}', color='#00ff00')
+            
+            if 'train_loss' in self.history.columns:
+                AX.plot(self.history[f'train_{metric}'], label=f'Training {metric}', color='#ff00ff')
+            
+            AX.legend()
 
-        # Plot the history
-        ax[0].plot(self.history['train_loss'], label='Training loss', color='#ff00ff')
-        ax[0].plot(self.history['test_loss'], label='Validation loss', color='#00ffff')
-        ax[0].legend()
-
-        ax[1].plot(self.history['train_acc'], label='Training accuracy', color='#ff00ff')
-        ax[1].plot(self.history['test_acc'], label='Validation accuracy', color='#00ffff')
-        ax[1].legend()
-
-        # Add grid
-        ax[0].grid(True)
-        ax[1].grid(True)
+            # Add grid
+            AX.grid(True)
 
         # Adjust margins
         #plt.subplots_adjust(wspace=0.3)

@@ -600,26 +600,24 @@ class DataReader(object):
         raise NotImplementedError
 
 
-    def timestamp_to_bins(self,
-                          conversion_factor:float=1):
+    def timestamp_to_bins(self):
         """
         Function to convert the timestamps in bins
-
-        Parameters
-        ----------
-        conversion_factor : float
-            Conversion factor to convert the timestamps in seconds [default: 1]
         """
         # Compute the time passed
         for i in range(len(self.timestamp_speech)):
-            # Convert the timestamps in seconds
-            self.timestamp_speech[i]['timestamp']=pd.to_datetime(self.timestamp_speech[i]['timestamp'])
-            # Compute the time passed
-            self.timestamp_speech[i]['time_passed'] = (self.timestamp_speech[i]['timestamp'] - self.timestamp_speech[i]['timestamp'].iloc[0]).dt.total_seconds()
-            # compute the time passed in bins
-            self.timestamp_speech[i]['time_passed_bins'] = (self.timestamp_speech[i]['time_passed']*conversion_factor).astype(int)
-            # compute number of bins per action
-            self.timestamp_speech[i]['n_bins'] = self.timestamp_speech[i]['time_passed_bins'].diff().fillna(0).astype(int)
+            # Compute the time difference
+            self.timestamp_speech[i]['timestamp'] = pd.to_datetime(self.timestamp_speech[i]['timestamp'])
+            self.timestamp_speech[i]['time_diff'] = self.timestamp_speech[i].timestamp.diff().shift(-1)
+            # Compute the mean time difference for the last command
+            if len(self.timestamp_speech[i][self.timestamp_speech[i]['command'] == self.timestamp_speech[0]['command'].iloc[-1]].iloc[:-1]['time_diff']) != 0:
+                self.timestamp_speech[i].loc[self.timestamp_speech[i].index[-1], 'time_diff'] = self.timestamp_speech[i][self.timestamp_speech[i]['command'] == self.timestamp_speech[0]['command'].iloc[-1]].iloc[:-1]['time_diff'].mean()
+            else:
+                self.timestamp_speech[i].loc[self.timestamp_speech[i].index[-1], 'time_diff'] = self.timestamp_speech[i].iloc[:-1]['time_diff'].mean()
+            # Compute the conversion factor as the number of bins per second
+            conversion_factor = len(self.mDoppler[i*2])/self.timestamp_speech[i].time_diff.sum().total_seconds()
+            # Compute the number of bins
+            self.timestamp_speech[i]['n_bins'] = np.round(self.timestamp_speech[i]['time_diff'].dt.total_seconds()*conversion_factor).astype(int)
 
         self.timestamp_to_bins_done = True
 
