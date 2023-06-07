@@ -4,11 +4,12 @@ make_datasets.py
 Generate training and test datasets from the original H5 file.
 
 Usage:
-    make_datasets.py [--augment]
+    make_datasets.py <input_file> [--augment] [--factor=<factor>]
     
 Options:
     -h --help       Show this screen.
     -a --augment    Augment the data by applying data augmentation techniques to the samples. [default: False]
+    -f --factor=<factor>    Factor by which to augment the data. [default: 3]
 """
 
 
@@ -217,12 +218,13 @@ def add_augmented_samples_to_h5(
 
 if __name__=='__main__':
     args = docopt(__doc__)
+
     
     TYPE = 'mDoppler'
     channels = 2
 
     dirname = 'DATA_preprocessed'
-    filename = 'processed_data_mDoppler.h5'
+    filename = args['<input_file>']
 
     file = h5py.File(
         os.path.join(dirname, filename),
@@ -252,7 +254,7 @@ if __name__=='__main__':
 
         labels = h5py.File(train_filename, 'r')['labels'][:]
 
-        augmentation_factor = 3
+        augmentation_factor = int(args['--factor'])
 
         class_weights = class_weight.compute_class_weight(
             class_weight='balanced',
