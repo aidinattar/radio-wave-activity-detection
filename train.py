@@ -12,6 +12,7 @@ Usage:
             [--channel=<channel>] [--load=<model_name>]
             [--aggregate_labels] [--dropout=<dropout>]
             [--epochs=<epochs>] [--batch_size=<batch_size>]
+            [--gradient_accumulation=<gradient_accumulation>]
             [--optimizer=<optimizer>] [--lr=<lr>]
             [--weight_decay=<weight_decay>] [--momentum=<momentum>]
             [--nesterov] [--scheduler=<scheduler>]
@@ -33,6 +34,7 @@ Options:
     --dropout=<dropout>             Dropout [default: 0.5].
     --epochs=<epochs>               Number of epochs [default: 100].
     --batch_size=<batch_size>       Batch size [default: 32].
+    --gradient_accumulation=<gradient_accumulation>   Gradient accumulation steps [default: 1].
     --optimizer=<optimizer>         Optimizer [default: Adam].
     --lr=<lr>                       Learning rate [default: 0.001].
     --weight_decay=<weight_decay>   Weight decay [default: 0.0001].
@@ -89,6 +91,7 @@ def main(
     dropout:float,
     epochs:int,
     batch_size:int,
+    gradient_accumulation:int,
     optimizer:str,
     lr:float,
     weight_decay:float,
@@ -169,7 +172,10 @@ def main(
         )
         
     # Create the DataLoaders
-    classifier.create_DataLoaders(batch_size=batch_size)
+    classifier.create_DataLoaders(
+        batch_size=batch_size,
+        #num_workers=1
+    )
     
     # Print the model summary
     classifier.summary(
@@ -199,9 +205,9 @@ def main(
             min_delta=min_delta,
             verbose=verbose,
             mode='min',
-            baseline=1.5,
-            start_epoch=30,
-            path=f'{model_name}__case_{case}_checkpoint.pt',
+            baseline=1.8,
+            start_epoch=15,
+            path=f'checkpoints/{model_name}__case_{case}_checkpoint.pt',
         )
 
     if scheduler != 'None':
@@ -255,7 +261,7 @@ def main(
     print('Training the model')
     classifier.train_model(
         epochs=epochs,
-        checkpoint=True
+        accumulate_grad=gradient_accumulation,
     )
 
     # Plot the training history
@@ -302,6 +308,7 @@ if __name__ == '__main__':
     momentum = float(args['--momentum'])
     nesterov = bool(args['--nesterov'])
     loss = args['--loss']
+    gradient_accumulation = int(args['--gradient_accumulation'])
     
     scheduler = args['--scheduler']
     early_stopping = bool(args['--early-stopping'])
@@ -428,6 +435,7 @@ if __name__ == '__main__':
         dropout=dropout,
         epochs=epochs,
         batch_size=batch_size,
+        gradient_accumulation=gradient_accumulation,
         optimizer=optimizer,
         lr=lr,
         weight_decay=weight_decay,
