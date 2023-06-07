@@ -57,6 +57,7 @@ class model(object):
     loss_created = False
     model_trained = False
     scheduler_created = False
+    early_stopping_created = False
 
     def __init__(
         self, 
@@ -354,6 +355,8 @@ class model(object):
             baseline=baseline,
             start_from_epoch=start_epoch
         )
+        
+        self.early_stopping_created=True
 
 
     def create_scheduler(
@@ -455,8 +458,8 @@ class model(object):
         #best_loss = np.inf
 
         # Lists to store the losses and accuracies
-        #train_losses = []
-        #train_accs = []
+        train_losses = []
+        train_accs = []
         test_losses = []
         test_accs = []
         try:
@@ -465,6 +468,7 @@ class model(object):
                 self.model.train()
                 print(f'Epoch {epoch+1}/{epochs}')
                 iterator = tqdm(self.train_loader)
+                preds, targets = [], []
                 for batch_features, batch_targets in iterator:
                     # Get the data
                     data = batch_features.to(self.device)
@@ -473,7 +477,7 @@ class model(object):
                     # Forward pass
                     output = self.model(data)
                     loss = self.loss(output, target)
-
+                    
                     # Backward pass
                     loss.backward()
     
@@ -482,12 +486,17 @@ class model(object):
                         self.optimizer.step()
                         self.optimizer.zero_grad()
 
+                    #preds.append(output.detach().cpu().numpy().argmax(axis=1))
+                    #targets.append(target.detach().cpu().numpy())
+
                     # Update the progress bar
                     iterator.set_postfix(loss=loss.item())
 
+                #preds = torch.cat(torch.tensor(preds), axis=0)
+                #targets = torch.cat(torch.tensor(targets), axis=0)
                 # Calculate the loss and accuracy for the training set
                 #train_loss = self.loss(preds, targets)
-                #train_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().argmax(axis=1))
+                #train_acc = accuracy_score(targets, preds)
 
                 self.model.eval()
                 with torch.no_grad():
@@ -509,22 +518,35 @@ class model(object):
                     test_loss = self.loss(output, target)
                     test_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().argmax(axis=1))
 
-                    print(f'Test loss: {test_loss.detach().cpu().numpy():.2f}')
-                    print(f'Test accuracy: {test_acc:.2f}')
+                    print("Epoch Results:")
+                    print("---------------------------")
+                    print("|   Metric   |   Value   |")
+                    print("---------------------------")
+                    #print(f"| Train Acc  |  {train_acc:.4f}   |")
+                    #print(f"| Train Loss |  {train_loss.detach().cpu().numpy():.4f}   |")
+                    #print("---------------------------")
+                    print(f"| Test Acc   |  {test_acc:.4f}   |")
+                    print(f"| Test Loss  |  {test_loss.detach().cpu().numpy():.4f}   |")
+                    print("---------------------------")
 
                     # Save the loss and accuracy values for plotting later
-                    #train_losses.append(train_loss)
+                    #train_losses.append(train_loss.detach().cpu().numpy())
                     #train_accs.append(train_acc)
-                    test_losses.append(test_loss)
+                    test_losses.append(test_loss.detach().cpu().numpy())
                     test_accs.append(test_acc)
                     
                 # Add the loss to Tensorboard
                 #self.writer.add_scalar('Loss/train', loss, epoch)
 
                 # Save the model if the loss is the best we've seen so far
-                self.early_stopping.check_improvement(
-                    test_loss,
-                )
+                if self.early_stopping_created:
+                    self.early_stopping.check_improvement(
+                        test_acc,
+                    )
+                    if self.early_stopping.early_stop:
+                        print('Early stopping')
+                        break
+                
 
                 if self.scheduler_created:
                     self.scheduler.step(
@@ -538,11 +560,7 @@ class model(object):
             test_losses = test_losses[:epoch]
             test_accs = test_accs[:epoch]
             print('Last epoch: ', epoch)
-            print('Best loss: ', self.early_stopping.best_score)
-
-
-        # don't like this, to be changed
-        #train_losses = [x.detach().cpu().numpy() for x in train_losses]
+            print('Best loss: ', self.early_stopping.best_score.item())
 
         # Create dataframe with the losses and accuracies history
         self.history = pd.DataFrame({
