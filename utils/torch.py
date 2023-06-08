@@ -89,7 +89,7 @@ class EarlyStopping:
                 self.counter = 0
                 self.best_score = metric
             else:
-                if self.epoch >= self.start_from_epoch:
+                if self.best_score >= self.baseline and self.epoch >= self.start_from_epoch:
                     self.counter += 1
                     if self.verbose:
                         print(f'Early stopping counter: {self.counter} out of {self.patience}')
