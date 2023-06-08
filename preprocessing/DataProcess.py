@@ -497,9 +497,8 @@ class DataProcess(object):
         """
         index_to_remove = []
         for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
-            print(mDoppler_1.shape[0], mDoppler_2.shape[0])
             if mDoppler_1.shape[0] > threshold or mDoppler_2.shape[0] > threshold:
-                print('removing')
+
                 index_to_remove.append(i)
 
         for i in index_to_remove[::-1]:
