@@ -75,12 +75,12 @@ def reading(data_path:str,
     if verbose > 1:
         print("Rescaling...")
     dr.rescaling(method='norm')
-    #if verbose > 1:
-    #    print("Filtering...")
-    #if do_mDoppler:
-    #    if verbose > 1:
-    #        print("Filtering...")
-    #    dr.filter_mDoppler(size=(21, 11), sigma=15)
+    if verbose > 1:
+        print("Filtering...")
+    if do_mDoppler:
+        if verbose > 1:
+            print("Filtering...")
+        dr.filter_mDoppler(size=(21, 11), sigma=15)
     return dr
             
 
@@ -170,14 +170,14 @@ def process(data:DataCutter,
     if verbose > 1:
         print("Separating actions in time...")
     dp.cut_time(
-        len_default=58,
-        loc='threshold-center',
-        threshold=1
+        len_default=40,
+        loc='max-integral',
+        #threshold=1
     )
     if verbose > 1:
         print("Padding...")
     dp.padding(
-        padding=58,
+        padding=40,
         mode='last-frame')
     if verbose > 1:
         print("Saving processed data...")
