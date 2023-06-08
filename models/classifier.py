@@ -560,7 +560,7 @@ class model(object):
             test_losses = test_losses[:epoch]
             test_accs = test_accs[:epoch]
             print('Last epoch: ', epoch)
-            print('Best loss: ', self.early_stopping.best_score.item())
+            print('Best loss: ', self.early_stopping.best_score)
 
         # Create dataframe with the losses and accuracies history
         self.history = pd.DataFrame({

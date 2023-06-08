@@ -191,6 +191,7 @@ def main(
         momentum=momentum,
         nesterov=nesterov
     )
+
     classifier.create_loss(
         loss=loss,
         use_weight=True,
