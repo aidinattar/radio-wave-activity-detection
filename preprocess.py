@@ -10,7 +10,7 @@ Options:
     -h --help                       Show this screen.
     --data_path <data_path>         Path to the data
     --output_path <output_path>     Path to save the data
-    --all                           Read all the data
+    --all                              Read all the data
     --selection <start-stop>        Read a selection of the data
     --do_rdn                        Whether to read the rdn data
     --do_mDoppler                   Whether to read the mDoppler data

@@ -329,7 +329,7 @@ if __name__ == '__main__':
     if case == 0:
 
         features_transform = transforms.Compose([
-            lambda x: x[:, 20:-20],
+            #lambda x: x[:, 20:-20],
             transforms.ToTensor(),
             transforms.Normalize((0,), (1,))
         ])
@@ -356,7 +356,7 @@ if __name__ == '__main__':
     elif case == 1:
         
         features_transform = transforms.Compose([
-            lambda x: x[:, 20:-20],
+            #lambda x: x[:, 20:-20],
             transforms.ToTensor(),
             transforms.Normalize((0,), (1,))
         ])
@@ -390,7 +390,7 @@ if __name__ == '__main__':
     
     elif case == 3:
         features_transform = transforms.Compose([
-            lambda x: x[:, :, 20:-20],
+            #lambda x: x[:, :, 20:-20],
             transforms.ToTensor(),
             transforms.Normalize((0,), (1,))
         ])
