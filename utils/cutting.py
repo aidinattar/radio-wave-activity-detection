@@ -273,12 +273,12 @@ def threshold_method_(array: np.ndarray,
             raise ValueError('loc must be "start", "end" or "center"')
 
 
-def moving_average_2d(
+def moving_average(
     arr: np.ndarray,
     window_size: int = 5
 ) -> np.ndarray:
     """
-    Calculate the centered moving average of a 2D array.
+    Calculate the centered moving average of an array.
 
     Parameters
     ----------
@@ -292,16 +292,14 @@ def moving_average_2d(
     moving_avg : np.ndarray
         Array with the moving average.
     """
-    # Define the weights for the moving average window
-    weights = np.ones((window_size, window_size)) / window_size**2
-
-    # Use 2D convolution to calculate the centered moving average
-    moving_avg = convolve(
-        arr,
-        weights,
-        mode='constant',
-        cval=0.0
-    )
+    if arr.ndim == 2:
+        weights = np.ones((window_size, window_size)) / (window_size ** 2)
+        moving_avg = convolve(arr, weights, mode='constant', cval=0.0)
+    elif arr.ndim == 3:
+        weights = np.ones((window_size, window_size, window_size)) / (window_size ** 3)
+        moving_avg = convolve(arr, weights, mode='constant', cval=0.0)
+    else:
+        raise ValueError("Input array must be 2D or 3D.")
 
     return moving_avg
 
@@ -340,7 +338,7 @@ def threshold_method(array: np.ndarray,
     else:
         array_copy = array.copy()
         integrals = np.cumsum(array_copy, axis=1)
-        integrals = moving_average_2d(arr=integrals, window_size=10)
+        integrals = moving_average(arr=integrals, window_size=10)
         
         try:
             first = np.where(integrals > threshold * integrals.max())[0][0]
