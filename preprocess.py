@@ -21,7 +21,7 @@ We suggest to avoid using tqdm together with the verbose option,
 as it may cause some problems with the progress bar.
 
 Example:
-    python preprocess.py --data_path=DATA --output_path=DATA_preprocessd --all --do_mDoppler --verbose=10
+    python preprocess.py --data_path=DATA --output_path=DATA_preprocessed --all --do_mDoppler --verbose=10
 """
 import os
 import h5py
