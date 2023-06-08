@@ -65,7 +65,7 @@ class EarlyStopping:
         self.start_from_epoch = start_from_epoch
         self.path = path
         self.counter = 0
-        self.best_score = None
+        self.best_score = -np.Inf if mode == 'max' else np.Inf
         self.early_stop = False
         self.metric_max = -np.Inf if mode == 'max' else np.Inf
         self.epoch = 0
@@ -82,7 +82,7 @@ class EarlyStopping:
             Monitored metric value to be compared.
         """
         if self.baseline is not None and self.mode == 'max':
-            if metric >= self.baseline:
+            if metric >= self.baseline and metric >= self.best_score - self.min_delta:
                 if self.verbose:
                     print('Metric improved from baseline.')
                 self.save_checkpoint(metric)
