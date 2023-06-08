@@ -167,6 +167,9 @@ def process(data:DataCutter,
     if verbose > 0:
         print('Processing data...')
     dp = DataProcess(data=data)
+    dp.remove_long_actions(
+        threshold=100
+    )
     if verbose > 1:
         print("Separating actions in time...")
     dp.cut_time(
@@ -187,6 +190,9 @@ def process(data:DataCutter,
     #else:
     #    dp.save(path=output_path,
     #            filename=f'processed_data_{subjects[0]}_{sets[0]}_{sets[-1]}.npz')
+    
+    if dp.is_empty():
+        return False
     
     return dp
 
@@ -478,13 +484,15 @@ if __name__ == '__main__':
             do_rdn=do_rdn,
             verbose=verbose)
 
-        file = save_h5(
-            data=dp,
-            output_path=output_path,
-            iteration=i,
-            do_mDoppler=do_mDoppler,
-            do_rdn=do_rdn,
-            verbose=verbose
-        )
-        
-    file.close()
+        if dp:
+            file = save_h5(
+                data=dp,
+                output_path=output_path,
+                iteration=i,
+                do_mDoppler=do_mDoppler,
+                do_rdn=do_rdn,
+                verbose=verbose
+            )
+    
+    if "file" in locals():
+        file.close()
