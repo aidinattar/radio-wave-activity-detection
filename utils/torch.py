@@ -50,14 +50,26 @@ class EarlyStopping:
         self.patience = patience
         self.min_delta = min_delta
         self.verbose = verbose
+
+        assert mode in ['min', 'max'], "Mode must be 'min' or 'max'."
         self.mode = mode
-        self.baseline = baseline
+
+        if baseline is not None:
+            self.baseline = baseline
+        else:
+            if self.mode == 'min':
+                self.baseline = np.Inf
+            else:
+                self.baseline = -np.Inf
+
         self.start_from_epoch = start_from_epoch
         self.path = path
         self.counter = 0
-        self.best_score = None
+        self.best_score = -np.Inf if mode == 'max' else np.Inf
         self.early_stop = False
         self.metric_max = -np.Inf if mode == 'max' else np.Inf
+        self.epoch = 0
+
 
     def check_improvement(self, metric):
         """
@@ -70,16 +82,17 @@ class EarlyStopping:
             Monitored metric value to be compared.
         """
         if self.baseline is not None and self.mode == 'max':
-            if metric >= self.baseline:
+            if metric >= self.baseline and metric >= self.best_score - self.min_delta:
                 if self.verbose:
                     print('Metric improved from baseline.')
                 self.save_checkpoint(metric)
                 self.counter = 0
                 self.best_score = metric
             else:
-                self.counter += 1
-                if self.verbose:
-                    print(f'Early stopping counter: {self.counter} out of {self.patience}')
+                if self.best_score >= self.baseline and self.epoch >= self.start_from_epoch:
+                    self.counter += 1
+                    if self.verbose:
+                        print(f'Early stopping counter: {self.counter} out of {self.patience}')
 
             if self.counter >= self.patience:
                 self.early_stop = True
@@ -96,20 +109,23 @@ class EarlyStopping:
             elif score < self.best_score + self.min_delta:
                 if self.verbose:
                     print('Metric did not improve enough.')
-                self.counter += 1
-                if self.verbose:
-                    print(f'Early stopping counter: {self.counter} out of {self.patience}')
+                if self.epoch >= self.start_from_epoch:
+                    self.counter += 1
+                    if self.verbose:
+                        print(f'Early stopping counter: {self.counter} out of {self.patience}')
 
-                if self.counter >= self.patience:
-                    self.early_stop = True
+                    if self.counter >= self.patience:
+                        self.early_stop = True
             else:
                 if self.verbose:
                     print('Metric improved.')
                 self.best_score = score
                 self.save_checkpoint(metric)
                 self.counter = 0
-                
-    
+        
+        self.epoch = self.epoch + 1
+
+
     def save_checkpoint(self, metric):
         """
         Save the model checkpoint.

@@ -191,6 +191,7 @@ def main(
         momentum=momentum,
         nesterov=nesterov
     )
+
     classifier.create_loss(
         loss=loss,
         use_weight=True,
@@ -204,8 +205,8 @@ def main(
             patience=patience,
             min_delta=min_delta,
             verbose=verbose,
-            mode='min',
-            baseline=1.8,
+            mode='max',
+            baseline=.6,
             start_epoch=15,
             path=f'checkpoints/{model_name}__case_{case}_checkpoint.pt',
         )
@@ -328,7 +329,7 @@ if __name__ == '__main__':
     if case == 0:
 
         features_transform = transforms.Compose([
-            lambda x: x[:, 20:-20],
+            #lambda x: x[:, 9:-9],
             transforms.ToTensor(),
             transforms.Normalize((0,), (1,))
         ])
@@ -355,7 +356,7 @@ if __name__ == '__main__':
     elif case == 1:
         
         features_transform = transforms.Compose([
-            lambda x: x[:, 20:-20],
+            #lambda x: x[:, 9:-9],
             transforms.ToTensor(),
             transforms.Normalize((0,), (1,))
         ])
@@ -389,7 +390,7 @@ if __name__ == '__main__':
     
     elif case == 3:
         features_transform = transforms.Compose([
-            lambda x: x[:, :, 20:-20],
+            #lambda x: x[:, :, 9:-9],
             transforms.ToTensor(),
             transforms.Normalize((0,), (1,))
         ])

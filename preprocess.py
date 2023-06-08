@@ -10,7 +10,7 @@ Options:
     -h --help                       Show this screen.
     --data_path <data_path>         Path to the data
     --output_path <output_path>     Path to save the data
-    --all                           Read all the data
+    --all                              Read all the data
     --selection <start-stop>        Read a selection of the data
     --do_rdn                        Whether to read the rdn data
     --do_mDoppler                   Whether to read the mDoppler data
@@ -71,7 +71,7 @@ def reading(data_path:str,
     dr.remove_static_bins()
     if verbose > 1:
         print("Removing silence...")
-    dr.crop()
+    dr.crop(start=22, stop=102)
     if verbose > 1:
         print("Rescaling...")
     dr.rescaling(method='norm')
@@ -167,17 +167,20 @@ def process(data:DataCutter,
     if verbose > 0:
         print('Processing data...')
     dp = DataProcess(data=data)
+    dp.remove_long_actions(
+        threshold=100
+    )
     if verbose > 1:
         print("Separating actions in time...")
     dp.cut_time(
-        len_default=58,
-        loc='threshold-start',
-        threshold=0.5
+        len_default=40,
+        loc='max-integral',
+        #threshold=1
     )
     if verbose > 1:
         print("Padding...")
     dp.padding(
-        padding=58,
+        padding=40,
         mode='last-frame')
     if verbose > 1:
         print("Saving processed data...")
@@ -187,6 +190,9 @@ def process(data:DataCutter,
     #else:
     #    dp.save(path=output_path,
     #            filename=f'processed_data_{subjects[0]}_{sets[0]}_{sets[-1]}.npz')
+    
+    if dp.is_empty():
+        return False
     
     return dp
 
@@ -478,13 +484,15 @@ if __name__ == '__main__':
             do_rdn=do_rdn,
             verbose=verbose)
 
-        file = save_h5(
-            data=dp,
-            output_path=output_path,
-            iteration=i,
-            do_mDoppler=do_mDoppler,
-            do_rdn=do_rdn,
-            verbose=verbose
-        )
-        
-    file.close()
+        if dp:
+            file = save_h5(
+                data=dp,
+                output_path=output_path,
+                iteration=i,
+                do_mDoppler=do_mDoppler,
+                do_rdn=do_rdn,
+                verbose=verbose
+            )
+    
+    if "file" in locals():
+        file.close()

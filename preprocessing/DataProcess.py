@@ -15,6 +15,7 @@ class DataProcess(object):
     """
     Class to process the data
     """
+    isempty = False
 
     def __init__(self,
                  data: DataCutter):
@@ -30,7 +31,6 @@ class DataProcess(object):
         self.do_rdn = self.data.data.do_rdn
         self.do_mDoppler = self.data.data.do_mDoppler
         self.labels = self.data.labels
-        #self.labels_dict = self.data.labels_dict
 
         self.rdn_1 = self.data.signals_rdn_1
         self.rdn_2 = self.data.signals_rdn_2
@@ -285,6 +285,9 @@ class DataProcess(object):
             elif loc == 'threshold-center':
                 self.rdn_1[i] = cutting.threshold_method(rdn_1, len_default, loc='center', **kwargs)
                 self.rdn_2[i] = cutting.threshold_method(rdn_2, len_default, loc='center', **kwargs)
+            elif loc == 'max-integral':
+                self.mDoppler_1[i] = cutting.find_highest_integral_frames(mDoppler_1, len_default, **kwargs)
+                self.mDoppler_2[i] = cutting.find_highest_integral_frames(mDoppler_2, len_default, **kwargs)
             else:
                 raise ValueError("Invalid location")
 
@@ -301,7 +304,9 @@ class DataProcess(object):
         ----------
         loc : str, optional
             Location of the cut. Possible values are:
-            'center', 'start', 'end', 'random', 'normal'.
+            'center', 'start', 'end', 'random', 'normal',
+            'threshold-center', 'threshold-start', 'threshold-end',
+            'max-integral'.
             The default is 'random'.
         len_default : int, optional
             Default length of the action. The default is 40.
@@ -346,6 +351,9 @@ class DataProcess(object):
             elif loc == 'threshold-center':
                 self.mDoppler_1[i] = cutting.threshold_method(mDoppler_1, len_default, loc='center', **kwargs)
                 self.mDoppler_2[i] = cutting.threshold_method(mDoppler_2, len_default, loc='center', **kwargs)
+            elif loc == 'max-integral':
+                self.mDoppler_1[i] = cutting.find_highest_integral_frames(mDoppler_1, len_default, **kwargs)
+                self.mDoppler_2[i] = cutting.find_highest_integral_frames(mDoppler_2, len_default, **kwargs)
             else:
                 raise ValueError("Invalid location")
 
@@ -387,6 +395,128 @@ class DataProcess(object):
             self.mDoppler_2[i] = np.transpose(mDoppler_2)
 
 
+    def remove_low_mean(self,
+                        threshold:float=0.1):
+        """
+        Remove the data with a low mean.
+        
+        Parameters
+        ----------
+        threshold : float, optional
+            Threshold to remove the data. The default is 0.1.
+        """
+        if self.do_rdn:
+            self.remove_low_mean_rdn(threshold)
+        if self.do_mDoppler:
+            self.remove_low_mean_mDoppler(threshold)
+            
+            
+    def remove_low_mean_rdn(self,
+                            threshold:float=0.1):
+        """
+        Remove the rdn data with a low mean.
+        
+        Parameters
+        ----------
+        threshold : float, optional
+            Threshold to remove the data. The default is 0.1.
+        """
+        for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
+            if np.mean(rdn_1) < threshold or np.mean(rdn_2) < threshold:
+                self.rdn_1.pop(i)
+                self.rdn_2.pop(i)
+                self.labels.pop(i)
+                
+    
+    def remove_low_mean_mDoppler(self,
+                                 threshold:float=0.1):
+        """
+        Remove the mDoppler data with a low mean.
+        
+        Parameters
+        ----------
+        threshold : float, optional
+            Threshold to remove the data. The default is 0.1.
+        """
+        for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
+            if np.mean(mDoppler_1) < threshold or np.mean(mDoppler_2) < threshold:
+                self.mDoppler_1.pop(i)
+                self.mDoppler_2.pop(i)
+                self.labels.pop(i)
+
+
+    def remove_long_actions(self,
+                            threshold:int=100):
+        """
+        Remove the data with a long action.
+        
+        Parameters
+        ----------
+        threshold : int, optional
+            Threshold to remove the data. The default is 100.
+        """
+        if self.do_rdn:
+            self.remove_long_actions_rdn(threshold)
+        if self.do_mDoppler:
+            self.remove_long_actions_mDoppler(threshold)
+
+
+    def remove_long_actions_rdn(self,
+                                     threshold:int=100):
+        """
+        Remove the rdn data with a long action.
+
+        Parameters
+        ----------
+        threshold : int, optional
+            Threshold to remove the data. The default is 100.
+        """
+        index_to_remove = []
+        for i, (rdn_1, rdn_2) in enumerate(zip(self.rdn_1, self.rdn_2)):
+            if rdn_1.shape[0] > threshold or rdn_2.shape[0] > threshold:
+                index_to_remove.append(i)
+
+        for i in index_to_remove[::-1]:
+            self.rdn_1.pop(i)
+            self.rdn_2.pop(i)
+            self.labels.pop(i)
+
+        if self.rdn_1 == [] or self.rdn_2 == []:
+            self.isempty = True
+
+                
+    def remove_long_actions_mDoppler(self,
+                                     threshold:int=100):
+        """
+        Remove the mDoppler data with a long action.
+
+        Parameters
+        ----------
+        threshold : int, optional
+            Threshold to remove the data. The default is 100.
+        """
+        index_to_remove = []
+        for i, (mDoppler_1, mDoppler_2) in enumerate(zip(self.mDoppler_1, self.mDoppler_2)):
+            if mDoppler_1.shape[0] > threshold or mDoppler_2.shape[0] > threshold:
+
+                index_to_remove.append(i)
+
+        for i in index_to_remove[::-1]:
+            self.mDoppler_1.pop(i)
+            self.mDoppler_2.pop(i)
+            self.labels.pop(i)
+
+        if self.mDoppler_1 == [] or self.mDoppler_2 == []:
+            self.isempty = True
+
+
+    def is_empty(self):
+        """
+        Check if the data is empty.
+        """
+        return self.isempty
+
+
     def save(self,
              path:str='DATA_preprocessed',
              filename:str='data_processed.npz'):
@@ -412,7 +542,6 @@ class DataProcess(object):
             rdn_1=self.rdn_1,
             rdn_2=self.rdn_2,
             labels=self.labels,
-            #labels_dict=self.labels_dict
         )
 
 
@@ -442,7 +571,6 @@ class DataProcess(object):
         self.rdn_1       = data['rdn_1']
         self.rdn_2       = data['rdn_2']
         self.labels      = data['labels']
-        #self.labels_dict = data['labels_dict'].item()
 
         if self.mDoppler_1 is None:
             self.do_mDoppler = False

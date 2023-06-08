@@ -19,6 +19,11 @@ import numpy as np
 from utils import augmentation
 from sklearn.utils import class_weight
 from docopt import docopt
+from utils.constants import MAPPING_LABELS_DICT
+
+labels_transform = np.vectorize(
+            lambda label: MAPPING_LABELS_DICT[label]
+        )
 
 def split_train_test(
     input_file: str,
@@ -108,7 +113,7 @@ def augment_data(
         sample = data[i]
         label = labels[i]
 
-        for _ in range(augmentation_factors[label]):
+        for _ in range(augmentation_factors[labels_transform(label).item()]):
             # Apply data augmentation techniques to the sample
             augmented_sample_1 = augmentation.time_mask(sample)
             augmented_sample_2 = augmentation.doppler_mask(sample)
@@ -256,10 +261,12 @@ if __name__=='__main__':
 
         augmentation_factor = int(args['--factor'])
 
+        
+
         class_weights = class_weight.compute_class_weight(
             class_weight='balanced',
-            classes=np.unique(labels),
-            y=labels
+            classes=np.unique(labels_transform(labels)),
+            y=labels_transform(labels)
         )
 
         class_weights = np.ceil(class_weights/class_weights.max() * augmentation_factor).astype(int)
@@ -274,7 +281,7 @@ if __name__=='__main__':
 
         print("HDF5 file copied from '{}' to '{}'.".format(source_file, destination_file))
 
-        class_weights_dict = dict(zip(np.unique(labels), class_weights))
+        class_weights_dict = dict(zip(np.unique(labels_transform(labels)), class_weights))
 
         add_augmented_samples_to_h5(
             train_filename,
