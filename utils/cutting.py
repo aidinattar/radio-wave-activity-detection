@@ -444,3 +444,51 @@ def threshold_method(array: np.ndarray,
                     return array[center - len_default // 2:center + len_default // 2]
         else:
             raise ValueError('loc must be "start", "end" or "center"')
+
+
+def find_highest_integral_frames(
+    array: np.ndarray,
+    len_default: int = 40,
+)-> np.ndarray:
+    """
+    Find the frames with the highest integral values.
+    
+    Parameters
+    ----------
+    array : np.ndarray
+        Array to cut.
+    len_default : int, optional
+        Default length of the action. The default is 40.
+        
+    Returns
+    -------
+    array : np.ndarray
+        Array with the highest integral values.
+    """
+    if array.shape[0] <= len_default:
+        return array
+    
+    else:
+        array_copy = array.copy()
+        
+        means = array_copy.mean(axis=1)
+        # this is not the actual integral, but it is proportional to it
+        integrals = centered_moving_average(
+            arr=means,
+            window_size=4
+        )
+
+        max_sum = 0
+        max_sum_start_index = 0
+
+        window_sum = np.sum(integrals[:len_default])
+        max_sum = window_sum
+
+        for i in range(len(integrals) - len_default - 1):
+            window_sum = window_sum - integrals[i] + integrals[i + len_default]
+            if window_sum > max_sum:
+                max_sum = window_sum
+                max_sum_start_index = i + 1
+
+        array = array[max_sum_start_index:max_sum_start_index + len_default]
+        return array
