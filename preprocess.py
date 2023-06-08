@@ -171,8 +171,8 @@ def process(data:DataCutter,
         print("Separating actions in time...")
     dp.cut_time(
         len_default=58,
-        loc='threshold-start',
-        threshold=0.5
+        loc='threshold-center',
+        threshold=1
     )
     if verbose > 1:
         print("Padding...")
