@@ -285,6 +285,9 @@ class DataProcess(object):
             elif loc == 'threshold-center':
                 self.rdn_1[i] = cutting.threshold_method(rdn_1, len_default, loc='center', **kwargs)
                 self.rdn_2[i] = cutting.threshold_method(rdn_2, len_default, loc='center', **kwargs)
+            elif loc == 'max-integral':
+                self.mDoppler_1[i] = cutting.find_highest_integral_frames(mDoppler_1, len_default, **kwargs)
+                self.mDoppler_2[i] = cutting.find_highest_integral_frames(mDoppler_2, len_default, **kwargs)
             else:
                 raise ValueError("Invalid location")
 
@@ -301,7 +304,9 @@ class DataProcess(object):
         ----------
         loc : str, optional
             Location of the cut. Possible values are:
-            'center', 'start', 'end', 'random', 'normal'.
+            'center', 'start', 'end', 'random', 'normal',
+            'threshold-center', 'threshold-start', 'threshold-end',
+            'max-integral'.
             The default is 'random'.
         len_default : int, optional
             Default length of the action. The default is 40.
@@ -346,6 +351,9 @@ class DataProcess(object):
             elif loc == 'threshold-center':
                 self.mDoppler_1[i] = cutting.threshold_method(mDoppler_1, len_default, loc='center', **kwargs)
                 self.mDoppler_2[i] = cutting.threshold_method(mDoppler_2, len_default, loc='center', **kwargs)
+            elif loc == 'max-integral':
+                self.mDoppler_1[i] = cutting.find_highest_integral_frames(mDoppler_1, len_default, **kwargs)
+                self.mDoppler_2[i] = cutting.find_highest_integral_frames(mDoppler_2, len_default, **kwargs)
             else:
                 raise ValueError("Invalid location")
 
