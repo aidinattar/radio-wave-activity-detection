@@ -250,6 +250,7 @@ class model(object):
                     loss: str='CrossEntropyLoss',
                     use_weight: bool=False,
                     weight: list=None,
+                    aggregate: bool=False,
                     **kwargs):
         """
         Create the loss function
@@ -276,13 +277,13 @@ class model(object):
         
         if use_weight:
             if weight is None:
-                if self.num_classes == 10:
+                if aggregate:
                     labels_transform = np.vectorize(
                         lambda label: MAPPING_LABELS_DICT[label]
                     )
                     labels = labels_transform(self.train_data.labels[:])
                 else:
-                    labels = self.train_data.dataset.labels[:]
+                    labels = self.train_data.labels[:]
                 class_weights = torch.tensor(
                     class_weight.compute_class_weight(
                         class_weight='balanced',

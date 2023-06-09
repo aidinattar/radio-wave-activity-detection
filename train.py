@@ -99,6 +99,7 @@ def main(
     nesterov:bool,
     scheduler:str,
     loss:str,
+    aggregate_labels:bool,
     early_stopping:bool,
     patience:int,
     min_delta:float,
@@ -195,6 +196,7 @@ def main(
     classifier.create_loss(
         loss=loss,
         use_weight=True,
+        aggregate=aggregate_labels
     )
     
     del classifier.train_data, classifier.test_data
@@ -323,9 +325,7 @@ if __name__ == '__main__':
         lambda label: MAPPING_LABELS_DICT[label]
     ) if aggregate else None
 
-    num_classes = 10 if aggregate else 14
 
-    
     if case == 0:
 
         features_transform = transforms.Compose([
@@ -422,6 +422,8 @@ if __name__ == '__main__':
     train_data.shuffle()
     test_data.shuffle()
     
+    num_classes = len(np.unique(labels_transform(train_data.labels[:])))
+    
     # load model
     model_name = args['<model>']
 
@@ -443,6 +445,7 @@ if __name__ == '__main__':
         momentum=momentum,
         nesterov=nesterov,
         loss=loss,
+        aggregate_labels=aggregate,
         scheduler=scheduler,
         early_stopping=early_stopping,
         patience=patience,

@@ -181,7 +181,7 @@ def process(data:DataCutter,
         print("Padding...")
     dp.padding(
         padding=40,
-        mode='last-frame')
+        mode='constant')
     if verbose > 1:
         print("Saving processed data...")
     #if len(subjects) > 1:
