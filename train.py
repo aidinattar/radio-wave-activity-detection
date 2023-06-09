@@ -438,7 +438,10 @@ if __name__ == '__main__':
     train_data.shuffle()
     test_data.shuffle()
     
-    num_classes = len(np.unique(labels_transform(train_data.labels[:])))
+    if labels_transform is not None:
+        num_classes = len(np.unique(labels_transform(train_data.labels[:])))
+    else:
+        num_classes = len(np.unique(train_data.labels[:]))
     
     # load model
     model_name = args['<model>']
