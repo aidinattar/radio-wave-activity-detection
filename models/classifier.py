@@ -251,7 +251,7 @@ class model(object):
                     loss: str='CrossEntropyLoss',
                     use_weight: bool=False,
                     weight: list=None,
-                    aggregate: bool=False,
+                    labels_transform=None,
                     **kwargs):
         """
         Create the loss function
@@ -278,10 +278,7 @@ class model(object):
         
         if use_weight:
             if weight is None:
-                if aggregate:
-                    labels_transform = np.vectorize(
-                        lambda label: MAPPING_LABELS_DICT[label]
-                    )
+                if labels_transform is not None:
                     labels = labels_transform(self.train_data.labels[:])
                 else:
                     labels = self.train_data.labels[:]

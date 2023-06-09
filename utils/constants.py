@@ -127,3 +127,21 @@ LYING_LABELS = {
     12: 'roll in bed',
     13: 'sit in bed'
 }
+
+
+LYING_LABELS_REVERSE = {
+    'get in  bed': 0,
+    'lie in bed': 1,
+    'get out  bed': 2,
+    'roll in bed': 3,
+    'sit in bed': 4
+}
+
+
+MAPPING_LYING_LABELS = {
+    9: 0,
+    10: 1,
+    11: 2,
+    12: 3,
+    13: 4
+}
