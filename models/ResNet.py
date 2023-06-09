@@ -79,33 +79,20 @@ class ConvolutionalBlock(MainPath):
     
 
 class ResNet50(Module):
-    
     def __init__(
         self,
-        in_channels:int,
-        num_classes:int,
-        dropout:float=0.2
+        in_channels: int,
+        num_classes: int,
+        dropout: float = 0.2
     ):
-        """
-        Initialize the ResNet50 model
-
-        Parameters
-        ----------
-        in_channels : int
-            Number of input channels.
-        num_classes : int
-            Number of output classes.
-        dropout : float, optional
-            Dropout probability, by default 0.2
-        """
         super().__init__()
         self.network = Sequential(
             Conv2d(
                 in_channels=in_channels,
                 out_channels=64,
-                kernel_size=3,
-                stride=1,
-                padding=1
+                kernel_size=7,
+                stride=2,
+                padding=3
             ),
             BatchNorm2d(64),
             ReLU(),
@@ -134,7 +121,7 @@ class ResNet50(Module):
             Dropout(dropout),
             IdentityBlock(2048, [512, 512, 2048], kernel_size=3),
             IdentityBlock(2048, [512, 512, 2048], kernel_size=3),
-            AvgPool2d(kernel_size=2)
+            AvgPool2d(kernel_size=1)
         )
         self.classification_layer = Linear(
             in_features=2048,
