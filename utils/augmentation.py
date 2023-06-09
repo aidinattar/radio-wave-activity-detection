@@ -232,8 +232,8 @@ def resample(train_data: torch.utils.data.dataset.Subset,
 
 def time_mask(
     spectrogram:np.ndarray,
-    num_masks:int=4,
-    mask_factor:int=4
+    num_masks:int=3,
+    mask_factor:int=3
 ):
     """
     Apply time masking to the spectrograms of the data
@@ -298,7 +298,7 @@ def time_doppler_mask(
     spectrogram:np.ndarray,
     num_masks:int=8,
     time_mask_factor:int=4,
-    doppler_mask_factor:int=4
+    doppler_mask_factor:int=5
 ):
     """
     Apply time and doppler masking to the spectrograms of the data
