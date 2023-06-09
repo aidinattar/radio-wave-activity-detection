@@ -71,7 +71,10 @@ class EarlyStopping:
         self.epoch = 0
 
 
-    def check_improvement(self, metric):
+    def check_improvement(
+        self,
+        metric,
+        model):
         """
         Check if the monitored metric has improved
         and update the early stopping counter and checkpoint.
@@ -85,7 +88,7 @@ class EarlyStopping:
             if metric >= self.baseline and metric >= self.best_score - self.min_delta:
                 if self.verbose:
                     print('Metric improved from baseline.')
-                self.save_checkpoint(metric)
+                self.save_checkpoint(model, metric)
                 self.counter = 0
                 self.best_score = metric
             else:
@@ -105,7 +108,7 @@ class EarlyStopping:
 
             if self.best_score is None:
                 self.best_score = score
-                self.save_checkpoint(metric)
+                self.save_checkpoint(model, metric)
             elif score < self.best_score + self.min_delta:
                 if self.verbose:
                     print('Metric did not improve enough.')
@@ -120,22 +123,24 @@ class EarlyStopping:
                 if self.verbose:
                     print('Metric improved.')
                 self.best_score = score
-                self.save_checkpoint(metric)
+                self.save_checkpoint(model, metric)
                 self.counter = 0
         
         self.epoch = self.epoch + 1
 
 
-    def save_checkpoint(self, metric):
+    def save_checkpoint(self, model, metric):
         """
         Save the model checkpoint.
         
         Parameters
         ----------
+        model : torch.nn.Module
+            Model to be saved.
         metric : float
             Monitored metric value to be saved.
         """
         if self.verbose:
             print(f'Metric increased ({self.metric_max:.6f} --> {metric:.6f}). Saving model...')
-        torch.save(metric, self.path)
+        torch.save(model, self.path)
         self.metric_max = metric

@@ -57,6 +57,24 @@ MAPPING_LABELS_DICT = {
 }
 
 
+MAPPING_LABELS_NAMES_DICT = {
+    'walk to bed': 'walk',
+    'sit down on bed': 'sit down',
+    'stand up from bed': 'stand up',
+    'walk to chair': 'walk',
+    'sit down on chair': 'sit down',
+    'stand up from chair': 'stand up',
+    'walk to room': 'walk',
+    'fall on floor of room': 'fall on floor',
+    'stand up from floor of room': 'stand up from floor',
+    'get in  bed':'get in  bed',
+    'lie in bed':'lie in bed',
+    'get out  bed':'get out  bed',
+    'roll in bed':'roll in bed',
+    'sit in bed':'sit in bed',
+}
+
+
 AGGREGATED_LABELS_DICT_REVERSE = {
     0: 'walk',
     1: 'sit down',

@@ -8,7 +8,7 @@ The model is trained using the Adam optimizer and
 the Cross Entropy loss.
 
 Usage:
-    train.py <model> <train_data> <test_data> <input> <case>
+    train.py <model> <train_data> <test_data> <input> <case> <mode>
             [--channel=<channel>] [--load=<model_name>]
             [--aggregate_labels] [--dropout=<dropout>]
             [--epochs=<epochs>] [--batch_size=<batch_size>]
@@ -28,6 +28,7 @@ Options:
     <test_data>                     Name of the test data file.
     <input>                         Type of data to use.
     <case>                          Case to use.
+    <mode>                          Mode to use, possible values are total, standing, lying.
     --channel=<channel>             Channel to use [default: 1].
     --load=<model_name>             Load a model [default: None].
     --aggregate_labels              Aggregate the labels [default: False].
@@ -105,6 +106,7 @@ def main(
     min_delta:float,
     verbose:int,
     device:torch.device,
+    mode:str,
     seed:int
 ):
     """
@@ -277,7 +279,9 @@ def main(
     # Evaluate the model
     print('Evaluating the model')
     classifier.evaluate_model(
-        save=True
+        save=True,
+        aggregate=aggregate_labels,
+        mode=mode
     )
 
     # Save the model trained
@@ -302,6 +306,7 @@ if __name__ == '__main__':
 
     # set hyperparameters
     case = int(args['<case>'])
+    mode = args['<mode>']
     dropout = float(args['--dropout'])
     epochs = int(args['--epochs'])
     batch_size = int(args['--batch_size'])
@@ -451,6 +456,7 @@ if __name__ == '__main__':
         patience=patience,
         min_delta=min_delta,
         verbose=verbose,
+        mode=mode,
         device=device,
         seed=seed
     )
