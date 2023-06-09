@@ -335,7 +335,7 @@ if __name__ == '__main__':
         labels_transform = np.vectorize(
             lambda label: MAPPING_LYING_LABELS[label]
         )
-    elif mode == aggregate:
+    elif aggregate:
         labels_transform = np.vectorize(
             lambda label: MAPPING_LABELS_DICT[label]
         )
