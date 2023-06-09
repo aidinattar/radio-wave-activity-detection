@@ -87,3 +87,25 @@ NON_AGGREGATED_LABELS_DICT_REVERSE = {
     12: 'roll in bed',
     13: 'sit in bed',
 }
+
+
+STANDING_LABELS = {
+    0: 'walk to bed',
+    1: 'sit down on bed',
+    2: 'stand up from bed',
+    3: 'walk to chair',
+    4: 'sit down on chair',
+    5: 'stand up from chair',
+    6: 'walk to room',
+    7: 'fall on floor of room',
+    8: 'stand up from floor of room',
+}
+
+
+LYING_LABELS = {
+    9: 'get in  bed',
+    10: 'lie in bed',
+    11: 'get out  bed',
+    12: 'roll in bed',
+    13: 'sit in bed'
+}
