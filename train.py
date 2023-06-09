@@ -75,7 +75,7 @@ import numpy as np
 from docopt import docopt
 from models.classifier import model
 from preprocessing.dataset import Dataset2Channels, Dataset1Channel
-from utils.constants import MAPPING_LABELS_DICT
+from utils.constants import MAPPING_LABELS_DICT, MAPPING_LYING_LABELS
 from datetime import datetime
 from torchvision import transforms
 
@@ -100,6 +100,7 @@ def main(
     nesterov:bool,
     scheduler:str,
     loss:str,
+    labels_transform:callable,
     aggregate_labels:bool,
     early_stopping:bool,
     patience:int,
@@ -143,6 +144,10 @@ def main(
         Nesterov
     loss : str
         Loss function
+    labels_transform : callable
+        Labels transform
+    aggregate_labels : bool
+        Aggregate the labels
     patience : int
         Patience
     min_delta : float
@@ -198,7 +203,7 @@ def main(
     classifier.create_loss(
         loss=loss,
         use_weight=True,
-        aggregate=aggregate_labels
+        labels_transform=labels_transform,
     )
     
     del classifier.train_data, classifier.test_data
@@ -326,10 +331,16 @@ if __name__ == '__main__':
 
     TYPE = args['<input>']
     
-    labels_transform = np.vectorize(
-        lambda label: MAPPING_LABELS_DICT[label]
-    ) if aggregate else None
-
+    if mode == 'lying':
+        labels_transform = np.vectorize(
+            lambda label: MAPPING_LYING_LABELS[label]
+        )
+    elif mode == aggregate:
+        labels_transform = np.vectorize(
+            lambda label: MAPPING_LABELS_DICT[label]
+        )
+    else:
+        labels_transform = None
 
     if case == 0:
 
@@ -450,6 +461,7 @@ if __name__ == '__main__':
         momentum=momentum,
         nesterov=nesterov,
         loss=loss,
+        labels_transform=labels_transform,
         aggregate_labels=aggregate,
         scheduler=scheduler,
         early_stopping=early_stopping,
