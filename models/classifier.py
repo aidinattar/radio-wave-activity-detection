@@ -40,7 +40,8 @@ from memory_profiler           import profile
 from sklearn.preprocessing     import label_binarize
 from sklearn.utils             import class_weight
 from utils.constants           import NON_AGGREGATED_LABELS_DICT_REVERSE,\
-    AGGREGATED_LABELS_DICT_REVERSE, MAPPING_LABELS_DICT
+    MAPPING_LABELS_NAMES_DICT, MAPPING_LABELS_DICT, STANDING_LABELS,\
+    LYING_LABELS
 #from torch.utils.tensorboaro import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR,\
     CosineAnnealingLR, MultiStepLR, ExponentialLR
@@ -543,6 +544,7 @@ class model(object):
                 if self.early_stopping_created:
                     self.early_stopping.check_improvement(
                         test_acc,
+                        self.model
                     )
                     if self.early_stopping.early_stop:
                         print('Early stopping')
@@ -585,6 +587,8 @@ class model(object):
                        do_recall_score: bool=True,
                        do_precision_score: bool=False,
                        save: bool=True,
+                       aggregate: bool=True,
+                       mode: str='total',
                        ):
         """
         Evaluate the model.
@@ -604,7 +608,12 @@ class model(object):
             Plot the ROC curve and print the AUC. The default is True.
         save : bool, optional
             Save the plots. The default is True.
-            
+        aggregate : bool, optional
+            Whether the labels are aggregated or not. The default is True.
+        mode : str, optional
+            Mode of the labels. Possible values are 'total', 'standing',
+            'lying'.
+
 
         Raises
         ------
@@ -635,11 +644,20 @@ class model(object):
             preds = preds.detach().cpu().numpy().argmax(axis=1)
             targets = targets.detach().cpu().numpy()
 
-        if self.num_classes==10:
-            target_names = AGGREGATED_LABELS_DICT_REVERSE.values()
+        if not aggregate:
+            if mode == 'standing':
+                target_names = STANDING_LABELS.values()
+            elif mode == 'lying':
+                target_names = LYING_LABELS.values()
+            else:
+                target_names = NON_AGGREGATED_LABELS_DICT_REVERSE.values()
         else:
-            target_names = NON_AGGREGATED_LABELS_DICT_REVERSE.values()
-            
+            if mode == 'standing':
+                target_names = np.unique([MAPPING_LABELS_NAMES_DICT[label] for label in STANDING_LABELS.values()])
+            elif mode == 'lying':
+                target_names = np.unique([MAPPING_LABELS_NAMES_DICT[label] for label in LYING_LABELS.values()])
+            else:
+                target_names = np.unique([MAPPING_LABELS_NAMES_DICT[label] for label in NON_AGGREGATED_LABELS_DICT_REVERSE.values()])
 
         # Confusion matrix
         if do_cm:
@@ -1252,9 +1270,11 @@ class model(object):
         torch.save(self.model.state_dict(), os.path.join(path, f'{name}.pt'))
 
 
-    def load_model(self,
-                   name: str,
-                   path: str='trained_models'):
+    def load_model(
+        self,
+        name: str,
+        path: str='trained_models'
+    ):
         """
         Load the model
 
@@ -1265,8 +1285,20 @@ class model(object):
         path : str, optional
             The path to load the model. The default is 'trained_models'.
         """
-        # Load the model
-        self.model.load_state_dict(torch.load(os.path.join(path, f'{name}.pt')))
+        # Check if the file exists
+        file_path = os.path.join(
+            path,
+            f'{name}.pt'
+        )
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"Model file not found: {file_path}")
 
-        # Set the model as trained
-        self.model_trained = True
+        # Load the model
+        try:
+            state_dict = torch.load(file_path)
+            if not isinstance(state_dict, dict):
+                raise TypeError(f"Expected state_dict to be dict-like, got {type(state_dict)}.")
+            self.model.load_state_dict(state_dict)
+            self.model_trained = True
+        except Exception as e:
+            raise RuntimeError(f"Failed to load model: {str(e)}")
