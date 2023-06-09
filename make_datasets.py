@@ -4,12 +4,15 @@ make_datasets.py
 Generate training and test datasets from the original H5 file.
 
 Usage:
-    make_datasets.py <input_file> [--augment] [--factor=<factor>]
+    make_datasets.py <input_file> [--augment] [--factor=<factor>] (--total|--standing|--lying)
     
 Options:
-    -h --help       Show this screen.
-    -a --augment    Augment the data by applying data augmentation techniques to the samples. [default: False]
+    -h --help               Show this screen.
+    -a --augment            Augment the data by applying data augmentation techniques to the samples. [default: False]
     -f --factor=<factor>    Factor by which to augment the data. [default: 3]
+    -t --total              Whether to generate the dataset with all the data or not.
+    -s --standing           Whether to generate the dataset with only the standing data or not.
+    -l --lying              Whether to generate the dataset with only the lying data or not.
 """
 
 
@@ -19,21 +22,25 @@ import numpy as np
 from utils import augmentation
 from sklearn.utils import class_weight
 from docopt import docopt
-from utils.constants import MAPPING_LABELS_DICT
+from utils.constants import MAPPING_LABELS_DICT, STANDING_LABELS, LYING_LABELS
+
 
 labels_transform = np.vectorize(
             lambda label: MAPPING_LABELS_DICT[label]
         )
 
+
 def split_train_test(
     input_file: str,
     train_file: str,
     test_file: str,
-    split_ratio:float=0.8
+    split_ratio: float = 0.8,
+    mode: str = 'total',
+    indices: np.ndarray = None
 ):
     """
     Split an H5 file into training and test data.
-    
+
     Parameters
     ----------
     input_file : str
@@ -44,6 +51,17 @@ def split_train_test(
         Path to the output test H5 file
     split_ratio : float, optional
         Ratio of training data to test data. The default is 0.8.
+    mode : str, optional
+        Mode for selecting indices. Can be 'total', 'standing', or 'lying'.
+        The default is 'total'.
+    indices : np.ndarray, optional
+        Indices corresponding to the selected labels. If provided, the function
+        will use these indices instead of computing them from the labels dataset.
+
+    Raises
+    ------
+    ValueError
+        If an invalid mode is specified.
     """
     # Open the original H5 file
     with h5py.File(input_file, 'r') as f:
@@ -53,29 +71,45 @@ def split_train_test(
             for dataset_name, dataset in f.items():
                 # Get the dataset shape
                 dataset_shape = dataset.shape
-                train_shape = (int(dataset_shape[0] * split_ratio), *dataset_shape[1:])
-                test_shape = (dataset_shape[0] - train_shape[0], *dataset_shape[1:])
+
+                if indices is None:
+                    if mode == 'total':
+                        indices = np.arange(dataset_shape[0])
+                    elif mode == 'standing':
+                        standing_indices = np.where(np.isin(f['labels'][:], list(STANDING_LABELS.keys())))
+                        indices = standing_indices[0]
+                    elif mode == 'lying':
+                        lying_indices = np.where(np.isin(f['labels'][:], list(LYING_LABELS.keys())))
+                        indices = lying_indices[0]
+                    else:
+                        raise ValueError("Invalid mode")
+
+                # Calculate the shape of the training and test datasets
+                train_shape = (int(np.round(len(indices) * split_ratio)), *dataset_shape[1:])
+                test_shape = (int(np.round(len(indices) * (1 - split_ratio))), *dataset_shape[1:])
+
                 # Create datasets in the new H5 files with the same shape as the original dataset
                 train_dataset = train_f.create_dataset(dataset_name, shape=train_shape, dtype=dataset.dtype,
                                                        chunks=True, compression="gzip")
                 test_dataset = test_f.create_dataset(dataset_name, shape=test_shape, dtype=dataset.dtype,
                                                       chunks=True, compression="gzip")
-                
+
                 train_index, test_index = 0, 0
                 # Copy the data chunk by chunk
-                for i in range(0, dataset_shape[0], 1000):
-                    chunk = dataset[i:i+1000]
-                    
+                for i in range(0, len(indices), 1000):
+                    chunk_indices = indices[i:i + 1000]
+                    chunk = dataset[chunk_indices]
+
                     # Calculate the split index based on the split ratio
-                    split_index = int(chunk.shape[0] * split_ratio)
-                    
+                    split_index = int(np.round(chunk.shape[0] * split_ratio))
+
                     # Split the chunk into training and test data
                     train_chunk = chunk[:split_index]
                     test_chunk = chunk[split_index:]
-                    
+
                     # Write the data to the new H5 files
-                    train_dataset[train_index:train_index+train_chunk.shape[0]] = train_chunk
-                    test_dataset[test_index:test_index+test_chunk.shape[0]] = test_chunk
+                    train_dataset[train_index:train_index + train_chunk.shape[0]] = train_chunk
+                    test_dataset[test_index:test_index + test_chunk.shape[0]] = test_chunk
 
                     # Update the current positions in each dataset
                     train_index += train_chunk.shape[0]
@@ -232,13 +266,21 @@ if __name__=='__main__':
     filename = args['<input_file>']
 
     file = h5py.File(
-        os.path.join(dirname, filename),
+        filename,
         'r'
     )
 
-    filename = os.path.join(dirname, filename)
-    train_filename = os.path.join(dirname, f'train_{TYPE}_{channels}channels.h5')
-    test_filename = os.path.join(dirname, f'test_{TYPE}_{channels}channels.h5')
+    if args['--total']:
+        mode = 'total'
+    elif args['--standing']:
+        mode = 'standing'
+    elif args['--lying']:
+        mode = 'lying'
+    else:
+        mode = 'total'
+
+    train_filename = os.path.join(dirname, f'train_{TYPE}_{channels}channels_{mode}.h5')
+    test_filename = os.path.join(dirname, f'test_{TYPE}_{channels}channels_{mode}.h5')
 
     # remove the destination file if it already exists
     if os.path.exists(train_filename):
@@ -251,11 +293,12 @@ if __name__=='__main__':
         filename,
         train_filename,
         test_filename,
-        split_ratio=0.8
+        split_ratio=0.8,
+        mode=mode
     )
     
     if args['--augment']:
-        train_augmented_filename = os.path.join(dirname, f'train_{TYPE}_{channels}channels_augmented.h5')
+        train_augmented_filename = os.path.join(dirname, f'train_{TYPE}_{channels}channels_{mode}_augmented.h5')
 
         labels = h5py.File(train_filename, 'r')['labels'][:]
 
