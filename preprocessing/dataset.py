@@ -206,6 +206,7 @@ class Dataset1Channel(Dataset):
         self.features_transform = features_transform
         self.labels_transform = labels_transform
         self.TYPE = TYPE
+        self.indices = np.arange(len(self))
         
     
     def __len__(self) -> int:
@@ -235,6 +236,7 @@ class Dataset1Channel(Dataset):
         tuple
             Tuple containing the two rdn data and the label
         """
+        idx = self.indices[idx]
         features = self.features[idx]
         label = self.labels[idx]
         
@@ -253,6 +255,7 @@ class Dataset1Channel(Dataset):
         
         # Update the indices for subsequent data retrieval
         self.indices = shuffled_indices
+
         
     def __iter__(self):
         # Shuffle the dataset when creating an iterator
