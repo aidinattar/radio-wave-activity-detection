@@ -23,6 +23,7 @@ from models.cnn_md_baseline    import cnn_md_baseline
 from models.ResNet50           import ResNet50
 from models.ResNet18           import ResNet18
 from models.inception_v4       import InceptionV4
+from models.pretrained_models  import InceptionV3, InceptionResNetV2
 from tqdm                      import tqdm
 from sklearn.metrics           import confusion_matrix, accuracy_score,\
                                       precision_recall_fscore_support,\
@@ -194,6 +195,24 @@ class model(object):
             self.model = InceptionV4(
                 num_classes=num_classes,
                 **kwargs
+            )
+        elif self.model_type == 'InceptionV3':
+            if self.train_data.TYPE != 'mDoppler':
+                OptionIsFalseError('do_mDoppler')
+            self.model = InceptionV3(
+                pretrained=True,
+                input_size=self.input_size,
+                num_classes=num_classes,
+                aux_logits=True,
+            )
+        elif self.model_type == 'IncetpionResNetV2':
+            if self.train_data.TYPE != 'mDoppler':
+                OptionIsFalseError('do_mDoppler')
+            self.model = InceptionResNetV2(
+                num_classes=num_classes,
+                input_size=self.input_size,
+                aux_logits=True,
+                pretrained=True,
             )
         else:
             raise ValueError('Invalid model type')
@@ -428,10 +447,11 @@ class model(object):
 
 
     #@profile
-    def train_model(self,
-                    epochs: int=10,
-                    accumulate_grad: int=1,
-                    ):
+    def train_model(
+        self,
+        epochs: int = 10,
+        accumulate_grad: int = 1
+    ):
         """
         Train the model
 
@@ -439,8 +459,8 @@ class model(object):
         ----------
         epochs : int, optional
             Number of epochs. The default is 10.
-        checkpoint : bool, optional
-            Save the model after every epoch. The default is False.
+        accumulate_grad : int, optional
+            Number of gradient accumulation steps. The default is 1.
 
         Raises
         ------
@@ -458,14 +478,12 @@ class model(object):
         # Use GPU
         self.model = self.model.to(self.device)
 
-        # Define first best loss
-        #best_loss = np.inf
-
         # Lists to store the losses and accuracies
         train_losses = []
         train_accs = []
         test_losses = []
         test_accs = []
+
         try:
             # Train the model
             for epoch in range(epochs):
@@ -481,26 +499,27 @@ class model(object):
                     # Forward pass
                     output = self.model(data)
                     loss = self.loss(output, target)
-                    
+
                     # Backward pass
                     loss.backward()
-    
-                    # gradient accumulation to avoid memory overflow                
+
+                    # Gradient accumulation to avoid memory overflow
                     if ((iterator.n + 1) % accumulate_grad == 0) or (iterator.n == len(iterator) - 1):
                         self.optimizer.step()
                         self.optimizer.zero_grad()
 
-                    #preds.append(output.detach().cpu().numpy().argmax(axis=1))
-                    #targets.append(target.detach().cpu().numpy())
+                    preds.append(output.detach().cpu().numpy())
+                    targets.append(target.detach().cpu().numpy())
 
                     # Update the progress bar
                     iterator.set_postfix(loss=loss.item())
 
-                #preds = torch.cat(torch.tensor(preds), axis=0)
-                #targets = torch.cat(torch.tensor(targets), axis=0)
+                preds = np.concatenate(preds, axis=0)
+                targets = np.concatenate(targets, axis=0)
+
                 # Calculate the loss and accuracy for the training set
-                #train_loss = self.loss(preds, targets)
-                #train_acc = accuracy_score(targets, preds)
+                train_loss = self.loss(torch.tensor(preds), torch.tensor(targets))
+                train_acc = accuracy_score(targets, preds.argmax(axis=1))
 
                 self.model.eval()
                 with torch.no_grad():
@@ -523,45 +542,38 @@ class model(object):
                     test_acc = accuracy_score(targets.detach().cpu().numpy(), preds.detach().cpu().numpy().argmax(axis=1))
 
                     print("Epoch Results:")
-                    print("---------------------------")
-                    print("|   Metric   |   Value   |")
-                    print("---------------------------")
-                    #print(f"| Train Acc  |  {train_acc:.4f}   |")
-                    #print(f"| Train Loss |  {train_loss.detach().cpu().numpy():.4f}   |")
-                    #print("---------------------------")
-                    print(f"| Test Acc   |  {test_acc:.4f}   |")
-                    print(f"| Test Loss  |  {test_loss.detach().cpu().numpy():.4f}   |")
-                    print("---------------------------")
+                    print("-------------------------------------")
+                    print("|   Metric   |   Train   |   Test   |")
+                    print("-------------------------------------")
+                    print(f"|    Acc     |   {train_acc:.4f}  |  {test_acc:.4f}  |")
+                    print(f"|   Loss     |   {train_loss.detach().cpu().numpy():.4f}  |  {test_loss.detach().cpu().numpy():.4f}  |")
+                    print("-------------------------------------")
+
 
                     # Save the loss and accuracy values for plotting later
-                    #train_losses.append(train_loss.detach().cpu().numpy())
-                    #train_accs.append(train_acc)
-                    test_losses.append(test_loss.detach().cpu().numpy())
+                    train_losses.append(train_loss.detach().cpu().numpy().item())
+                    train_accs.append(train_acc)
+                    test_losses.append(test_loss.detach().cpu().numpy().item())
                     test_accs.append(test_acc)
-                    
+
                 # Add the loss to Tensorboard
-                #self.writer.add_scalar('Loss/train', loss, epoch)
+                # self.writer.add_scalar('Loss/train', loss, epoch)
 
                 # Save the model if the loss is the best we've seen so far
                 if self.early_stopping_created:
-                    self.early_stopping.check_improvement(
-                        test_acc,
-                        self.model
-                    )
+                    self.early_stopping.check_improvement(test_acc, self.model)
                     if self.early_stopping.early_stop:
                         print('Early stopping')
                         break
-                
 
                 if self.scheduler_created:
-                    self.scheduler.step(
-                        metrics=test_loss,
-                    )
+                    self.scheduler.step(metrics=test_loss)
+
         except KeyboardInterrupt:
             print('Interrupted by the user')
             print('Removing extra elements from the history')
-            #train_losses = train_losses[:epoch]
-            #train_accs = train_accs[:epoch]
+            train_losses = train_losses[:epoch]
+            train_accs = train_accs[:epoch]
             test_losses = test_losses[:epoch]
             test_accs = test_accs[:epoch]
             print('Last epoch: ', epoch)
@@ -569,8 +581,8 @@ class model(object):
 
         # Create dataframe with the losses and accuracies history
         self.history = pd.DataFrame({
-            #'train_loss': train_losses,
-            #'train_acc': train_accs,
+            'train_loss': train_losses,
+            'train_acc': train_accs,
             'test_loss': test_losses,
             'test_acc': test_accs
         })
