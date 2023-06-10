@@ -127,13 +127,14 @@ class DataCutter(object):
         if not self.data.do_rdn:
             raise OptionIsFalseError('do_rdn')
 
-        # Create the list of signals
+                # Create the list of signals
         self.signals_rdn_1, self.signals_rdn_2 = ([] for i in range(2))
 
         # Cut the data
         for i, (rdn_1, rdn_2) in enumerate(zip(self.data.rdn_1, self.data.rdn_2)):
-            # Get the time bins 
+            # Get the time bins
             time_bins = self.timestamps[i].n_bins.cumsum().shift().fillna(0).astype(int).values
+
             # Loop over the time bins
             for j in range(len(time_bins)):
                 # Cut the data

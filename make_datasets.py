@@ -4,7 +4,7 @@ make_datasets.py
 Generate training and test datasets from the original H5 file.
 
 Usage:
-    make_datasets.py <input_file> [--augment] [--factor=<factor>] (--total|--standing|--lying)
+    make_datasets.py <input_file> <type> [--augment] [--factor=<factor>] (--total|--standing|--lying)
     
 Options:
     -h --help               Show this screen.
@@ -259,7 +259,7 @@ if __name__=='__main__':
     args = docopt(__doc__)
 
     
-    TYPE = 'rdn'
+    TYPE = args['<type>']
     channels = 2
 
     dirname = 'DATA_preprocessed'

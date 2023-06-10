@@ -335,3 +335,36 @@ def time_doppler_mask(
         d_mask = random.randint(1, doppler_mask_factor)
         masked_spectrogram[t:t + t_mask, d:d + d_mask] = 0
     return masked_spectrogram
+
+
+def range_mask(
+    spectrogram:np.ndarray,
+    num_masks:int=3,
+    mask_factor:int=3
+):
+    """
+    Apply range masking to the spectrograms of the data
+    This is available only for rdn data
+    
+    Parameters
+    ----------
+    spectrogram : np.ndarray
+        Spectrogram to which the range masking will be applied.
+    num_masks : int, optional
+        Number of masks to apply. The default is 1.
+    mask_factor : int, optional
+        Maximum length of the mask. The default is 40.
+    
+    Returns
+    -------
+    masked_spectrogram : np.ndarray
+        Masked spectrogram.
+    """
+    masked_spectrogram = spectrogram.copy()
+    _, _,  = masked_spectrogram.shape
+    n_masks = random.randint(1, num_masks)
+    for _ in range(n_masks):
+        f = random.randint(0, freq_bins - 1)
+        f_mask = random.randint(1, mask_factor)
+        masked_spectrogram[:, f:f + f_mask] = 0
+    return masked_spectrogram

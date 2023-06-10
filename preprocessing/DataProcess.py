@@ -286,8 +286,8 @@ class DataProcess(object):
                 self.rdn_1[i] = cutting.threshold_method(rdn_1, len_default, loc='center', **kwargs)
                 self.rdn_2[i] = cutting.threshold_method(rdn_2, len_default, loc='center', **kwargs)
             elif loc == 'max-integral':
-                self.mDoppler_1[i] = cutting.find_highest_integral_frames(mDoppler_1, len_default, **kwargs)
-                self.mDoppler_2[i] = cutting.find_highest_integral_frames(mDoppler_2, len_default, **kwargs)
+                self.rdn_1[i] = cutting.find_highest_integral_frames(rdn_1, len_default, **kwargs)
+                self.rdn_2[i] = cutting.find_highest_integral_frames(rdn_2, len_default, **kwargs)
             else:
                 raise ValueError("Invalid location")
 

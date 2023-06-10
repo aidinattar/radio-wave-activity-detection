@@ -78,13 +78,14 @@ from preprocessing.dataset import Dataset2Channels, Dataset1Channel
 from utils.constants import MAPPING_LABELS_DICT, MAPPING_LYING_LABELS
 from datetime import datetime
 from torchvision import transforms
+from utils.torch import ToTensor4D
 
 now = datetime.now().strftime("%Y%m%d")
 
 def main(
     model_name:str,
-    train_data,
-    test_data,
+    train_data: torch.utils.data.Dataset,
+    test_data: torch.utils.data.Dataset,
     case:int,
     load:bool,
     in_channels:int,
@@ -217,7 +218,6 @@ def main(
             mode='max',
             baseline=.6,
             start_epoch=15,
-            path=f'checkpoints/{model_name}__case_{case}_checkpoint.pt',
         )
 
     if scheduler != 'None':
@@ -225,7 +225,7 @@ def main(
             'ReduceLROnPlateau': {
                 'mode': 'min',
                 'factor': 0.1,
-                'patience': 10,
+                'patience': 5,
                 'verbose': True,
                 'threshold': 0.0001,
                 'threshold_mode': 'rel',
@@ -278,7 +278,8 @@ def main(
     classifier.plot_history(
         save=True,
         show=False,
-        save_csv=True
+        save_csv=True,
+        name_csv=f'{model_name}_case{case}_history_{classifier.early_stopping.best_score}_{now}.csv',
     )
 
     # Evaluate the model
@@ -292,7 +293,7 @@ def main(
     # Save the model trained
     print('Saving the model')
     classifier.save_trained_model(
-        name=f'{model_name}_{now}_case{case}'
+        #name=f'{model_name}_{now}_case{case}'
     )
 
 
@@ -335,7 +336,7 @@ if __name__ == '__main__':
         labels_transform = np.vectorize(
             lambda label: MAPPING_LYING_LABELS[label]
         )
-    elif mode == aggregate:
+    elif aggregate:
         labels_transform = np.vectorize(
             lambda label: MAPPING_LABELS_DICT[label]
         )
@@ -405,11 +406,17 @@ if __name__ == '__main__':
         raise NotImplementedError('Case 2 not implemented yet')
     
     elif case == 3:
-        features_transform = transforms.Compose([
-            #lambda x: x[:, :, 9:-9],
-            transforms.ToTensor(),
-            transforms.Normalize((0,), (1,))
-        ])
+        if TYPE == 'mDoppler':
+            features_transform = transforms.Compose([
+                #lambda x: x[:, :, 9:-9],
+                transforms.ToTensor(),
+                transforms.Normalize((0,), (1,))
+            ])
+        else:
+            features_transform = transforms.Compose([
+                ToTensor4D(),
+                transforms.Normalize((0,), (1,))
+            ])
         
         train_data = Dataset2Channels(
             TYPE=TYPE,
@@ -438,7 +445,10 @@ if __name__ == '__main__':
     train_data.shuffle()
     test_data.shuffle()
     
-    num_classes = len(np.unique(labels_transform(train_data.labels[:])))
+    if labels_transform is not None:
+        num_classes = len(np.unique(labels_transform(train_data.labels[:])))
+    else:
+        num_classes = len(np.unique(train_data.labels[:]))
     
     # load model
     model_name = args['<model>']

@@ -7,6 +7,8 @@ Classes and functions for cutting the data.
 import numpy as np
 import sys
 from scipy.ndimage import convolve
+from scipy.signal import convolve2d
+
 sys.setrecursionlimit(10000)
 
 
@@ -119,18 +121,30 @@ def centered_moving_average(
         Array with the moving average.
     """
     # Define the weights for the moving average window
-    weights = np.ones(window_size) / window_size
+    weights = np.ones((window_size,)*len(arr.shape)) / window_size**len(arr.shape)
+    
+    if len(arr.shape) == 1:
 
-    # Use np.convolve() to calculate the centered moving average
-    moving_avg = np.convolve(arr, weights, mode='valid')
+        # Use np.convolve() to calculate the centered moving average
+        moving_avg = np.convolve(arr, weights, mode='valid')
 
-    # Calculate the number of values to be padded on each side
-    pad_width = window_size // 2
+        # Calculate the number of values to be padded on each side
+        pad_width = window_size // 2
 
-    # Pad the output array with edge values
-    padded_avg = np.pad(moving_avg, pad_width, mode='edge')
+        # Pad the output array with edge values
+        padded_avg = np.pad(moving_avg, pad_width, mode='edge')
 
-    return padded_avg
+        return padded_avg
+    
+    elif len(arr.shape) == 2:
+        
+        moving_average = convolve2d(arr, weights, mode='valid')
+        
+        pad_width = window_size // 2
+        
+        padded_avg = np.pad(moving_average, pad_width, mode='edge')
+        
+        return padded_avg
    
     
 def threshold_method_(array: np.ndarray,
@@ -448,8 +462,8 @@ def threshold_method(array: np.ndarray,
 
 def find_highest_integral_frames(
     array: np.ndarray,
-    len_default: int = 40,
-)-> np.ndarray:
+    len_default: int = 40
+) -> np.ndarray:
     """
     Find the frames with the highest integral values.
     
@@ -465,18 +479,51 @@ def find_highest_integral_frames(
     array : np.ndarray
         Array with the highest integral values.
     """
+    if array.ndim == 2:
+        return find_highest_integral_frames_2d(array, len_default)
+    elif array.ndim == 3:
+        return find_highest_integral_frames_3d(array, len_default)
+    else:
+        raise ValueError("Array dimension should be 2 or 3.")
+        
+
+def find_highest_integral_frames_2d(
+    array: np.ndarray,
+    len_default: int = 40
+) -> np.ndarray:
     if array.shape[0] <= len_default:
         return array
-    
     else:
         array_copy = array.copy()
-        
         means = array_copy.mean(axis=1)
-        # this is not the actual integral, but it is proportional to it
-        integrals = centered_moving_average(
-            arr=means,
-            window_size=4
-        )
+        integrals = centered_moving_average(arr=means, window_size=4)
+
+        max_sum = 0
+        max_sum_start_index = 0
+
+        window_sum = np.sum(integrals[:len_default])
+        max_sum = window_sum
+
+        for i in range(len(integrals) - len_default - 1):
+            window_sum = window_sum - integrals[i] + integrals[i + len_default]
+            if window_sum > max_sum:
+                max_sum = window_sum
+                max_sum_start_index = i + 1
+
+        array = array[max_sum_start_index:max_sum_start_index + len_default]
+        return array
+
+
+def find_highest_integral_frames_3d(
+    array: np.ndarray,
+    len_default: int = 40
+) -> np.ndarray:
+    if array.shape[0] <= len_default:
+        return array
+    else:
+        array_copy = array.copy()
+        means = array_copy.mean(axis=(1, 2))
+        integrals = centered_moving_average(arr=means, window_size=4)
 
         max_sum = 0
         max_sum_start_index = 0

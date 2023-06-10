@@ -71,7 +71,10 @@ def reading(data_path:str,
     dr.remove_static_bins()
     if verbose > 1:
         print("Removing silence...")
-    dr.crop(start=22, stop=102)
+    dr.crop(
+        start_vel=22,
+        stop_vel=102
+    )
     if verbose > 1:
         print("Rescaling...")
     dr.rescaling(method='norm')
