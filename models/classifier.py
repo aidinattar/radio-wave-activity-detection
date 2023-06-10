@@ -162,7 +162,7 @@ class model(object):
                 **kwargs
             )
         elif self.model_type == 'CNN-RD':
-            if self.test_data.type != 'rdn':
+            if self.test_data.TYPE != 'rdn':
                 OptionIsFalseError('do_rdn')
             self.model = cnn_rd(
                 out_channels=num_classes,
