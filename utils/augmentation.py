@@ -367,9 +367,9 @@ def time_doppler_mask(
 
 
 def range_mask(
-    spectrogram: np.ndarray,
-    num_masks: int = 3,
-    mask_factor: int = 3
+    spectrogram:np.ndarray,
+    num_masks:int=3,
+    mask_factor:int=3
 ):
     """
     Apply range masking to the spectrograms of the data
