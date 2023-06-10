@@ -147,3 +147,12 @@ class EarlyStopping:
             print(f'Metric increased ({self.metric_max:.6f} --> {metric:.6f}). Saving model...')
         torch.save(model, path)
         self.metric_max = metric
+        
+        
+        
+class ToTensor4D(object):
+    def __call__(self, sample):
+        # Convert the 4D input to a tensor
+        tensor_sample = torch.from_numpy(sample)
+
+        return tensor_sample
