@@ -78,6 +78,7 @@ from preprocessing.dataset import Dataset2Channels, Dataset1Channel
 from utils.constants import MAPPING_LABELS_DICT, MAPPING_LYING_LABELS
 from datetime import datetime
 from torchvision import transforms
+from utils.torch import ToTensor4D
 
 now = datetime.now().strftime("%Y%m%d")
 
@@ -405,11 +406,17 @@ if __name__ == '__main__':
         raise NotImplementedError('Case 2 not implemented yet')
     
     elif case == 3:
-        features_transform = transforms.Compose([
-            #lambda x: x[:, :, 9:-9],
-            transforms.ToTensor(),
-            transforms.Normalize((0,), (1,))
-        ])
+        if TYPE == 'mDoppler':
+            features_transform = transforms.Compose([
+                #lambda x: x[:, :, 9:-9],
+                transforms.ToTensor(),
+                transforms.Normalize((0,), (1,))
+            ])
+        else:
+            features_transform = transforms.Compose([
+                ToTensor4D(),
+                transforms.Normalize((0,), (1,))
+            ])
         
         train_data = Dataset2Channels(
             TYPE=TYPE,
