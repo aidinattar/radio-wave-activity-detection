@@ -124,7 +124,7 @@ class Dataset2Channels(Dataset):
                 if self.TYPE == 'mDoppler':
                     features = self.features_transform(features).permute(1, 0, 2)
                 else:
-                    features = self.features_transform(features)
+                    features = self.features_transform(features).permute(0, 2, 1, 3)
             
             return features, label
 
