@@ -132,7 +132,7 @@ class cnn_rd(Module):
             # height = (input_height - kernel_size + 2 * padding) / stride + 1
             # width = (input_width - kernel_size + 2 * padding) / stride + 1
             # depth = (input_depth - kernel_size + 2 * padding) / stride + 1
-            Linear(in_features=f4*4*6*3, out_features=128),  # adjust the input size accordingly
+            Linear(in_features=f4*4*6*5, out_features=128),  # adjust the input size accordingly
             ELU(), # not sure if this is the right activation function
             Dropout(p=dropout),
             Linear(in_features=128, out_features=out_channels),
