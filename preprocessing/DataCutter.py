@@ -133,7 +133,7 @@ class DataCutter(object):
         # Cut the data
         for i, (rdn_1, rdn_2) in enumerate(zip(self.data.rdn_1, self.data.rdn_2)):
             # Get the time bins 
-            time_bins = self.timestamps[i]['time_passed_bins'].values
+            time_bins = self.timestamps[i].n_bins.cumsum().shift().fillna(0).astype(int).values
             # Loop over the time bins
             for j in range(len(time_bins)):
                 # Cut the data

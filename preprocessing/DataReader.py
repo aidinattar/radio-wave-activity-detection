@@ -166,8 +166,8 @@ class DataReader(object):
 
 
     def crop_rdn(self,
-                 start_vel:int=13,
-                 stop_vel:int=111,
+                 start:int=13,
+                 stop:int=111,
                  start_range:int=0,
                  stop_range:int=63):
         """
@@ -188,6 +188,8 @@ class DataReader(object):
         if not self.do_rdn:
             raise OptionIsFalseError('do_rdn')
 
+        start_vel = start
+        stop_vel = stop
         # crop the data
         for i in range(len(self.rdn)):
             self.rdn[i] = self.rdn[i][:, start_range:stop_range, start_vel:stop_vel]
@@ -604,6 +606,7 @@ class DataReader(object):
         """
         Function to convert the timestamps in bins
         """
+
         # Compute the time passed
         for i in range(len(self.timestamp_speech)):
             # Compute the time difference
@@ -616,7 +619,10 @@ class DataReader(object):
                 self.timestamp_speech[i].loc[self.timestamp_speech[i].index[-1], 'time_diff'] = self.timestamp_speech[i].iloc[:-1]['time_diff'].mean()
             # Compute the conversion factor as the number of bins per second
             #conversion_factor = 60/5.8
-            conversion_factor = len(self.mDoppler[i*2])/self.timestamp_speech[i].time_diff.sum().total_seconds()
+            if self.do_mDoppler:
+                conversion_factor = len(self.mDoppler[i*2])/self.timestamp_speech[i].time_diff.sum().total_seconds()
+            else:
+                conversion_factor = len(self.rdn[i*2])/self.timestamp_speech[i].time_diff.sum().total_seconds()
             # Compute the number of bins
             self.timestamp_speech[i]['n_bins'] = np.round(self.timestamp_speech[i]['time_diff'].dt.total_seconds()*conversion_factor).astype(int)
 
