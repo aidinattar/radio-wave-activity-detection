@@ -121,7 +121,10 @@ class Dataset2Channels(Dataset):
             features = np.concatenate((features_1, features_2), axis=0)
             
             if self.features_transform:
-                features = self.features_transform(features).permute(1, 0, 2)
+                if self.TYPE == 'mDoppler':
+                    features = self.features_transform(features).permute(1, 0, 2)
+                else:
+                    features = self.features_transform(features).permute(1, 0, 2)
             
             return features, label
 

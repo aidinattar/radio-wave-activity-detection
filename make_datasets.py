@@ -259,7 +259,7 @@ if __name__=='__main__':
     args = docopt(__doc__)
 
     
-    TYPE = 'mDoppler'
+    TYPE = 'rdn'
     channels = 2
 
     dirname = 'DATA_preprocessed'
