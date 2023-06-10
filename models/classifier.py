@@ -20,10 +20,12 @@ from exceptions                import OptionIsFalseError, WorkToDoError
 from models.cnn_rd             import cnn_rd
 from models.cnn_md             import cnn_md
 from models.cnn_md_baseline    import cnn_md_baseline
+from models.custom_cnns        import CNNCustom
 from models.ResNet50           import ResNet50
 from models.ResNet18           import ResNet18
 from models.inception_v4       import InceptionV4
-from models.pretrained_models  import InceptionV3, InceptionResNetV2
+#from models.Inception_v3       import InceptionV3
+#from models.Inception_ResNet_v2 import InceptionResNetV2
 from tqdm                      import tqdm
 from sklearn.metrics           import confusion_matrix, accuracy_score,\
                                       precision_recall_fscore_support,\
@@ -200,19 +202,24 @@ class model(object):
             if self.train_data.TYPE != 'mDoppler':
                 OptionIsFalseError('do_mDoppler')
             self.model = InceptionV3(
-                pretrained=True,
-                input_size=self.input_size,
                 num_classes=num_classes,
-                aux_logits=True,
+                **kwargs
             )
         elif self.model_type == 'IncetpionResNetV2':
             if self.train_data.TYPE != 'mDoppler':
                 OptionIsFalseError('do_mDoppler')
             self.model = InceptionResNetV2(
                 num_classes=num_classes,
-                input_size=self.input_size,
-                aux_logits=True,
-                pretrained=True,
+                **kwargs
+            )
+        elif self.model_type == 'DenseNet121':
+            raise NotImplementedError
+        elif self.model_type == 'custom':
+            if self.train_data.TYPE != 'mDoppler':
+                OptionIsFalseError('do_mDoppler')
+            self.model = CNNCustom(
+                out_channels=num_classes,
+                **kwargs
             )
         else:
             raise ValueError('Invalid model type')
