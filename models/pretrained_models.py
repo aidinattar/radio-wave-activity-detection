@@ -8,13 +8,11 @@ from torch import nn
 def InceptionV3(
     input_size=(2,40,80),
     num_classes:int=5,
-    pretrained:bool=True,
-    aux_logits:bool=False
+    pretrained:bool=True
 )->nn.Module:
     # Load and modify InceptionV3
     model = models.inception_v3(
-        pretrained=pretrained,
-        aux_logits=aux_logits
+        pretrained=pretrained
     )
     # Modify input layer to accept n channels
     model.Conv2d_1a_3x3.conv = nn.Conv2d(
