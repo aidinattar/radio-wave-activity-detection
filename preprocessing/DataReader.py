@@ -214,7 +214,7 @@ class DataReader(object):
 
         # crop the data
         for i in range(len(self.mDoppler)):
-            self.mDoppler[i] = self.mDoppler[i][:, start:stop]
+            self.mDoppler[i] = self.mDoppler[i][:, start_vel:stop_vel]
 
 
     def radar_division(self):

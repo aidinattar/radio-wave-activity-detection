@@ -288,6 +288,7 @@ def doppler_mask(
         Masked spectrogram.
     """
     masked_spectrogram = spectrogram.copy()
+    freq_bins = 0
     if type == 'mDoppler':
         _, freq_bins = masked_spectrogram.shape
     else:
