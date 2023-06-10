@@ -3,11 +3,6 @@ classifier.py
 
 This file contains the model class, which is used
 to create the model and train it.
-
-TODO:
-    - Add missing parts
-    - Check if the code is correct
-    - Add possible plots and results
 """
 import os, sys
 import torch
@@ -25,7 +20,8 @@ from exceptions                import OptionIsFalseError, WorkToDoError
 from models.cnn_rd             import cnn_rd
 from models.cnn_md             import cnn_md
 from models.cnn_md_baseline    import cnn_md_baseline
-from models.ResNet             import ResNet50
+from models.ResNet50           import ResNet50
+from models.ResNet18           import ResNet18
 from models.inception_v4       import InceptionV4
 from tqdm                      import tqdm
 from sklearn.metrics           import confusion_matrix, accuracy_score,\
@@ -45,9 +41,11 @@ from utils.constants           import NON_AGGREGATED_LABELS_DICT_REVERSE,\
 #from torch.utils.tensorboaro import SummaryWriter
 from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR,\
     CosineAnnealingLR, MultiStepLR, ExponentialLR
+from datetime                  import datetime
 
 fig_dir = 'figures'
 sns.set_style('darkgrid')
+now = datetime.now().strftime("%Y%m%d")
 
 class model(object):
     """
@@ -59,6 +57,7 @@ class model(object):
     model_trained = False
     scheduler_created = False
     early_stopping_created = False
+    accuracy = 0
 
     def __init__(
         self, 
@@ -175,10 +174,17 @@ class model(object):
                 out_channels=num_classes,
                 **kwargs
             )
-        elif self.model_type == 'ResNet':
+        elif self.model_type == 'ResNet50':
             if self.train_data.TYPE != 'mDoppler':
                 OptionIsFalseError('do_mDoppler')
             self.model = ResNet50(
+                num_classes=num_classes,
+                **kwargs
+            )
+        elif self.model_type == 'ResNet18':
+            if self.train_data.TYPE != 'mDoppler':
+                OptionIsFalseError('do_mDoppler')
+            self.model = ResNet18(
                 num_classes=num_classes,
                 **kwargs
             )
@@ -317,8 +323,7 @@ class model(object):
         verbose: bool=False,
         mode: str='min',
         baseline: float=None,
-        start_epoch: int=0,
-        path: str='chekpoints/checkpoint.pt',
+        start_epoch: int=0
     ):
         """
         Create the early stopping object
@@ -343,16 +348,16 @@ class model(object):
             Epoch from which to start counting the patience.
             The default is 0.
         path : str, optional
-            Path for the checkpoint. The default is 'checkpoint.pt'.
+            Path for the checkpoint. The default is None.
         """
         self.early_stopping = EarlyStopping(
             patience=patience,
             min_delta=min_delta,
             verbose=verbose,
             mode=mode,
-            path=path,
             baseline=baseline,
-            start_from_epoch=start_epoch
+            start_from_epoch=start_epoch,
+            model_name=self.model_type
         )
         
         self.early_stopping_created=True
@@ -570,6 +575,7 @@ class model(object):
             'test_acc': test_accs
         })
 
+        self.accuracy = test_accs[-1]
         self.model_trained = True
 
 
@@ -636,7 +642,7 @@ class model(object):
                 targets.append(target)
             preds = torch.cat(preds, axis=0)
             targets = torch.cat(targets, axis=0)
-            loss = self.loss(preds, targets).detach().cpu().numpy()
+            #loss = self.loss(preds, targets).detach().cpu().numpy()
             probs = preds.detach().cpu().numpy()
             preds = preds.detach().cpu().numpy().argmax(axis=1)
             targets = targets.detach().cpu().numpy()
@@ -650,11 +656,17 @@ class model(object):
                 target_names = NON_AGGREGATED_LABELS_DICT_REVERSE.values()
         else:
             if mode == 'standing':
-                target_names = np.unique([MAPPING_LABELS_NAMES_DICT[label] for label in STANDING_LABELS.values()])
+                labels = [MAPPING_LABELS_NAMES_DICT[label] for label in STANDING_LABELS.values()]
+                target_names, first_indices = np.unique(labels, return_index=True)
+                target_names = [labels[index] for index in sorted(first_indices)]
             elif mode == 'lying':
-                target_names = np.unique([MAPPING_LABELS_NAMES_DICT[label] for label in LYING_LABELS.values()])
+                labels = [MAPPING_LABELS_NAMES_DICT[label] for label in LYING_LABELS.values()]
+                target_names, first_indices = np.unique(labels, return_index=True)
+                target_names = [labels[index] for index in sorted(first_indices)]
             else:
-                target_names = np.unique([MAPPING_LABELS_NAMES_DICT[label] for label in NON_AGGREGATED_LABELS_DICT_REVERSE.values()])
+                labels = [MAPPING_LABELS_NAMES_DICT[label] for label in NON_AGGREGATED_LABELS_DICT_REVERSE.values()]
+                target_names, first_indices = np.unique(labels, return_index=True)
+                target_names = [labels[index] for index in sorted(first_indices)]
 
         # Confusion matrix
         if do_cm:
@@ -667,11 +679,11 @@ class model(object):
 
         # Accuracy
         if do_acc:
-            self.accuracy(targets=targets, preds=preds, save=save)
+            self._accuracy(targets=targets, preds=preds, save=save)
 
         # Precision, recall, f1-score
         if do_prec_rec_f1:
-            self.precision_recall_fscore_support(targets=targets, preds=preds, save=save)
+            self._precision_recall_fscore_support(targets=targets, preds=preds, save=save)
 
         # ROC curve
         if do_roc_auc:
@@ -706,6 +718,16 @@ class model(object):
                     target_names=target_names,
                 )
             )
+            # save classification report
+            if save:
+                with open(os.path.join(fig_dir, f'{self.model_type}_classfication_report__{self.accuracy:.3f}__{now}.txt'), 'w') as f:
+                    f.write(
+                        self._classification_report(
+                            y_true=targets,
+                            y_pred=preds,
+                            target_names=target_names,
+                        )
+                    )
             
 
     def _precision(self,
@@ -913,7 +935,7 @@ class model(object):
                 if dir is None:
                     dir='figures'
                 if name is None:
-                    name=f'{self.model_type}_roc_curve.png'
+                    name=f'{self.model_type}_roc_curve__{self.accuracy:.3f}__{now}.png'
                 plt.savefig(
                     os.path.join(
                         dir,
@@ -1010,7 +1032,7 @@ class model(object):
                 if dir is None:
                     dir='figures'
                 if name is None:
-                    name=f'{self.model_type}_pr_curve.png'
+                    name=f'{self.model_type}_pr_curve__{self.accuracy:.3f}__{now}.png'
                 plt.savefig(
                     os.path.join(
                         dir,
@@ -1068,10 +1090,16 @@ class model(object):
 
         # Save the confusion matrix
         if save:
-            fig.savefig(os.path.join(fig_dir, f'{self.model_type}__confusion_matrix.png'))
+            fig.savefig(
+                os.path.join(
+                    fig_dir,
+                    f'{self.model_type}__confusion_matrix__{self.accuracy:.3f}__{now}.png'))
 
 
-    def accuracy(self, targets, preds, save: bool=False):
+    def _accuracy(self,
+                 targets,
+                 preds,
+                 save: bool=False):
         """
         Calculate the accuracy
 
@@ -1090,11 +1118,11 @@ class model(object):
 
         # Save the accuracy
         if save:
-            with open(os.path.join(fig_dir, f'{self.model_type}__accuracy.txt'), 'w') as f:
+            with open(os.path.join(fig_dir, f'{self.model_type}__accuracy__{self.accuracy:.3f}__{now}.txt'), 'w') as f:
                 f.write(f'Accuracy: {accuracy}')
 
 
-    def precision_recall_fscore_support(self,
+    def _precision_recall_fscore_support(self,
                                         targets,
                                         preds,
                                         average: str=None,
@@ -1123,11 +1151,10 @@ class model(object):
 
         # Save the precision, recall, f1-score
         if save:
-            with open(os.path.join(fig_dir, f'{self.model_type}__precision_recall_fscore_support.txt'), 'w') as f:
+            with open(os.path.join(fig_dir, f'{self.model_type}__precision_recall_fscore_support__{self.accuracy:.3f}__{now}.txt'), 'w') as f:
                 f.write(f'Precision: {precision}\n')
                 f.write(f'Recall: {recall}\n')
                 f.write(f'F1-score: {fscore}\n')
-
 
 
     def predict(self, data):
@@ -1166,7 +1193,6 @@ class model(object):
     def plot_history(self,
                      save: bool=False,
                      path: str='figures',
-                     name: str='history.png',
                      show: bool=True,
                      save_csv: bool=True,
                      path_csv: str='results',
@@ -1197,6 +1223,7 @@ class model(object):
         pandas.DataFrame
             The history of the training.
         """
+        name = f'history__{self.model_type}__{self.accuracy:.3f}__{now}.png'
         plotting.PlotHistory(self.history).plot(save=save, path=path, name=name, show=show)
 
         if save_csv:
@@ -1239,7 +1266,7 @@ class model(object):
 
 
     def save_trained_model(self,
-                           name: str,
+                           name: str=None,
                            path: str='trained_models'):
         """
         Save the model
@@ -1262,6 +1289,9 @@ class model(object):
         # Create the path if it does not exist
         if not os.path.exists(path):
             os.makedirs(path)
+
+        if name is None:
+            name = f'{self.model_type}__{self.accuracy:.3f}__{now}'
 
         # Save the model
         torch.save(self.model.state_dict(), os.path.join(path, f'{name}.pt'))
