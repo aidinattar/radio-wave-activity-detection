@@ -28,7 +28,7 @@ TODO:
 import torch
 from torch.nn import Module, Linear,\
                      Conv3d, MaxPool3d,\
-                     Dropout,\
+                     Dropout, Dropout3d,\
                      Flatten, Sequential,\
                      ELU, Softmax
 
@@ -39,16 +39,19 @@ class cnn_rd(Module):
 
     def __init__(self,
                  in_channels: int=1,
+                 out_channels : int=10,
                  filters: tuple=(8, 16, 32, 64),
-                 kernel_size: tuple=(3, 3, 3),  # change 1
+                 kernel_size: tuple=(3, 3, 3),
                  stride: int=1,
-                 pool_size: int=2,
+                 padding= 'same',
+                 pool_size: tuple=(2, 2, 2),
                  pool_stride: int=2,
-                 padding: tuple=(1, 1, 1),  # change 2
+                 pool_padding: int=1,
                  dilation: int=1,
                  groups: int=1,
                  bias: bool=True,
-                 padding_mode: str='zeros'):
+                 padding_mode: str='zeros',
+                 dropout: float=0.5,):
         """
         Constructor
         """
@@ -58,21 +61,66 @@ class cnn_rd(Module):
         # Convolutional layers
         self.cnn = Sequential(
 
-            Conv3d(in_channels=in_channels, out_channels=f1, kernel_size=kernel_size, stride=stride, padding=padding),  # change 4
+            Conv3d(in_channels=in_channels,
+                   out_channels=f1,
+                   kernel_size=kernel_size,
+                   stride=stride, padding=padding,
+                   groups=groups, bias=bias,
+                   dilation=dilation,
+                   padding_mode=padding_mode),
             ELU(),
-            MaxPool3d(kernel_size=pool_size, stride=pool_stride),
+            MaxPool3d(kernel_size=pool_size,
+                      stride=pool_stride,
+                      padding=pool_padding,
+                      dilation=dilation),
 
-            Conv3d(in_channels=f1, out_channels=f2, kernel_size=kernel_size, stride=stride, padding=padding),  # change 4
-            ELU(),
-            MaxPool3d(kernel_size=pool_size, stride=pool_stride),
+            Dropout3d(p=dropout),
 
-            Conv3d(in_channels=f2, out_channels=f3, kernel_size=kernel_size, stride=stride, padding=padding),  # change 4
+            Conv3d(in_channels=f1,
+                   out_channels=f2,
+                   kernel_size=kernel_size,
+                   stride=stride,
+                   padding=padding,
+                   groups=groups, bias=bias,
+                   dilation=dilation,
+                   padding_mode=padding_mode),
             ELU(),
-            MaxPool3d(kernel_size=pool_size, stride=pool_stride),
+            MaxPool3d(kernel_size=pool_size,
+                      stride=pool_stride,
+                      padding=pool_padding,
+                      dilation=dilation),
 
-            Conv3d(in_channels=f3, out_channels=f4, kernel_size=kernel_size, stride=stride, padding=padding),  # change 4
+            Dropout3d(p=dropout),
+
+            Conv3d(in_channels=f2,
+                   out_channels=f3,
+                   kernel_size=kernel_size,
+                   stride=stride,
+                   padding=padding,
+                   groups=groups, bias=bias,
+                   dilation=dilation,
+                   padding_mode=padding_mode),  # change 4
             ELU(),
-            MaxPool3d(kernel_size=pool_size, stride=pool_stride)
+            MaxPool3d(kernel_size=pool_size,
+                      stride=pool_stride,
+                      padding=pool_padding,
+                      dilation=dilation),
+
+            Dropout3d(p=dropout),
+
+            Conv3d(in_channels=f3,
+                   out_channels=f4,
+                   kernel_size=kernel_size,
+                   stride=stride,
+                   padding=padding,
+                   groups=groups, bias=bias,
+                   dilation=dilation,
+                   padding_mode=padding_mode),  # change 4
+            ELU(),
+            MaxPool3d(kernel_size=pool_size,
+                      stride=pool_stride,
+                      padding=pool_padding,
+                      dilation=dilation)
         )
 
         # Flatten the output of the convolutional layers
@@ -84,10 +132,10 @@ class cnn_rd(Module):
             # height = (input_height - kernel_size + 2 * padding) / stride + 1
             # width = (input_width - kernel_size + 2 * padding) / stride + 1
             # depth = (input_depth - kernel_size + 2 * padding) / stride + 1
-            Linear(in_features=f4*3*5*3*3, out_features=128),  # adjust the input size accordingly
+            Linear(in_features=f4*4*6*3, out_features=128),  # adjust the input size accordingly
             ELU(), # not sure if this is the right activation function
-            Dropout(p=0.2),
-            Linear(in_features=128, out_features=6),
+            Dropout(p=dropout),
+            Linear(in_features=128, out_features=out_channels),
             Softmax(dim=1)
         )
 

@@ -253,7 +253,10 @@ def time_mask(
         Masked spectrogram.
     """
     masked_spectrogram = spectrogram.copy()
-    time_frames, _ = masked_spectrogram.shape
+    if type == 'mDoppler':
+        time_frames, _ = masked_spectrogram.shape
+    else:
+        time_frames, _, _ = masked_spectrogram.shape
     n_masks = random.randint(1, num_masks)
     for _ in range(n_masks):
         t = random.randint(0, time_frames - 1)
@@ -285,7 +288,10 @@ def doppler_mask(
         Masked spectrogram.
     """
     masked_spectrogram = spectrogram.copy()
-    _, freq_bins = masked_spectrogram.shape
+    if type == 'mDoppler':
+        _, freq_bins = masked_spectrogram.shape
+    else:
+        _, _, freq_bins = masked_spectrogram.shape
     n_masks = random.randint(1, num_masks)
     for _ in range(n_masks):
         f = random.randint(0, freq_bins - 1)
