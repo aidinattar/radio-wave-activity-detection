@@ -22,7 +22,7 @@ def InceptionV3(
         out_channels=32,
         kernel_size=(3,3),
         stride=(2,2),
-        bias=False
+        bias=False,
         padding=(0,0)
     )
     
@@ -37,7 +37,7 @@ def InceptionV3(
     return model
 
 
-def IncetpionResNetV2(
+def InceptionResNetV2(
     input_size=(2,40,80),
     num_classes:int=5,
     pretrained:bool=True,
