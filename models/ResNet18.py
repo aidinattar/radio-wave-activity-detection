@@ -64,13 +64,13 @@ class ResNet18(Module):
     def _init_weights(self):
         for m in self.modules():
             if isinstance(m, torch.nn.Conv2d) or isinstance(m, torch.nn.Linear):
-                torch.nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                torch.nn.init.xavier_normal_(m.weight)
                 if m.bias is not None:
                     torch.nn.init.constant_(m.bias, 0)
             elif isinstance(m, torch.nn.BatchNorm2d):
                 torch.nn.init.constant_(m.weight, 1)
                 torch.nn.init.constant_(m.bias, 0)
-
+                
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
