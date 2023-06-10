@@ -606,6 +606,10 @@ class DataReader(object):
         """
         # Compute the time passed
         for i in range(len(self.timestamp_speech)):
+            if len(self.mDoppler) == 0:
+                arr = self.rdn[i*2]
+            else:
+                arr = self.mDoppler[i*2]
             # Compute the time difference
             self.timestamp_speech[i]['timestamp'] = pd.to_datetime(self.timestamp_speech[i]['timestamp'])
             self.timestamp_speech[i]['time_diff'] = self.timestamp_speech[i].timestamp.diff().shift(-1)
@@ -616,7 +620,7 @@ class DataReader(object):
                 self.timestamp_speech[i].loc[self.timestamp_speech[i].index[-1], 'time_diff'] = self.timestamp_speech[i].iloc[:-1]['time_diff'].mean()
             # Compute the conversion factor as the number of bins per second
             #conversion_factor = 60/5.8
-            conversion_factor = len(self.mDoppler[i*2])/self.timestamp_speech[i].time_diff.sum().total_seconds()
+            conversion_factor = len(arr)/self.timestamp_speech[i].time_diff.sum().total_seconds()
             # Compute the number of bins
             self.timestamp_speech[i]['n_bins'] = np.round(self.timestamp_speech[i]['time_diff'].dt.total_seconds()*conversion_factor).astype(int)
 
