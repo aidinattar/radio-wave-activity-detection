@@ -14,7 +14,7 @@ class EarlyStopping:
         mode: str = 'max',
         baseline: float = None,
         start_from_epoch: int = 0,
-        path: str = 'checkpoint.pt'
+        model_name: str = 'CNN-MD'
         ):
         """
         Initialize the early stopping object
@@ -63,12 +63,12 @@ class EarlyStopping:
                 self.baseline = -np.Inf
 
         self.start_from_epoch = start_from_epoch
-        self.path = path
         self.counter = 0
         self.best_score = -np.Inf if mode == 'max' else np.Inf
         self.early_stop = False
         self.metric_max = -np.Inf if mode == 'max' else np.Inf
         self.epoch = 0
+        self.model_name = model_name
 
 
     def check_improvement(
@@ -129,7 +129,9 @@ class EarlyStopping:
         self.epoch = self.epoch + 1
 
 
-    def save_checkpoint(self, model, metric):
+    def save_checkpoint(self,
+                        model,
+                        metric):
         """
         Save the model checkpoint.
         
@@ -140,7 +142,8 @@ class EarlyStopping:
         metric : float
             Monitored metric value to be saved.
         """
+        path = f'checkpoints/checkpoint__{self.model_name}__{metric:.6f}.pt'
         if self.verbose:
             print(f'Metric increased ({self.metric_max:.6f} --> {metric:.6f}). Saving model...')
-        torch.save(model, self.path)
+        torch.save(model, path)
         self.metric_max = metric

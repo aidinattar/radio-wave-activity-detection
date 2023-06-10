@@ -217,7 +217,6 @@ def main(
             mode='max',
             baseline=.6,
             start_epoch=15,
-            path=f'checkpoints/{model_name}__case_{case}_checkpoint.pt',
         )
 
     if scheduler != 'None':
@@ -225,7 +224,7 @@ def main(
             'ReduceLROnPlateau': {
                 'mode': 'min',
                 'factor': 0.1,
-                'patience': 10,
+                'patience': 5,
                 'verbose': True,
                 'threshold': 0.0001,
                 'threshold_mode': 'rel',
@@ -292,7 +291,7 @@ def main(
     # Save the model trained
     print('Saving the model')
     classifier.save_trained_model(
-        name=f'{model_name}_{now}_case{case}'
+        #name=f'{model_name}_{now}_case{case}'
     )
 
 
