@@ -194,8 +194,8 @@ class DataReader(object):
 
 
     def crop_mDoppler(self,
-                      start:int=13,
-                      stop:int=111):
+                      start_vel:int=13,
+                      stop_vel:int=111):
         """
         Crop the mDoppler data
         
