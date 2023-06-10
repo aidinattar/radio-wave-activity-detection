@@ -83,8 +83,8 @@ now = datetime.now().strftime("%Y%m%d")
 
 def main(
     model_name:str,
-    train_data,
-    test_data,
+    train_data: torch.utils.data.Dataset,
+    test_data: torch.utils.data.Dataset,
     case:int,
     load:bool,
     in_channels:int,
@@ -277,7 +277,8 @@ def main(
     classifier.plot_history(
         save=True,
         show=False,
-        save_csv=True
+        save_csv=True,
+        name_csv=f'{model_name}_case{case}_history_{classifier.early_stopping.best_score}_{now}.csv',
     )
 
     # Evaluate the model
