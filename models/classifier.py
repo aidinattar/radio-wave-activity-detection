@@ -1262,8 +1262,7 @@ class model(object):
         """
         if not self.model_created:
             raise WorkToDoError('model_created')
-        
-        print(self.input_size)
+
         summary(self.model, self.input_size)
         
         if save:
