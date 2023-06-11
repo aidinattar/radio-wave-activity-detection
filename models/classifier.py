@@ -23,6 +23,8 @@ from models.cnn_md_baseline    import cnn_md_baseline
 from models.custom_cnns        import CNNCustom
 from models.ResNet50           import ResNet50
 from models.ResNet18           import ResNet18
+from models.cnn_md_resnet      import cnn_md_resnet_v1, cnn_md_resnet_v2
+from models.cnn_md_inception   import cnn_md_inception
 from models.inception_v4       import InceptionV4
 #from models.Inception_v3       import InceptionV3
 #from models.Inception_ResNet_v2 import InceptionResNetV2
@@ -198,6 +200,27 @@ class model(object):
                 num_classes=num_classes,
                 **kwargs
             )
+        elif self.model_type == 'CNN-MD-ResNet-V1':
+            if self.train_data.TYPE != 'mDoppler':
+                OptionIsFalseError('do_mDoppler')
+            self.model = cnn_md_resnet_v1(
+                out_channels=num_classes,
+                **kwargs
+            )
+        elif self.model_type == 'CNN-MD-ResNet-V2':
+            if self.train_data.TYPE != 'mDoppler':
+                OptionIsFalseError('do_mDoppler')
+            self.model = cnn_md_resnet_v2(
+                out_channels=num_classes,
+                **kwargs
+            )
+        elif self.model_type == 'CNN-MD-Inception':
+            if self.train_data.TYPE != 'mDoppler':
+                OptionIsFalseError('do_mDoppler')
+            self.model = cnn_md_inception(
+                out_channels=num_classes,
+                **kwargs
+            )
         elif self.model_type == 'InceptionV3':
             if self.train_data.TYPE != 'mDoppler':
                 OptionIsFalseError('do_mDoppler')
@@ -336,7 +359,8 @@ class model(object):
         else:
             raise ValueError('Invalid loss function')
 
-        self.loss.weight = self.loss.weight.float()
+        if use_weight:
+            self.loss.weight = self.loss.weight.float()
 
         # Set the flag
         self.loss_created = True
@@ -574,7 +598,18 @@ class model(object):
                         break
 
                 if self.scheduler_created:
-                    self.scheduler.step(metrics=test_loss)
+                    if isinstance(self.scheduler, ReduceLROnPlateau):
+                        self.scheduler.step(metrics=test_loss)
+                    elif isinstance(self.scheduler, CosineAnnealingLR):
+                        self.scheduler.step()
+                    elif isinstance(self.scheduler, StepLR):
+                        self.scheduler.step()
+                    elif isinstance(self.scheduler, ExponentialLR):
+                        self.scheduler.step()
+                    elif isinstance(self.scheduler, MultiStepLR):
+                        self.scheduler.step()
+                    else:
+                        raise ValueError('Invalid scheduler')
 
         except KeyboardInterrupt:
             print('Interrupted by the user')

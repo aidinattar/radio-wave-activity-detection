@@ -244,3 +244,4 @@ model = InceptionResNetV2(in_channels=2, num_classes=10)
 input_tensor = torch.randn(2, 2, 80, 40)
 output = model(input_tensor)
 print(output.shape)
+# %%
