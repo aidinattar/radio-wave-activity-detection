@@ -78,12 +78,12 @@ def reading(data_path:str,
     if verbose > 1:
         print("Rescaling...")
     dr.rescaling(method='norm')
-    #if verbose > 1:
-    #    print("Filtering...")
-    #if do_mDoppler:
-    #    if verbose > 1:
-    #        print("Filtering...")
-    #    dr.filter_mDoppler(size=(21, 11), sigma=15)
+    if verbose > 1:
+        print("Filtering...")
+    if do_mDoppler:
+        if verbose > 1:
+            print("Filtering...")
+        dr.filter_mDoppler(size=(11, 5), sigma=5)
     return dr
             
 

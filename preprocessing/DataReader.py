@@ -166,8 +166,8 @@ class DataReader(object):
 
 
     def crop_rdn(self,
-                 start:int=13,
-                 stop:int=111,
+                 start_vel:int=13,
+                 stop_vel:int=111,
                  start_range:int=0,
                  stop_range:int=63):
         """
@@ -188,8 +188,6 @@ class DataReader(object):
         if not self.do_rdn:
             raise OptionIsFalseError('do_rdn')
 
-        start_vel = start
-        stop_vel = stop
         # crop the data
         for i in range(len(self.rdn)):
             self.rdn[i] = self.rdn[i][:, start_range:stop_range, start_vel:stop_vel]
