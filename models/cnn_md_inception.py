@@ -92,10 +92,7 @@ class cnn_md_inception(Module):
             # num_filters * height * width
             # height = (input_height - kernel_size + 2 * padding) / stride + 1
             # width = (input_width - kernel_size + 2 * padding) / stride + 1
-            Linear(in_features=(f4*3+128)*4*6, out_features=128),  # 6 and 4 are the height and width of the input
-            ReLU(),
-            Dropout(p=dropout),
-            Linear(in_features=1280, out_features=128),
+            Linear(in_features=(f4*3+128)*4*6, out_features=128),
             ReLU(),
             Dropout(p=dropout),
             Linear(in_features=128, out_features=out_channels),
