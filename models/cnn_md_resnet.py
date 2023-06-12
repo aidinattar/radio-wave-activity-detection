@@ -189,9 +189,6 @@ class ConvBlock(Module):
         kernel_size,
         stride: int,
         padding: int,
-        pool_kernel_size: int,
-        pool_stride: int,
-        dropout: float=0.5
     ):
         """
         Make a convolutional layer
@@ -226,14 +223,6 @@ class ConvBlock(Module):
                 padding=padding
             ),
             ELU(),
-            MaxPool2d(
-                kernel_size=pool_kernel_size,
-                stride=pool_stride,
-                padding=(pool_kernel_size-1)//2
-            ),
-            Dropout2d(
-                p=dropout
-            )
         )
         
         self.apply(self._init_weights)
@@ -320,7 +309,7 @@ class cnn_md_resnet_v2(Module):
                  kernel_size=3,
                  stride: int=1,
                  padding: str='same',
-                 pool_size=1,
+                 pool_size=2,
                  pool_stride: int=2,
                  pool_padding: int=1,
                  dilation: int=1,
@@ -349,6 +338,18 @@ class cnn_md_resnet_v2(Module):
                     BatchNorm2d(num_filters)
                 )
             )
+            in_ch = num_filters
+    
+        self.pool = Sequential(
+            MaxPool2d(
+                kernel_size=pool_size,
+                stride=pool_stride,
+                padding=pool_padding
+            ),
+            Dropout2d(
+                p=dropout
+            )
+        )
     
         self.conv_blocks = ModuleList()
         in_ch = in_channels
@@ -359,10 +360,7 @@ class cnn_md_resnet_v2(Module):
                     out_channels=num_filters,
                     kernel_size=kernel_size,
                     stride=stride,
-                    pool_stride=1,
                     padding=(kernel_size - 1) // 2,
-                    pool_kernel_size=pool_size,
-                    dropout=dropout
                 )
             )
             in_ch = num_filters
@@ -372,7 +370,7 @@ class cnn_md_resnet_v2(Module):
 
         # Fully connected layers
         self.linear_blocks = ModuleList()
-        in_features = filters[-1] * 3200
+        in_features = filters[-1] * 6 * 4
         for num_neurons in neurons:
             self.linear_blocks.append(
                 LinearBlock(
@@ -418,6 +416,7 @@ class cnn_md_resnet_v2(Module):
             residual = shortcut(x)
             x = conv(x)
             x += residual  # Add residual connection
+            x = self.pool(x)    
         x = ELU()(x)
         # Flatten the output of the convolutional layers
         x = self.flatten(x)
