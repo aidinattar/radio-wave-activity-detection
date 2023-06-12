@@ -244,7 +244,10 @@ class Dataset1Channel(Dataset):
         label = self.labels[idx]
         
         if self.features_transform:
-            features = self.features_transform(features)
+            if self.TYPE == 'mDoppler':
+                features = self.features_transform(features).permute(0, 2, 1)
+            else:
+                features = self.features_transform(features).permute(0, 2, 1, 3)
             
         if self.labels_transform:
             label = self.labels_transform(label)

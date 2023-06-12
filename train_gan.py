@@ -16,7 +16,7 @@ Options:
     -e --epochs=<epochs>            Number of epochs [default: 100].
 
 Example:
-    python train_gan.py --filename gan.h5 --dirname gan
+    python train_gan.py --filename gan.h5 --dirname gan --channel 1 --batch_size 32 --lr 0.001 --epochs 100
 """
 import os
 import torch
@@ -193,7 +193,9 @@ def train(dataloader: DataLoader,
     gloss = []
     dloss = []
     
-    for epoch in tqdm(range(epochs)):
+    iterator = tqdm(range(epochs))
+    iterator
+    for epoch in iterator:
         gen_losses = []
         disc_losses = []
         # Train loop
@@ -202,6 +204,14 @@ def train(dataloader: DataLoader,
             gen_loss, disc_loss = train_step(image_batch, generator, discriminator, BATCH_SIZE, noise_dim, device, dis_opt, gen_opt)
             gen_losses.append(gen_loss.detach().cpu())
             disc_losses.append(disc_loss.detach().cpu())
+            iterator.set_description(
+                'Epoch {}/{} - Generator Loss: {:.4f} - Discriminator Loss: {:.4f}'.format(
+                    epoch + 1,
+                    epochs,
+                    np.mean(gen_losses),
+                    np.mean(disc_losses)
+                )
+            )
 
         # collect losses
         gloss.append(np.mean(gen_losses))
@@ -247,7 +257,7 @@ if __name__=='__main__':
     # 2. convert to tensor
     # 3. normalize
     features_transform = transforms.Compose([
-        lambda x: x[:,9:-9].T,
+        #lambda x: x[:,9:-9].T,
         transforms.ToTensor(),
         transforms.Normalize((0,), (1,))
     ])
@@ -264,7 +274,7 @@ if __name__=='__main__':
     
     data_loader = DataLoader(
         dataset=data,
-        batch_size=int(args['--batch-size']),
+        batch_size=int(args['--batch_size']),
         shuffle=True
     )
     
@@ -306,7 +316,7 @@ if __name__=='__main__':
         epochs=EPOCHS,
         generator=generator,
         discriminator=discriminator,
-        BATCH_SIZE=int(args['--batch-size']),
+        BATCH_SIZE=int(args['--batch_size']),
         noise_dim=noise_dim,
         device=device,
         dis_opt=dis_opt,
