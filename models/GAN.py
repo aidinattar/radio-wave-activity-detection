@@ -240,11 +240,16 @@ class Discriminator(Module):
             ),
             LeakyReLU(),
             Dropout(dropout),
-
-            Flatten(),
-            ##### TODO: Check if this is correct
-            Linear(f3 * 10 * 5, 1)
         )
+        
+        self.flatten = Flatten()
+        self.fc_net = Sequential(
+            Linear(
+                in_features=f3*5*10,
+                out_features=1
+            )
+        )
+            
         
         self.apply(self._init_weights)
 
@@ -263,8 +268,10 @@ class Discriminator(Module):
         y : torch.Tensor
             Output tensor
         """
-        y = self.model(x)
-        return y
+        x = self.model(x)
+        x = self.flatten(x)
+        x = self.fc_net(x)
+        return x
 
 
     def _init_weights(self, module):
