@@ -355,11 +355,17 @@ if __name__ == '__main__':
 
     if case == 0:
 
-        features_transform = transforms.Compose([
-            #lambda x: x[:, 9:-9],
-            transforms.ToTensor(),
-            transforms.Normalize((0,), (1,))
-        ])
+        if TYPE == 'mDoppler':
+            features_transform = transforms.Compose([
+                #lambda x: x[:, :, 9:-9],
+                transforms.ToTensor(),
+                transforms.Normalize((0,), (1,))
+            ])
+        else:
+            features_transform = transforms.Compose([
+                ToTensor4D(),
+                transforms.Normalize((0,), (1,))
+            ])
 
         train_data = Dataset1Channel(
             TYPE=TYPE,
@@ -461,6 +467,7 @@ if __name__ == '__main__':
         num_classes = len(np.unique(train_data.labels[:]))
     
     # load model
+    train_data[0]
     model_name = args['<model>']
 
     main(
