@@ -18,7 +18,7 @@ Usage:
             [--nesterov] [--scheduler=<scheduler>]
             [--loss=<loss>] [--early-stopping]
             [--patience=<patience>] [--min_delta=<min_delta>]
-            [--verbose=<verbose>] [--seed=<seed>]
+            [--verbose=<verbose>] [--class_weights] [--seed=<seed>]
     train.py -h | --help
 
 Options:
@@ -46,6 +46,7 @@ Options:
     --early-stopping                Early stopping [default: False].
     --patience=<patience>           Patience [default: 10].
     --min_delta=<min_delta>         Minimum delta [default: 0.0001].
+    --class_weights                 Class weights [default: False].
     --verbose=<verbose>             Verbose [default: 1].
     --seed=<seed>                   Seed [default: 42].
 
@@ -109,6 +110,7 @@ def main(
     verbose:int,
     device:torch.device,
     mode:str,
+    class_weights:bool,
     seed:int
 ):
     """
@@ -167,11 +169,19 @@ def main(
         model_type=model_name,
         device=device,
     )
+
     classifier.create_model(
         in_channels=in_channels,
         num_classes=num_classes,
-        dropout=dropout
+        dropout=dropout,
     )
+    #classifier.create_model(
+    #    in_channels=in_channels,
+    #    num_classes=num_classes,
+    #    filters=(512, 64, 128, 32),
+    #    neurons=(8,),
+    #    dropout=(.2, .9, .0, .4, .3),
+    #)
 
     # Load the pre-trained model
     if load != "None":
@@ -203,7 +213,7 @@ def main(
 
     classifier.create_loss(
         loss=loss,
-        use_weight=True,
+        use_weight=class_weights,
         labels_transform=labels_transform,
     )
     
@@ -323,7 +333,7 @@ if __name__ == '__main__':
     nesterov = bool(args['--nesterov'])
     loss = args['--loss']
     gradient_accumulation = int(args['--gradient_accumulation'])
-    
+    class_weights = bool(args['--class_weights'])
     scheduler = args['--scheduler']
     early_stopping = bool(args['--early-stopping'])
     patience = int(args['--patience'])
@@ -345,11 +355,17 @@ if __name__ == '__main__':
 
     if case == 0:
 
-        features_transform = transforms.Compose([
-            #lambda x: x[:, 9:-9],
-            transforms.ToTensor(),
-            transforms.Normalize((0,), (1,))
-        ])
+        if TYPE == 'mDoppler':
+            features_transform = transforms.Compose([
+                #lambda x: x[:, :, 9:-9],
+                transforms.ToTensor(),
+                transforms.Normalize((0,), (1,))
+            ])
+        else:
+            features_transform = transforms.Compose([
+                ToTensor4D(),
+                transforms.Normalize((0,), (1,))
+            ])
 
         train_data = Dataset1Channel(
             TYPE=TYPE,
@@ -451,6 +467,7 @@ if __name__ == '__main__':
         num_classes = len(np.unique(train_data.labels[:]))
     
     # load model
+    train_data[0]
     model_name = args['<model>']
 
     main(
@@ -479,6 +496,7 @@ if __name__ == '__main__':
         min_delta=min_delta,
         verbose=verbose,
         mode=mode,
+        class_weights=class_weights,
         device=device,
         seed=seed
     )

@@ -64,6 +64,7 @@ class ConvBlock(Module):
         Sequential
             Sequential layer
         """
+        super().__init__()
         self.conv = Sequential(
             Conv2d(
                 in_channels=in_channels,
@@ -126,6 +127,7 @@ class LinearBlock(Module):
         Sequential
             Sequential layer
         """
+        super().__init__()
         self.linear = Sequential(
             Linear(
                 in_features=in_features,
@@ -165,13 +167,19 @@ class CNNCustom(Module):
         padding='same',
         pool_size=(2, 2),
         pool_stride=2,
-        dropout=0.5,
+        dropout=(0.2, 0.2, 0.2, 0.2, 0.2, 0.2),
     ):
         super().__init__()
 
+        if len(dropout) != len(filters) + len(neurons):
+            raise ValueError(
+                "The number of dropout values should be equal to the number of "
+                "convolutional layers + the number of linear layers"
+            )
+
         # Convolutional layers
         self.conv_blocks = ModuleList()
-        for num_filters in filters:
+        for i, num_filters in enumerate(filters):
             self.conv_blocks.append(
                 ConvBlock(
                     in_channels=in_channels,
@@ -181,7 +189,7 @@ class CNNCustom(Module):
                     padding=padding,
                     pool_kernel_size=pool_size,
                     pool_stride=pool_stride,
-                    dropout=dropout,
+                    dropout=dropout[i],
                 )
             )
             in_channels = num_filters
@@ -189,18 +197,19 @@ class CNNCustom(Module):
         # Linear layers
         self.linear_blocks = ModuleList()
         in_features = filters[-1] * (80 // (2 ** len(filters))) * (40 // (2 ** len(filters)))
-        for num_neurons in neurons:
+        for i, num_neurons in enumerate(neurons):
             self.linear_blocks.append(
                 LinearBlock(
                     in_features=in_features,
                     out_features=num_neurons,
-                    dropout=dropout,
+                    dropout=dropout[i + len(filters)],
                 )
             )
             in_features = num_neurons
 
         # Output layer
         self.output_layer = Linear(in_features, out_channels)
+        self.softmax = Softmax(dim=1)
 
     def forward(self, x):
         for conv_block in self.conv_blocks:
@@ -212,6 +221,7 @@ class CNNCustom(Module):
             x = linear_block(x)
 
         x = self.output_layer(x)
+        x = self.softmax(x)
 
         return x
 
@@ -228,19 +238,6 @@ class CNNCustom(Module):
             torch.nn.init.xavier_uniform_(module.weight)
             if module.bias is not None:
                 module.bias.data.zero_()
-
-
-    def forward(self, x):
-        """
-        Forward pass
-        """
-        # Convolutional layers
-        x = self.cnn(x)
-        # Flatten the output of the convolutional layers
-        x = self.flatten(x)        
-        # Fully connected layers
-        x = self.fc(x)
-        return x
 
 
     def save(self, path: str):

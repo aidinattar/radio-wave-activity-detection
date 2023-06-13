@@ -83,7 +83,7 @@ def reading(data_path:str,
     #if do_mDoppler:
     #    if verbose > 1:
     #        print("Filtering...")
-    #    dr.filter_mDoppler(size=(21, 11), sigma=15)
+    #    dr.filter_mDoppler(size=(11, 5), sigma=5)
     return dr
             
 

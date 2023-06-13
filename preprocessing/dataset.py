@@ -115,9 +115,9 @@ class Dataset2Channels(Dataset):
         if self.labels_transform:
             label = self.labels_transform(label)
             
+        features_1 = np.expand_dims(features_1, axis=0)
+        features_2 = np.expand_dims(features_2, axis=0)
         if self.combine_channels:
-            features_1 = np.expand_dims(features_1, axis=0)
-            features_2 = np.expand_dims(features_2, axis=0)
             features = np.concatenate((features_1, features_2), axis=0)
             
             if self.features_transform:
@@ -243,8 +243,13 @@ class Dataset1Channel(Dataset):
         features = self.features[idx]
         label = self.labels[idx]
         
+        features = np.expand_dims(features, axis=0)
+        
         if self.features_transform:
-            features = self.features_transform(features)
+            if self.TYPE == 'mDoppler':
+                features = self.features_transform(features).permute(0, 2, 1)
+            else:
+                features = self.features_transform(features).permute(0, 2, 1, 3)
             
         if self.labels_transform:
             label = self.labels_transform(label)
