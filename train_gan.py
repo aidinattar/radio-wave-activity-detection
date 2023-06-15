@@ -4,19 +4,20 @@ train_gan.py
 Trains a GAN.
 
 Usage:
-    train_gan.py (--filename <filename>) (--dirname <dirname>) [--channel=<channel>] [--batch_size=<batch_size>] [--epochs=<epochs>] [--lr=<lr>]
-    
+    train_gan.py [--epochs=<epochs>] [--batch_size=<batch_size>] [--lr=<lr>] [--b1=<b1>] [--b2=<b2>] [--img_height=<img_height>] [--img_width=<img_width>] [--channels=<channels>] [--latent_dim=<latent_dim>] [--sample_interval=<sample_interval>]
+        
 Options:
     -h --help                       Show this screen.
-    -f --filename <filename>        Name of the file to save the model.
-    -d --dirname <dirname>          Name of the directory to save the model.
-    -c --channel=<channel>          Channel to use [default: 1].
-    -b --batch_size=<batch_size>    Batch size [default: 32].
-    -l --lr=<lr>                    Learning rate [default: 0.001].
-    -e --epochs=<epochs>            Number of epochs [default: 100].
-
-Example:
-    python train_gan.py --filename gan.h5 --dirname gan --channel 1 --batch_size 32 --lr 0.001 --epochs 100
+    --epochs=<epochs>               Number of epochs [default: 200].
+    --batch_size=<batch_size>       Batch size [default: 64].
+    --lr=<lr>                       Learning rate [default: 0.0002].
+    --b1=<b1>                       Adam: decay of first order momentum of gradient [default: 0.5].
+    --b2=<b2>                       Adam: decay of first order momentum of gradient [default: 0.999].
+    --img_height=<img_height>       Height of the images [default: 80].
+    --img_width=<img_width>         Width of the images [default: 40].
+    --channels=<channels>           Number of image channels [default: 1].
+    --latent_dim=<latent_dim>       Dimensionality of the latent space [default: 100].
+    --sample_interval=<sample_interval>   Interval between image samples [default: 400].
 """
 import os
 import torch
@@ -31,350 +32,128 @@ from torchvision.utils import make_grid
 from utils.constants import MAPPING_LABELS_DICT
 from preprocessing.dataset import Dataset1Channel
 from models.GAN import Generator, Discriminator
-from models.GAN import generator_loss, discriminator_loss
+from torch.autograd import Variable
+from torchvision.utils import save_image
+
+os.makedirs("images", exist_ok=True)
+
+opt = docopt(__doc__)
+
+img_shape = (
+    int(opt['--channels']),
+    int(opt['--img_height']),
+    int(opt['--img_width']),
+)
+
+cuda = True if torch.cuda.is_available() else False
+
+# Loss function
+adversarial_loss = torch.nn.BCELoss()
+
+# Initialize generator and discriminator
+generator = Generator()
+discriminator = Discriminator()
+
+if cuda:
+    generator.cuda()
+    discriminator.cuda()
+    adversarial_loss.cuda()
+
+# Configure data loader
+# labels mapping
+labels_transform = np.vectorize(
+    lambda label: MAPPING_LABELS_DICT[label]
+)
+
+# transforms:
+# 1. cut the first and last 9 rows
+# 2. convert to tensor
+# 3. normalize
+features_transform = transforms.Compose([
+    #lambda x: x[:,9:-9].T,
+    transforms.ToTensor(),
+    transforms.Normalize((0,), (1,))
+])
+
+# dataset
+data = Dataset1Channel(
+    TYPE='mDoppler',
+    dirname='DATA_preprocessed',
+    filename='processed_data_mDoppler.h5',
+    features_transform=features_transform,
+    labels_transform=labels_transform,
+    channel=1
+)
+
+dataloader = DataLoader(
+    dataset=data,
+    batch_size=int(opt['--batch_size']),
+    shuffle=True
+)
 
 
-def train_step(images: torch.Tensor,
-               generator: torch.nn.Module,
-               discriminator: torch.nn.Module,
-               BATCH_SIZE: int,
-               noise_dim: int,
-               device: str,
-               dis_opt: torch.optim.Optimizer,
-               gen_opt: torch.optim.Optimizer):
-    """
-    Performs a training step for a GAN
-    
-    Parameters
-    ----------
-    images : torch.Tensor
-        Batch of images
-    generator : torch.nn.Module
-        Generator model
-    discriminator : torch.nn.Module
-        Discriminator model
-    BATCH_SIZE : int
-        Batch size
-    noise_dim : int
-        Dimension of the noise vector
-    device : str or torch.device
-        Device to perform the computation
-    dis_opt : torch.optim.Optimizer
-        Optimizer for the discriminator
-    gen_opt : torch.optim.Optimizer
-        Optimizer for the generator
-    
-    Returns
-    -------
-    gen_loss : torch.Tensor
-        Generator loss
-    disc_loss : torch.Tensor
-        Discriminator loss
-    """
+# Optimizers
+optimizer_G = torch.optim.Adam(generator.parameters(), lr=float(opt['--lr']), betas=(float(opt['--b1']), float(opt['--b2'])))
+optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=float(opt['--lr']), betas=(float(opt['--b1']), float(opt['--b2'])))
 
-    # generate noise vector    
-    noise = torch.randn([BATCH_SIZE, noise_dim], device=device)
+Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
-    # generate images
-    generated_images = generator(noise)
+# ----------
+#  Training
+# ----------
 
-    # forward pass through discriminator
-    # for real and fake images
-    real_output = discriminator(images)
-    fake_output = discriminator(generated_images.detach())
+for epoch in range(int(opt['--epochs'])):
+    for i, (imgs, _) in enumerate(dataloader):
 
-    # compute losses for discriminator
-    disc_loss = discriminator_loss(real_output, fake_output, device=device)
-    dis_opt.zero_grad()
-    disc_loss.backward()
-    dis_opt.step()
+        # Adversarial ground truths
+        valid = Variable(Tensor(imgs.size(0), 1).fill_(1.0), requires_grad=False)
+        fake = Variable(Tensor(imgs.size(0), 1).fill_(0.0), requires_grad=False)
 
-    # forward pass through discriminator
-    fake_output = discriminator(generated_images)
-    # compute losses for generator
-    gen_loss = generator_loss(fake_output, device=device)
-    gen_opt.zero_grad()
-    gen_loss.backward()
-    gen_opt.step()
+        # Configure input
+        real_imgs = Variable(imgs.type(Tensor))
 
-    return gen_loss, disc_loss
+        # -----------------
+        #  Train Generator
+        # -----------------
 
+        optimizer_G.zero_grad()
 
-def generate_and_save_images(model: torch.nn.Module,
-                             epoch: int,
-                             test_input: torch.Tensor,
-                             show: bool=False):
-    """
-    Generates and saves images from a GAN
-    
-    Parameters
-    ----------
-    model : torch.nn.Module
-        Generator model
-    epoch : int
-        Epoch number
-    test_input : torch.Tensor
-        Noise vector
-    show : bool, optional
-        Whether to show the images or not
-    """
-    # Notice `training` is set to False.
-    # This is so all layers run in inference mode (batchnorm).
-    model.eval()
-    with torch.no_grad():
-        predictions = model(test_input).detach().cpu()* 250
+        # Sample noise as generator input
+        z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], int(opt['--latent_dim'])))))
 
-    # Plot the generated images
-    grid = make_grid(predictions, 4).numpy().squeeze().transpose(1, 2, 0)
+        # Generate a batch of images
+        gen_imgs = generator(z)
 
-    plt.imshow(grid.astype(np.uint8) , cmap='binary')
-    plt.axis('off')
-    plt.tight_layout()
+        # Loss measures generator's ability to fool the discriminator
+        g_loss = adversarial_loss(discriminator(gen_imgs), valid)
 
-    plt.savefig(
-        os.path.join(
-            'figures',
-            'image_at_epoch_{:04d}.png'.format(epoch)
-        )
-    )
-    
-    if show:
-        plt.show()
+        g_loss.backward()
+        optimizer_G.step()
 
-    model.train()
-    
-    
-def train(dataloader: DataLoader,
-          epochs: int,
-          generator: torch.nn.Module,
-          discriminator: torch.nn.Module,
-          BATCH_SIZE: int,
-          noise_dim: int,
-          device: str,
-          dis_opt: torch.optim.Optimizer,
-          gen_opt: torch.optim.Optimizer,
-          seed: torch.Tensor,
-          show: bool=False):
-    """
-    Trains a GAN
-    
-    Parameters
-    ----------
-    dataloader : DataLoader
-        DataLoader for the dataset
-    epochs : int
-        Number of epochs
-    generator : torch.nn.Module
-        Generator model
-    discriminator : torch.nn.Module
-        Discriminator model
-    BATCH_SIZE : int
-        Batch size
-    noise_dim : int
-        Dimension of the noise vector
-    device : str or torch.device
-        Device to perform the computation
-    dis_opt : torch.optim.Optimizer
-        Optimizer for the discriminator
-    gen_opt : torch.optim.Optimizer
-        Optimizer for the generator
-    seed : torch.Tensor
-        Noise vector
-    show : bool, optional
-        Whether to show the images or not
-        
-    Returns
-    -------
-    gloss : list
-        Generator losses
-    dloss : list
-        Discriminator losses
-    """
-    gloss = []
-    dloss = []
-    
-    iterator = tqdm(range(epochs))
-    iterator
-    for epoch in iterator:
-        gen_losses = []
-        disc_losses = []
-        # Train loop
-        for image_batch, _ in dataloader:
-            image_batch = image_batch.to(device)
-            gen_loss, disc_loss = train_step(image_batch, generator, discriminator, BATCH_SIZE, noise_dim, device, dis_opt, gen_opt)
-            gen_losses.append(gen_loss.detach().cpu())
-            disc_losses.append(disc_loss.detach().cpu())
-            iterator.set_description(
-                'Epoch {}/{} - Generator Loss: {:.4f} - Discriminator Loss: {:.4f}'.format(
-                    epoch + 1,
-                    epochs,
-                    np.mean(gen_losses),
-                    np.mean(disc_losses)
-                )
-            )
+        # ---------------------
+        #  Train Discriminator
+        # ---------------------
 
-        # collect losses
-        gloss.append(np.mean(gen_losses))
-        dloss.append(np.mean(disc_losses))
-        
-        # save checkpoint if loss is lower than the previous one
-        if gloss[-1] == min(gloss):
-            torch.save(generator.state_dict(), os.path.join('checkpoints', 'generator.pt'))
-            torch.save(discriminator.state_dict(), os.path.join('checkpoints', 'discriminator.pt'))
-        
-        # produce images
-        display.clear_output(wait=True)
-        generate_and_save_images(
-            model=generator,
-            epoch=epoch + 1,
-            test_input=seed,
-            show=show
+        optimizer_D.zero_grad()
+
+        # Measure discriminator's ability to classify real from generated samples
+        real_loss = adversarial_loss(discriminator(real_imgs), valid)
+        fake_loss = adversarial_loss(discriminator(gen_imgs.detach()), fake)
+        d_loss = (real_loss + fake_loss) / 2
+
+        d_loss.backward()
+        optimizer_D.step()
+
+        print(
+            "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
+            % (epoch, int(opt['--epochs']), i, len(dataloader), d_loss.item(), g_loss.item())
         )
 
-    # Generate after the final epoch
-    display.clear_output(wait=True)
-    generate_and_save_images(
-        model=generator,
-        epoch=epochs,
-        test_input=seed,
-        show=show
-    )
-
-    return gloss, dloss
-
-
-if __name__=='__main__':
-    
-    args = docopt(__doc__)
-    
-    # labels mapping
-    labels_transform = np.vectorize(
-        lambda label: MAPPING_LABELS_DICT[label]
-    )
-
-    # transforms:
-    # 1. cut the first and last 9 rows
-    # 2. convert to tensor
-    # 3. normalize
-    features_transform = transforms.Compose([
-        #lambda x: x[:,9:-9].T,
-        transforms.ToTensor(),
-        transforms.Normalize((0,), (1,))
-    ])
-    
-    # dataset
-    data = Dataset1Channel(
-        TYPE='mDoppler',
-        dirname=args['--dirname'],
-        filename=args['--filename'],
-        features_transform=features_transform,
-        labels_transform=labels_transform,
-        channel=int(args['--channel'])
-    )
-    
-    data_loader = DataLoader(
-        dataset=data,
-        batch_size=int(args['--batch_size']),
-        shuffle=True
-    )
-    
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    
-    # create the generator
-    generator = Generator(
-        input_size=100
-    )
-    
-    # create the discriminator
-    discriminator = Discriminator()
-    
-    # optimizers
-    gen_opt = torch.optim.Adam(
-        generator.parameters(),
-        lr=float(args['--lr'])
-    )
-    
-    dis_opt = torch.optim.Adam(
-        discriminator.parameters(),
-        lr=float(args['--lr'])
-    )
-    
-    EPOCHS = int(args['--epochs'])
-    noise_dim = 100
-    num_examples_to_generate = 16
-    # seed for the generator
-    seed = torch.randn(
-         [num_examples_to_generate, noise_dim],
-         device=device
-    )
-    
-    # train the GAN
-    generator.to(device)
-    discriminator.to(device)
-    gloss, dloss = train(
-        dataloader=data_loader,
-        epochs=EPOCHS,
-        generator=generator,
-        discriminator=discriminator,
-        BATCH_SIZE=int(args['--batch_size']),
-        noise_dim=noise_dim,
-        device=device,
-        dis_opt=dis_opt,
-        gen_opt=gen_opt,
-        seed=seed,
-        show=False
-    )
-    
-    # save the models
-    torch.save(
-        generator.state_dict(),
-        os.path.join(
-            'trained_models',
-            'generator.pt'
-        )
-    )
-    
-    torch.save(
-        discriminator.state_dict(),
-        os.path.join(
-            'trained_models',
-            'discriminator.pt'
-        )
-    )
-    
-    # save the losses
-    np.save(
-        os.path.join(
-            'logs',
-            'gloss.npy'
-        ),
-        np.array(gloss)
-    )
-    
-    np.save(
-        os.path.join(
-            'logs',
-            'dloss.npy'
-        ),
-        np.array(dloss)
-    )
-    
-    # plot the losses
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(gloss, label="Generator Loss")
-    ax.plot(dloss, label="Discriminator Loss")
-    ax.set_xlabel("Epochs")
-    ax.set_ylabel("Loss")
-    ax.set_title("Generator and Discriminator Loss Over Time")
-    ax.legend(loc="upper right")
-    ax.grid(True, linestyle='--', alpha=0.5)
-    ax.tick_params(axis='both', which='both', labelsize=10)
-    plt.tight_layout()
-    plt.savefig(
-        os.path.join(
-            'figures',
-            'losses_gan.png'
-        )
-    )
+        batches_done = epoch * len(dataloader) + i
+        if batches_done % int(opt['--sample_interval']) == 0:
+            save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
             
-    plt.show()
+
+# Save models checkpoints
+torch.save(generator.state_dict(), 'trained_models/generatorGAN.pth')
+torch.save(discriminator.state_dict(), 'trained_models/discriminatorGAN.pth')
