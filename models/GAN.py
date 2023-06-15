@@ -8,120 +8,38 @@ from torch.nn import Module, Linear,\
                      Flatten, Sequential,\
                      BatchNorm1d, BatchNorm2d,\
                      LeakyReLU, ConvTranspose2d,\
-                     Sigmoid, BCEWithLogitsLoss
-
+                     Sigmoid, BCEWithLogitsLoss,\
+                     Tanh, BCELoss
+import numpy as np
 import time as time
 
+
+map_shape = (1, 80, 40)
 
 class Generator(Module):
     """
     Class to create the generator model
     """
-    def __init__(self,
-                 input_size,
-                 filters: tuple=(128, 64),
-                 kernel_size: int=5,
-                 channels:int=256,
-                 height:int=10,
-                 width:int=20,
-                 bias:bool=False,
-                 padding:int=2,
-                 stride:int=2,
-                 output_padding:int=1):
-        """
-        Constructor
-        
-        Parameters
-        ----------
-        input_size : int
-            Size of the input vector
-        filters : tuple, optional
-            Number of filters for each convolutional layer.
-            The default is (128, 64).
-        kernel_size : int, optional
-            Kernel size for the convolutional layers.
-            The default is 5.
-        channels : int, optional
-            Number of channels for the convolutional layers.
-            The default is 256.
-        height : int, optional
-            Height of the input image.
-            The default is 20.
-        width : int, optional
-            Width of the input image.
-            The default is 10.
-        bias : bool, optional
-            Whether to use bias in the convolutional layers.
-            The default is False.
-        padding : int, optional
-            Padding for the convolutional layers.
-            The default is 2.
-        stride : int, optional
-            Stride for the convolutional layers.
-            The default is 2.
-        output_padding : int, optional
-            Output padding for the convolutional layers.
-            The default is 1.
-        """
+    def __init__(self):
 
         super().__init__()
 
-        # Save the input size
-        self.input_size = input_size
+        
+        
+        def block(in_feat, out_feat, normalize=True):
+            layers = [Linear(in_feat, out_feat)]
+            if normalize:
+                layers.append(BatchNorm1d(out_feat, 0.8))
+            layers.append(LeakyReLU(0.2, inplace=True))
+            return layers
 
-        # Save the parameters
-        self.channels = channels
-        self.height = height
-        self.width = width
-
-        self.fc_net = Sequential(
-            Linear(
-                in_features=input_size,
-                out_features=channels*width*height,
-                bias=bias
-            ),
-            BatchNorm1d(
-                num_features=channels*width*height
-            ),
-            LeakyReLU()
-        )
-
-        f1, f2 = filters
-        self.conv_model = Sequential(
-            ConvTranspose2d(
-                in_channels=channels,
-                out_channels=f1,
-                kernel_size=kernel_size,
-                bias=bias,
-                padding=padding
-            ),
-            BatchNorm2d(
-                num_features=(f1)
-            ),
-            LeakyReLU(),
-            ConvTranspose2d(
-                in_channels=f1,
-                out_channels=f2,
-                kernel_size=kernel_size,
-                stride=stride,
-                bias=bias,
-                padding=padding,
-                output_padding=output_padding
-            ),
-            BatchNorm2d(
-                num_features=(f2)
-            ),
-            LeakyReLU(),
-            ConvTranspose2d(
-                in_channels=f2,
-                out_channels=1,
-                kernel_size=kernel_size,
-                stride=stride,
-                bias=bias,
-                padding=padding,
-                output_padding=output_padding
-            ),
-            Sigmoid()
+        self.model = Sequential(
+            *block(100, 128, normalize=False),
+            *block(128, 256),
+            *block(256, 512),
+            *block(512, 1024),
+            Linear(1024, int(np.prod(map_shape))),
+            Tanh()
         )
 
         self.apply(self._init_weights)
@@ -140,15 +58,10 @@ class Generator(Module):
         y : torch.Tensor
             Output tensor
         """
-        y = self.fc_net(x)
-        y = y.reshape((
-            -1,
-            self.channels,
-            self.width,
-            self.height
-        ))
-        y = self.conv_model(y)
-        return y
+        img = self.model(x)
+        img = img.view(img.size(0), *map_shape)
+        return img
+
 
     def _init_weights(self, module):
         """
@@ -175,13 +88,7 @@ class Discriminator(Module):
     """
     Class to create the discriminator model
     """
-    def __init__(self,
-                 in_channels:int=1,
-                 filters: tuple=(64, 128, 128),
-                 kernel_size: int=5,
-                 padding:int=2,
-                 stride:int=2,
-                 dropout:float=0.3):
+    def __init__(self,):
         """
         Constructor
         
@@ -207,54 +114,19 @@ class Discriminator(Module):
 
         super().__init__()
 
-        f1, f2, f3 = filters
-        
-        # Create the model
         self.model = Sequential(
-            Conv2d(
-                in_channels=in_channels,
-                out_channels=f1,
-                kernel_size=kernel_size,
-                stride=stride,
-                padding=padding
-            ),
-            LeakyReLU(),
-            Dropout(dropout),
-
-            Conv2d(
-                in_channels=f1,
-                out_channels=f2,
-                kernel_size=kernel_size,
-                stride=stride,
-                padding=padding
-            ),
-            LeakyReLU(),
-            Dropout(dropout),
-
-            Conv2d(
-                in_channels=f2,
-                out_channels=f3,
-                kernel_size=kernel_size,
-                stride=stride,
-                padding=padding
-            ),
-            LeakyReLU(),
-            Dropout(dropout),
-        )
-        
-        self.flatten = Flatten()
-        self.fc_net = Sequential(
-            Linear(
-                in_features=f3*5*10,
-                out_features=1
-            )
-        )
-            
+            Linear(int(np.prod(map_shape)), 512),
+            LeakyReLU(0.2, inplace=True),
+            Linear(512, 256),
+            LeakyReLU(0.2, inplace=True),
+            Linear(256, 1),
+            Sigmoid(),
+        )            
         
         self.apply(self._init_weights)
 
 
-    def forward(self, x):
+    def forward(self, img):
         """
         Forward pass
         
@@ -268,10 +140,10 @@ class Discriminator(Module):
         y : torch.Tensor
             Output tensor
         """
-        x = self.model(x)
-        x = self.flatten(x)
-        x = self.fc_net(x)
-        return x
+        img_flat = img.view(img.size(0), -1)
+        validity = self.model(img_flat)
+
+        return validity
 
 
     def _init_weights(self, module):
@@ -293,73 +165,3 @@ class Discriminator(Module):
         elif classname.find('BatchNorm') != -1:
             torch.nn.init.normal_(module.weight.data, 1.0, 0.2)
             torch.nn.init.constant_(module.bias.data, 0)
-
-
-######################################################################
-# Loss functions
-######################################################################
-def discriminator_loss(real_output,
-                       fake_output,
-                       criterion=BCEWithLogitsLoss(),
-                       device='cpu'):
-    """
-    Compute the discriminator loss
-    
-    Parameters
-    ----------
-    real_output : torch.Tensor
-        Output of the discriminator for the real images
-    fake_output : torch.Tensor
-        Output of the discriminator for the fake images
-    criterion : torch.nn.Module
-        Loss function
-        
-    Returns
-    -------
-    loss : torch.Tensor
-        Discriminator loss
-    """
-    real_loss = criterion(
-        real_output,
-        torch.ones_like(
-            real_output,
-            device=device
-        )
-    )
-    fake_loss = criterion(
-        fake_output,
-        torch.zeros_like(
-            fake_output,
-            device=device
-        )
-    )
-    loss = real_loss + fake_loss
-    return loss
-
-
-def generator_loss(fake_output,
-                   criterion=BCEWithLogitsLoss(),
-                   device='cpu'):
-    """
-    Compute the generator loss
-    
-    Parameters
-    ----------
-    fake_output : torch.Tensor
-        Output of the discriminator for the fake images
-    criterion : torch.nn.Module
-        Loss function
-        
-    Returns
-    -------
-    loss : torch.Tensor
-        Generator loss
-    """
-    loss = criterion(
-        fake_output,
-        torch.ones_like(
-            fake_output,
-            device=device
-        )
-    )
-    return loss
