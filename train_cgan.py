@@ -4,7 +4,7 @@ train_gan.py
 Trains a GAN.
 
 Usage:
-    train_gan.py [--epochs=<epochs>] [--batch_size=<batch_size>] [--lr=<lr>] [--b1=<b1>] [--b2=<b2>] [--img_height=<img_height>] [--img_width=<img_width>] [--channels=<channels>] [--latent_dim=<latent_dim>] [--sample_interval=<sample_interval>]
+    train_gan.py [--epochs=<epochs>] [--batch_size=<batch_size>] [--lr=<lr>] [--b1=<b1>] [--b2=<b2>] [--img_height=<img_height>] [--img_width=<img_width>] [--channels=<channels>] [--latent_dim=<latent_dim>] [--sample_interval=<sample_interval>] [--n_classes=<n_classes>]
         
 Options:
     -h --help                       Show this screen.
@@ -18,6 +18,7 @@ Options:
     --channels=<channels>           Number of image channels [default: 1].
     --latent_dim=<latent_dim>       Dimensionality of the latent space [default: 100].
     --sample_interval=<sample_interval>   Interval between image samples [default: 400].
+    --n_classes=<n_classes>           Number of classes [Default: 10]
 """
 import os
 import torch
@@ -96,7 +97,7 @@ LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor
 def sample_image(n_row, batches_done):
     """Saves a grid of generated digits ranging from 0 to n_classes"""
     # Sample noise
-    z = Variable(FloatTensor(np.random.normal(0, 1, (n_row ** 2, opt['--latent_dim']))))
+    z = Variable(FloatTensor(np.random.normal(0, 1, (n_row ** 2, int(opt['--latent_dim'])))))
     # Get labels ranging from 0 to n_classes for n rows
     labels = np.array([num for _ in range(n_row) for num in range(n_row)])
     labels = Variable(LongTensor(labels))
@@ -107,7 +108,7 @@ def sample_image(n_row, batches_done):
 #  Training
 # ----------
 
-for epoch in range(opt['--epochs']):
+for epoch in range(int(opt['--epochs'])):
     for i, (imgs, labels) in enumerate(dataloader):
 
         batch_size = imgs.shape[0]
@@ -127,8 +128,8 @@ for epoch in range(opt['--epochs']):
         optimizer_G.zero_grad()
 
         # Sample noise and labels as generator input
-        z = Variable(FloatTensor(np.random.normal(0, 1, (batch_size, opt['--latent_dim']))))
-        gen_labels = Variable(LongTensor(np.random.randint(0, opt['--n_classes'], batch_size)))
+        z = Variable(FloatTensor(np.random.normal(0, 1, (batch_size, int(opt['--latent_dim'])))))
+        gen_labels = Variable(LongTensor(np.random.randint(0, int(opt['--n_classes']), batch_size)))
 
         # Generate a batch of images
         gen_imgs = generator(z, gen_labels)
@@ -162,11 +163,11 @@ for epoch in range(opt['--epochs']):
 
         print(
             "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
-            % (epoch, opt['--epochs'], i, len(dataloader), d_loss.item(), g_loss.item())
+            % (epoch,int(opt['--epochs']), i, len(dataloader), d_loss.item(), g_loss.item())
         )
 
         batches_done = epoch * len(dataloader) + i
-        if batches_done % opt['--sample_interval'] == 0:
+        if batches_done % int(opt['--sample_interval']) == 0:
             sample_image(n_row=10, batches_done=batches_done)
             # save checkpoint
             torch.save(generator.state_dict(), 'checkpoints/generatorCGAN.pth')
