@@ -246,11 +246,12 @@ class Dataset1Channel(Dataset):
         features = np.expand_dims(features, axis=0)
         
         if self.features_transform:
+            features = self.features_transform(features)
             if self.TYPE == 'mDoppler':
-                features = self.features_transform(features).permute(0, 2, 1)
+                features = features.permute(1, 0, 2)
             else:
-                features = self.features_transform(features).permute(0, 2, 1, 3)
-            
+                features = features.permute(0, 1, 2, 3)
+
         if self.labels_transform:
             label = self.labels_transform(label)
             
