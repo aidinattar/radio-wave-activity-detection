@@ -13,9 +13,10 @@ import numpy as np
 
 map_shape = (1, 80, 40)
 n_classes = 10
+latent_dim = 100
 
 class Generator(Module):
-    def __init__(self, n_classes, latent_dim):
+    def __init__(self):
         super().__init__()
 
         self.label_emb = Embedding(n_classes, n_classes)
