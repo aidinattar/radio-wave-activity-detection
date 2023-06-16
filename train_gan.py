@@ -152,8 +152,10 @@ for epoch in range(int(opt['--epochs'])):
         batches_done = epoch * len(dataloader) + i
         if batches_done % int(opt['--sample_interval']) == 0:
             save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+            # save checkpoints
+            torch.save(generator.state_dict(), 'checkpoints/generatorGAN.pth')
+            torch.save(discriminator.state_dict(), 'checkpoints/discriminatorGAN.pth')
             
-
 # Save models checkpoints
 torch.save(generator.state_dict(), 'trained_models/generatorGAN.pth')
 torch.save(discriminator.state_dict(), 'trained_models/discriminatorGAN.pth')
